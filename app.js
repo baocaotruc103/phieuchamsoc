@@ -64,6 +64,11 @@ const state = {
     circulationNote: "",
     respiratoryNote: "",
     diseasedOrgan: "",
+    fallRiskAssessment: false,
+    vteRiskAssessment: false,
+    painAssessment: false,
+    pressureUlcerRiskAssessment: false,
+    glasgowAssessment: false,
     handoverMedicineHalf: false,
     handoverLab: false,
     handoverWaitLab: false,
@@ -812,6 +817,17 @@ function renderAssessmentPanel(assessments) {
           <h3>Cơ quan bệnh</h3>
           ${checkArea("diseasedOrgan", "Nhập nhận định cơ quan tổn thương", check.diseasedOrgan)}
         </div>
+
+        <div class="assessment-section-card">
+          <h3>Thang điểm đánh giá</h3>
+          <div class="assessment-form compact-form">
+            ${checkBool("fallRiskAssessment", "Đánh giá nguy cơ té ngã", check.fallRiskAssessment)}
+            ${checkBool("vteRiskAssessment", "Đánh giá nguy cơ viêm tĩnh mạch", check.vteRiskAssessment)}
+            ${checkBool("painAssessment", "Đánh giá đau", check.painAssessment)}
+            ${checkBool("pressureUlcerRiskAssessment", "Đánh giá nguy cơ loét tỳ đè", check.pressureUlcerRiskAssessment)}
+            ${checkBool("glasgowAssessment", "Đánh giá Glasgow", check.glasgowAssessment)}
+          </div>
+        </div>
       </div>
     </section>
   `;
@@ -869,6 +885,28 @@ function renderAssessmentPanel(assessments) {
         <div class="assessment-section-card">
           <h3>Cơ quan bệnh</h3>
           ${checkArea("diseasedOrgan", "Nhập thông tin cơ quan bệnh", check.diseasedOrgan)}
+        </div>
+
+        <div class="assessment-section-card">
+          <h3>Thang điểm đánh giá</h3>
+          <div class="assessment-form compact-form">
+            ${checkBool("fallRiskAssessment", "Đánh giá nguy cơ té ngã", check.fallRiskAssessment)}
+            ${checkBool("vteRiskAssessment", "Đánh giá nguy cơ viêm tĩnh mạch", check.vteRiskAssessment)}
+            ${checkBool("painAssessment", "Đánh giá đau", check.painAssessment)}
+            ${checkBool("pressureUlcerRiskAssessment", "Đánh giá nguy cơ loét tỳ đè", check.pressureUlcerRiskAssessment)}
+            ${checkBool("glasgowAssessment", "Đánh giá Glasgow", check.glasgowAssessment)}
+          </div>
+        </div>
+
+        <div class="assessment-section-card">
+          <h3>Thang điểm đánh giá</h3>
+          <div class="assessment-form compact-form">
+            ${checkBool("fallRiskAssessment", "Đánh giá nguy cơ té ngã", check.fallRiskAssessment)}
+            ${checkBool("vteRiskAssessment", "Đánh giá nguy cơ viêm tĩnh mạch", check.vteRiskAssessment)}
+            ${checkBool("painAssessment", "Đánh giá đau", check.painAssessment)}
+            ${checkBool("pressureUlcerRiskAssessment", "Đánh giá nguy cơ loét tỳ đè", check.pressureUlcerRiskAssessment)}
+            ${checkBool("glasgowAssessment", "Đánh giá Glasgow", check.glasgowAssessment)}
+          </div>
         </div>
 
         <div class="disease-checklist">
@@ -1316,7 +1354,8 @@ function buildAssessmentSectionsForSheet() {
     "F. Tiết niệu": ["urinary", "urineAmount"],
     "G. Dinh dưỡng": ["nutritionType", "menu"],
     "H. Bàn giao": ["handoverMedicineHalf", "handoverLab", "handoverWaitLab", "handoverFilm", "handoverWaitFilm", "handoverDressing", "handoverDrain", "handoverVitals", "handoverUrine", "handoverTube", "handoverOther"],
-    "I. Khác": ["diseasedOrgan"]
+    "I. Khác": ["diseasedOrgan"],
+    "J. Thang điểm đánh giá": ["fallRiskAssessment", "vteRiskAssessment", "painAssessment", "pressureUlcerRiskAssessment", "glasgowAssessment"]
   };
   
   const labels = {
@@ -1328,7 +1367,12 @@ function buildAssessmentSectionsForSheet() {
     urinary: "Tiểu tiện", urineAmount: "Số lượng",
     nutritionType: "Loại", menu: "Thực đơn",
     handoverMedicineHalf: "Thuốc còn 1/2", handoverLab: "Lấy xét nghiệm", handoverWaitLab: "Chờ xét nghiệm", handoverFilm: "Lấy phim", handoverWaitFilm: "Chờ phim", handoverDressing: "Thay băng", handoverDrain: "Theo dõi dẫn lưu", handoverVitals: "Theo dõi DHST", handoverUrine: "Theo dõi nước tiểu", handoverTube: "Chăm sóc sonde", handoverOther: "Khác",
-    diseasedOrgan: "Cơ quan bị bệnh"
+    diseasedOrgan: "Cơ quan bị bệnh",
+    fallRiskAssessment: "Đánh giá nguy cơ té ngã",
+    vteRiskAssessment: "Đánh giá nguy cơ viêm tĩnh mạch",
+    painAssessment: "Đánh giá đau",
+    pressureUlcerRiskAssessment: "Đánh giá nguy cơ loét tỳ đè",
+    glasgowAssessment: "Đánh giá Glasgow"
   };
   
   for (const [section, fields] of Object.entries(sectionGroups)) {
