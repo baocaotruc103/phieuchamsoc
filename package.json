@@ -3,9 +3,14 @@
   "version": "1.0.0",
   "description": "Phiếu chăm sóc điều dưỡng",
   "scripts": {
+    "dev": "http-server -p 8080 -c-1",
+    "start": "http-server -p 8080 -c-1",
     "build": "echo 'No build needed for static site'"
   },
   "keywords": ["healthcare", "nursing"],
   "author": "baocaotruc103",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
 }
