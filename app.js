@@ -1200,6 +1200,10 @@ function renderSheet(condition) {
     });
   const diagnoses = state.diagnosisRows.filter((row) => row.selected && (row.diagnosis || row.goal));
   const interventions = state.interventionRows.filter((row) => row.selected && row.content);
+  
+  // Build comprehensive assessment sections for sheet
+  const assessmentSections = buildAssessmentSectionsForSheet();
+  
   return `
     <section class="panel printable-panel">
       <div class="panel-header no-print">
@@ -1214,17 +1218,17 @@ function renderSheet(condition) {
             <div>
               <h2>Phiếu chăm sóc điều dưỡng cấp ${h(state.careLevel)}</h2>
               <div class="sheet-meta">
-                <span>Người bệnh: ${h(state.patient.name || "........................")}</span>
-                <span>Tuổi: ${h(state.patient.age || ".....")}</span>
-                <span>Ngày: ${h(state.patient.date)}</span>
-                <span>Phòng: ${h(state.patient.room || ".....")}</span>
-                <span>Giường: ${h(state.patient.bed || ".....")}</span>
-                <span>Chẩn đoán y khoa: ${h(state.patient.diagnosis || condition.ten_mat_benh)}</span>
+                <span>Người bệnh: ${h((patients[state.selectedPatientIndex] || patients[0]).name)}</span>
+                <span>Tuổi: ${h((patients[state.selectedPatientIndex] || patients[0]).age)}</span>
+                <span>Ngày: ${h(state.assessmentChecklist.evalTime.split('T')[0])}</span>
+                <span>Phòng: ${h((patients[state.selectedPatientIndex] || patients[0]).room)}</span>
+                <span>Giường: ${h((patients[state.selectedPatientIndex] || patients[0]).bed || ".....")}</span>
+                <span>Chẩn đoán y khoa: ${h((patients[state.selectedPatientIndex] || patients[0]).name)}</span>
               </div>
             </div>
             <strong>${h(currentCategory().ten_nhom)} / ${h(currentDepartment().ten_khoa)}</strong>
           </header>
-          ${sheetList("I. Nhận định điều dưỡng", [...checklistItems, ...assessments])}
+          ${sheetList("I. Nhận định điều dưỡng", [...checklistItems, ...assessmentSections, ...assessments])}
           ${sheetDiagnosis(diagnoses)}
           ${sheetInterventions(interventions)}
         </article>
@@ -1297,6 +1301,56 @@ function assessmentChecklistSummary() {
       if (Array.isArray(value)) return `${labels[key] || key}: ${value.join(", ")}`;
       return `${labels[key] || key}: ${value}`;
     });
+}
+
+function buildAssessmentSectionsForSheet() {
+  const check = state.assessmentChecklist;
+  const sections = [];
+  
+  const sectionGroups = {
+    "A. Dấu hiệu sinh tồn": ["pulse", "temperature", "bloodPressure", "respiratoryRate", "spo2", "weight", "height", "bmi"],
+    "B. Toàn thân": ["bodyType", "consciousness", "mucosa", "edema"],
+    "C. Hô hấp": ["breathingMode", "oxygenFlow", "ventilatorMode", "fio2", "peep", "vt", "respiratoryNote"],
+    "D. Tuần hoàn": ["circulationStable", "circulationFastPulse", "circulationHypotension", "circulationShock", "circulationVasopressor", "vasopressorNoradrenaline", "vasopressorAdrenaline", "vasopressorDobutamine", "vasopressorVasopressin", "vasopressorOther", "circulationNote"],
+    "E. Tiêu hóa": ["abdomen", "stool"],
+    "F. Tiết niệu": ["urinary", "urineAmount"],
+    "G. Dinh dưỡng": ["nutritionType", "menu"],
+    "H. Bàn giao": ["handoverMedicineHalf", "handoverLab", "handoverWaitLab", "handoverFilm", "handoverWaitFilm", "handoverDressing", "handoverDrain", "handoverVitals", "handoverUrine", "handoverTube", "handoverOther"],
+    "I. Khác": ["diseasedOrgan"]
+  };
+  
+  const labels = {
+    pulse: "Mạch", temperature: "Nhiệt độ", bloodPressure: "Huyết áp", weight: "Cân nặng", height: "Chiều cao", bmi: "BMI",
+    bodyType: "Thể trạng", consciousness: "Ý thức", mucosa: "Da niêm mạc", edema: "Phù",
+    breathingMode: "Hô hấp", oxygenFlow: "Lưu lượng oxy", ventilatorMode: "Mode thở máy", fio2: "FiO2", peep: "PEEP", vt: "VT", respiratoryNote: "Ghi chú",
+    circulationStable: "Ổn định", circulationFastPulse: "Mạch nhanh", circulationHypotension: "Hạ huyết áp", circulationShock: "Sốc", circulationVasopressor: "Có vận mạch", vasopressorNoradrenaline: "Noradrenaline", vasopressorAdrenaline: "Adrenaline", vasopressorDobutamine: "Dobutamine", vasopressorVasopressin: "Vasopressin", vasopressorOther: "Khác", circulationNote: "Ghi chú",
+    abdomen: "Bụng", stool: "Đại tiện",
+    urinary: "Tiểu tiện", urineAmount: "Số lượng",
+    nutritionType: "Loại", menu: "Thực đơn",
+    handoverMedicineHalf: "Thuốc còn 1/2", handoverLab: "Lấy xét nghiệm", handoverWaitLab: "Chờ xét nghiệm", handoverFilm: "Lấy phim", handoverWaitFilm: "Chờ phim", handoverDressing: "Thay băng", handoverDrain: "Theo dõi dẫn lưu", handoverVitals: "Theo dõi DHST", handoverUrine: "Theo dõi nước tiểu", handoverTube: "Chăm sóc sonde", handoverOther: "Khác",
+    diseasedOrgan: "Cơ quan bị bệnh"
+  };
+  
+  for (const [section, fields] of Object.entries(sectionGroups)) {
+    const items = [];
+    for (const field of fields) {
+      const value = check[field];
+      if (value === undefined || value === null || value === "" || (Array.isArray(value) && value.length === 0) || (typeof value === "boolean" && !value)) continue;
+      
+      if (typeof value === "boolean") {
+        items.push(`${labels[field] || field}: Có`);
+      } else if (Array.isArray(value)) {
+        items.push(`${labels[field] || field}: ${value.join(", ")}`);
+      } else if (typeof value === "string" && value.trim()) {
+        items.push(`${labels[field] || field}: ${value}`);
+      }
+    }
+    if (items.length > 0) {
+      sections.push(`${section}: ${items.join("; ")}`);
+    }
+  }
+  
+  return sections;
 }
 
 function oldAssessmentChecklistSummary() {
