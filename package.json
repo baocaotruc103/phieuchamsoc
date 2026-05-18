@@ -1,0 +1,11 @@
+{
+  "name": "demophieuchamsoc",
+  "version": "1.0.0",
+  "description": "Phiếu chăm sóc điều dưỡng",
+  "scripts": {
+    "build": "echo 'No build needed for static site'"
+  },
+  "keywords": ["healthcare", "nursing"],
+  "author": "baocaotruc103",
+  "license": "MIT"
+}
