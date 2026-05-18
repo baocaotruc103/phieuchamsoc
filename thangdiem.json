@@ -1,0 +1,163 @@
+[
+    {
+        "id": "norton_scale",
+        "name": "Thang điểm Norton cải tiến",
+        "totalScoreRule": "Tổng điểm các mục",
+        "riskInterpretation": [
+            { "min": 15, "max": 20, "risk": "Nguy cơ thấp" },
+            { "min": 13, "max": 14, "risk": "Nguy cơ trung bình" },
+            { "min": 10, "max": 12, "risk": "Nguy cơ cao" },
+            { "min": 0, "max": 9, "risk": "Nguy cơ rất cao" }
+        ],
+        "items": [
+            { "key": "physical_condition", "label": "Nhận định thể chất", "options": [
+                { "label": "Tốt", "score": 4 }, { "label": "Khá", "score": 3 }, { "label": "Kém", "score": 2 }, { "label": "Rất kém", "score": 1 }
+            ]},
+            { "key": "mental_state", "label": "Tình trạng tinh thần", "options": [
+                { "label": "Tỉnh táo", "score": 4 }, { "label": "Lơ mơ", "score": 3 }, { "label": "Lẫn", "score": 2 }, { "label": "Hôn mê", "score": 1 }
+            ]},
+            { "key": "activity", "label": "Hoạt động", "options": [
+                { "label": "Đi lại bình thường", "score": 4 }, { "label": "Đi lại hạn chế", "score": 3 }, { "label": "Ngồi xe lăn", "score": 2 }, { "label": "Nằm tại giường", "score": 1 }
+            ]},
+            { "key": "mobility", "label": "Khả năng vận động", "options": [
+                { "label": "Đầy đủ", "score": 4 }, { "label": "Hạn chế nhẹ", "score": 3 }, { "label": "Hạn chế nhiều", "score": 2 }, { "label": "Bất động", "score": 1 }
+            ]},
+            { "key": "incontinence", "label": "Tiểu tiện/đại tiện không tự chủ", "options": [
+                { "label": "Không", "score": 4 }, { "label": "Thỉnh thoảng", "score": 3 }, { "label": "Thường xuyên", "score": 2 }, { "label": "Liên tục", "score": 1 }
+            ]}
+        ]
+    },
+    {
+        "id": "morse_fall_scale",
+        "name": "Thang điểm nguy cơ té ngã Morse",
+        "totalScoreRule": "Cộng tổng điểm",
+        "riskInterpretation": [
+            { "min": 0, "max": 24, "risk": "Nguy cơ thấp" },
+            { "min": 25, "max": 44, "risk": "Nguy cơ trung bình" },
+            { "min": 45, "max": 125, "risk": "Nguy cơ cao" }
+        ],
+        "items": [
+            { "key": "history_of_fall", "label": "Tiền sử té ngã", "options": [
+                { "label": "Không", "score": 0 }, { "label": "Có", "score": 25 }
+            ]},
+            { "key": "secondary_diagnosis", "label": "Chẩn đoán phụ", "options": [
+                { "label": "Không", "score": 0 }, { "label": "Có", "score": 15 }
+            ]},
+            { "key": "ambulatory_aid", "label": "Phương tiện hỗ trợ đi lại", "options": [
+                { "label": "Không/cần người hỗ trợ", "score": 0 }, { "label": "Nạng/gậy/khung tập đi", "score": 15 }, { "label": "Bám đồ vật", "score": 30 }
+            ]},
+            { "key": "iv_therapy", "label": "Có truyền dịch/đường truyền", "options": [
+                { "label": "Không", "score": 0 }, { "label": "Có", "score": 20 }
+            ]},
+            { "key": "gait", "label": "Dáng đi", "options": [
+                { "label": "Bình thường", "score": 0 }, { "label": "Yếu", "score": 10 }, { "label": "Rối loạn", "score": 20 }
+            ]},
+            { "key": "mental_status", "label": "Tinh thần", "options": [
+                { "label": "Nhận thức đúng khả năng", "score": 0 }, { "label": "Quên giới hạn bản thân", "score": 15 }
+            ]}
+        ]
+    },
+    {
+        "id": "lawrence_braden_scale",
+        "name": "Thang điểm nguy cơ loét do tì đè Braden",
+        "totalScoreRule": "Cộng tổng điểm",
+        "riskInterpretation": [
+            { "min": 19, "max": 24, "risk": "Nguy cơ rất thấp" },
+            { "min": 15, "max": 18, "risk": "Nguy cơ thấp" },
+            { "min": 13, "max": 14, "risk": "Nguy cơ trung bình" },
+            { "min": 10, "max": 12, "risk": "Nguy cơ cao" },
+            { "min": 6, "max": 9, "risk": "Nguy cơ rất cao" }
+        ],
+        "items": [
+            { "key": "physical_need", "label": "Nhận định thể chất", "options": [
+                { "label": "Tốt", "score": 4 }, { "label": "Khá", "score": 3 }, { "label": "Kém", "score": 2 }, { "label": "Rất kém", "score": 1 }
+            ]},
+            { "key": "mental_status", "label": "Tình trạng tinh thần", "options": [
+                { "label": "Tỉnh táo", "score": 4 }, { "label": "Lơ mơ", "score": 3 }, { "label": "Lẫn", "score": 2 }, { "label": "Hôn mê", "score": 1 }
+            ]},
+            { "key": "activity", "label": "Hoạt động", "options": [
+                { "label": "Đi lại bình thường", "score": 4 }, { "label": "Đi lại hạn chế", "score": 3 }, { "label": "Ngồi xe lăn", "score": 2 }, { "label": "Nằm tại giường", "score": 1 }
+            ]},
+            { "key": "mobility", "label": "Khả năng vận động", "options": [
+                { "label": "Đầy đủ", "score": 4 }, { "label": "Hạn chế nhẹ", "score": 3 }, { "label": "Hạn chế nhiều", "score": 2 }, { "label": "Bất động", "score": 1 }
+            ]},
+            { "key": "incontinence", "label": "Tiểu tiện/đại tiện không tự chủ", "options": [
+                { "label": "Không", "score": 4 }, { "label": "Thỉnh thoảng", "score": 3 }, { "label": "Thường xuyên", "score": 2 }, { "label": "Liên tục", "score": 1 }
+            ]},
+            { "key": "nutrition", "label": "Dinh dưỡng", "options": [
+                { "label": "Ăn đủ/tốt", "score": 4 }, { "label": "Ăn được/có bổ sung", "score": 3 }, { "label": "Thường xuyên ăn ít/bán lỏng", "score": 2 }, { "label": "Ít/kém ăn, nhịn ăn", "score": 1 }
+            ]}
+        ]
+    },
+    {
+        "id": "vip_score",
+        "name": "Thang điểm đánh giá mức độ viêm tĩnh mạch (VIP Score)",
+        "totalScoreRule": "Chọn mức độ cao nhất phù hợp",
+        "items": [
+            { "key": "vip_level", "label": "Mức độ viêm tĩnh mạch", "options": [
+                { "label": "0 - Không có dấu hiệu viêm tĩnh mạch", "score": 0 },
+                { "label": "1 - Đau nhẹ / đỏ nhẹ gần vị trí kim", "score": 1 },
+                { "label": "2 - Đau + Đỏ + Sưng tại vị trí kim", "score": 2 },
+                { "label": "3 - Đau dọc tĩnh mạch + Đỏ + Cứng TM", "score": 3 },
+                { "label": "4 - Đau + Đỏ + Cứng TM + Sờ thấy TM cứng", "score": 4 },
+                { "label": "5 - Đau nhiều + Đỏ lan rộng + Sưng + Có thể sốt", "score": 5 }
+            ]}
+        ],
+        "riskInterpretation": [
+            { "min": 0, "max": 0, "risk": "Không viêm - Theo dõi định kỳ" },
+            { "min": 1, "max": 1, "risk": "Viêm TM sớm - Theo dõi sát" },
+            { "min": 2, "max": 2, "risk": "Viêm TM giai đoạn sớm - Cân nhắc thay vị trí" },
+            { "min": 3, "max": 3, "risk": "Viêm TM trung bình - Ngừng truyền, thay catheter" },
+            { "min": 4, "max": 4, "risk": "Viêm TM tiến triển - Ngừng truyền, báo BS" },
+            { "min": 5, "max": 5, "risk": "Viêm TM nặng/huyết khối - Xử trí cấp cứu" }
+        ]
+    },
+    {
+        "id": "flacc_pain_scale",
+        "name": "Thang điểm đau FLACC",
+        "totalScoreRule": "Cộng 5 mục",
+        "riskInterpretation": [
+            { "min": 0, "max": 3, "risk": "Đau nhẹ" },
+            { "min": 4, "max": 6, "risk": "Đau vừa" },
+            { "min": 7, "max": 10, "risk": "Đau nặng" }
+        ],
+        "items": [
+            { "key": "face", "label": "Khuôn mặt", "options": [
+                { "label": "Bình thường", "score": 0 }, { "label": "Nhăn mặt nhẹ", "score": 1 }, { "label": "Nhăn nhó liên tục", "score": 2 }
+            ]},
+            { "key": "legs", "label": "Chân", "options": [
+                { "label": "Bình thường", "score": 0 }, { "label": "Khó chịu", "score": 1 }, { "label": "Co kéo", "score": 2 }
+            ]},
+            { "key": "activity", "label": "Hoạt động", "options": [
+                { "label": "Bình thường", "score": 0 }, { "label": "Khó chịu", "score": 1 }, { "label": "Cong cứng", "score": 2 }
+            ]},
+            { "key": "cry", "label": "Khóc", "options": [
+                { "label": "Không", "score": 0 }, { "label": "Rên", "score": 1 }, { "label": "Khóc liên tục", "score": 2 }
+            ]},
+            { "key": "consolability", "label": "Dỗ dành", "options": [
+                { "label": "Bình thường", "score": 0 }, { "label": "Dỗ được", "score": 1 }, { "label": "Không dỗ được", "score": 2 }
+            ]}
+        ]
+    },
+    {
+        "id": "glasgow_coma_scale",
+        "name": "Thang điểm Glasgow",
+        "totalScoreRule": "Eye + Verbal + Motor",
+        "riskInterpretation": [
+            { "min": 13, "max": 15, "risk": "Nhẹ" },
+            { "min": 9, "max": 12, "risk": "Trung bình" },
+            { "min": 3, "max": 8, "risk": "Nặng" }
+        ],
+        "items": [
+            { "key": "eye", "label": "Mở mắt", "options": [
+                { "label": "Tự nhiên", "score": 4 }, { "label": "Gọi", "score": 3 }, { "label": "Đau", "score": 2 }, { "label": "Không", "score": 1 }
+            ]},
+            { "key": "verbal", "label": "Lời nói", "options": [
+                { "label": "Trả lời đúng", "score": 5 }, { "label": "Lẫn xộn", "score": 4 }, { "label": "Từ không phù hợp", "score": 3 }, { "label": "Âm thanh vô nghĩa", "score": 2 }, { "label": "Không", "score": 1 }
+            ]},
+            { "key": "motor", "label": "Vận động", "options": [
+                { "label": "Làm theo lệnh", "score": 6 }, { "label": "Định vị đau", "score": 5 }, { "label": "Co chi khi đau", "score": 4 }, { "label": "Gấp bất thường", "score": 3 }, { "label": "Duỗi bất thường", "score": 2 }, { "label": "Không", "score": 1 }
+            ]}
+        ]
+    }
+]

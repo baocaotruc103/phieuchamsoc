@@ -83,6 +83,18 @@ const state = {
   },
   diagnosisRows: [],
   interventionRows: [],
+  scaleData: [],
+  scaleScores: {},
+  scaleResults: {},
+  activeScale: null,
+};
+
+const scaleMapping = {
+  fallRiskAssessment: "morse_fall_scale",
+  vteRiskAssessment: "vip_score",
+  painAssessment: "flacc_pain_scale",
+  pressureUlcerRiskAssessment: "lawrence_braden_scale",
+  glasgowAssessment: "glasgow_coma_scale",
 };
 
 const patients = [
@@ -499,10 +511,6 @@ function renderRecordMenuScreen() {
 }
 
 function renderCareEmptyScreen() {
-  if (state.hasCareSheet) {
-    state.screen = "careForm";
-    return render();
-  }
   return `
     <div class="mobile-app empty-care-screen">
       ${appBar("Phiếu Chăm Sóc", "recordMenu")}
@@ -531,8 +539,12 @@ function render(focusSelector = "") {
     return;
   }
   if (state.screen === "careEmpty") {
-    app.innerHTML = renderCareEmptyScreen();
-    return;
+    if (state.hasCareSheet) {
+      state.screen = "careForm";
+    } else {
+      app.innerHTML = renderCareEmptyScreen();
+      return;
+    }
   }
   const category = currentCategory();
   const department = currentDepartment();
@@ -631,6 +643,7 @@ function render(focusSelector = "") {
         </section>
       </main>
     </div>
+    ${state.activeScale ? renderScaleModal() : ""}
   `;
 
   if (focusSelector) {
@@ -821,95 +834,15 @@ function renderAssessmentPanel(assessments) {
         <div class="assessment-section-card">
           <h3>Thang điểm đánh giá</h3>
           <div class="assessment-form compact-form">
-            ${checkBool("fallRiskAssessment", "Đánh giá nguy cơ té ngã", check.fallRiskAssessment)}
-            ${checkBool("vteRiskAssessment", "Đánh giá nguy cơ viêm tĩnh mạch", check.vteRiskAssessment)}
-            ${checkBool("painAssessment", "Đánh giá đau", check.painAssessment)}
-            ${checkBool("pressureUlcerRiskAssessment", "Đánh giá nguy cơ loét tỳ đè", check.pressureUlcerRiskAssessment)}
-            ${checkBool("glasgowAssessment", "Đánh giá Glasgow", check.glasgowAssessment)}
-          </div>
-        </div>
-      </div>
-    </section>
-  `;
-  return `
-    <section class="panel assessment-checklist-panel structured-assessment">
-      <div class="panel-header">
-        <div>
-          <h2 class="panel-title">Nhận định</h2>
-          <p class="panel-subtitle">Nhập nhanh dấu hiệu sinh tồn, toàn thân, hô hấp, tiêu hóa, dinh dưỡng và cơ quan bệnh.</p>
-        </div>
-      </div>
-      <div class="panel-body">
-        <div class="assessment-section-card">
-          <h3>Dấu hiệu sinh tồn</h3>
-          <div class="care-info-grid vital-grid">
-            ${checkField("pulse", "Mạch", check.pulse)}
-            ${checkField("temperature", "Nhiệt độ", check.temperature)}
-            ${checkField("bloodPressure", "Huyết áp", check.bloodPressure)}
-            ${checkField("weight", "Cân nặng", check.weight)}
-            ${checkField("height", "Chiều cao", check.height)}
-            ${checkField("bmi", "BMI", check.bmi)}
+            ${renderScaleCheckItem("fallRiskAssessment", "Đánh giá nguy cơ té ngã (Morse)", check.fallRiskAssessment)}
+            ${renderScaleCheckItem("vteRiskAssessment", "Đánh giá mức độ viêm tĩnh mạch (VIP)", check.vteRiskAssessment)}
+            ${renderScaleCheckItem("painAssessment", "Đánh giá đau (FLACC)", check.painAssessment)}
+            ${renderScaleCheckItem("pressureUlcerRiskAssessment", "Đánh giá nguy cơ loét tỳ đè (Braden)", check.pressureUlcerRiskAssessment)}
+            ${renderScaleCheckItem("glasgowAssessment", "Đánh giá Glasgow (GCS)", check.glasgowAssessment)}
           </div>
         </div>
 
-        <div class="assessment-section-card">
-          <h3>Toàn thân</h3>
-          <div class="assessment-form compact-form">
-            ${radioGroup("bodyType", "Thể trạng", ["Trung bình", "Gầy", "Béo"], check.bodyType)}
-            ${radioGroup("consciousness", "Ý thức", ["Tỉnh", "Lơ mơ", "Hôn mê"], check.consciousness)}
-            ${radioGroup("mucosa", "Da niêm mạc", ["Hồng", "Bình thường", "Nhợt"], check.mucosa)}
-          </div>
-        </div>
-
-        <div class="assessment-section-card">
-          <h3>Tuần hoàn, hô hấp</h3>
-          <div class="assessment-form compact-form">
-            ${radioGroup("breathingMode", "Hô hấp", ["Tự thở", "Thở hỗ trợ oxy", "Thở máy"], check.breathingMode)}
-            ${checkField("respiratoryRate", "Nhịp thở", check.respiratoryRate)}
-            ${checkField("spo2", "SpO2", check.spo2)}
-            ${checkArea("circulationNote", "Tuần hoàn", check.circulationNote)}
-            ${checkArea("respiratoryNote", "Ghi chú hô hấp", check.respiratoryNote)}
-          </div>
-        </div>
-
-        <div class="assessment-section-card">
-          <h3>Tiêu hóa, dinh dưỡng</h3>
-          <div class="assessment-form compact-form">
-            ${radioGroup("abdomen", "Bụng", ["Mềm", "Chướng"], check.abdomen)}
-            ${radioGroup("stool", "Đại tiện", ["Bình thường", "Lỏng", "Rắn", "Không"], check.stool)}
-            ${radioGroup("nutritionType", "Dinh dưỡng", ["Cơm", "Cháo", "Soup", "Thực đơn"], check.nutritionType)}
-            ${checkField("menu", "Thực đơn", check.menu)}
-          </div>
-        </div>
-
-        <div class="assessment-section-card">
-          <h3>Cơ quan bệnh</h3>
-          ${checkArea("diseasedOrgan", "Nhập thông tin cơ quan bệnh", check.diseasedOrgan)}
-        </div>
-
-        <div class="assessment-section-card">
-          <h3>Thang điểm đánh giá</h3>
-          <div class="assessment-form compact-form">
-            ${checkBool("fallRiskAssessment", "Đánh giá nguy cơ té ngã", check.fallRiskAssessment)}
-            ${checkBool("vteRiskAssessment", "Đánh giá nguy cơ viêm tĩnh mạch", check.vteRiskAssessment)}
-            ${checkBool("painAssessment", "Đánh giá đau", check.painAssessment)}
-            ${checkBool("pressureUlcerRiskAssessment", "Đánh giá nguy cơ loét tỳ đè", check.pressureUlcerRiskAssessment)}
-            ${checkBool("glasgowAssessment", "Đánh giá Glasgow", check.glasgowAssessment)}
-          </div>
-        </div>
-
-        <div class="assessment-section-card">
-          <h3>Thang điểm đánh giá</h3>
-          <div class="assessment-form compact-form">
-            ${checkBool("fallRiskAssessment", "Đánh giá nguy cơ té ngã", check.fallRiskAssessment)}
-            ${checkBool("vteRiskAssessment", "Đánh giá nguy cơ viêm tĩnh mạch", check.vteRiskAssessment)}
-            ${checkBool("painAssessment", "Đánh giá đau", check.painAssessment)}
-            ${checkBool("pressureUlcerRiskAssessment", "Đánh giá nguy cơ loét tỳ đè", check.pressureUlcerRiskAssessment)}
-            ${checkBool("glasgowAssessment", "Đánh giá Glasgow", check.glasgowAssessment)}
-          </div>
-        </div>
-
-        <div class="disease-checklist">
+        <div class="disease-checklist" style="display: none;">
           <div class="disease-checklist-head">
             <strong>Gợi ý nhận định theo mặt bệnh</strong>
             <button class="btn" data-action="add-assessment">Thêm mục khác</button>
@@ -933,78 +866,6 @@ function renderAssessmentPanel(assessments) {
                   <input value="${h(state.assessmentEdits[id] || "")}" placeholder="Nhập nhận định khác..." data-assessment-edit="${h(id)}" />
                 </label>
               `).join("")}
-          </div>
-        </div>
-      </div>
-    </section>
-  `;
-  return `
-    <section class="panel assessment-checklist-panel">
-      <div class="panel-header">
-        <div>
-          <h2 class="panel-title">Nhận định điều dưỡng</h2>
-          <p class="panel-subtitle">Ghi nhận theo checklist, chọn nhanh các mục phù hợp và bổ sung nhận định theo mặt bệnh.</p>
-        </div>
-        <span class="step-badge">2</span>
-      </div>
-      <div class="panel-body">
-        <div class="assessment-form">
-          <div class="assessment-full patient-summary">
-            <strong>Thông tin hành chính của người bệnh</strong>
-            <span>Họ tên: ${h((patients[state.selectedPatientIndex] || patients[0]).name)} | Mã y tế: ${h((patients[state.selectedPatientIndex] || patients[0]).code)} | Giới tính: ${h((patients[state.selectedPatientIndex] || patients[0]).sex)} | Tuổi: ${(patients[state.selectedPatientIndex] || patients[0]).age}</span>
-          </div>
-
-          ${checkField("evalTime", "Thời gian đánh giá", check.evalTime, "datetime-local")}
-          ${checkField("evaluator", "Người đánh giá", check.evaluator)}
-          ${checkArea("admissionReason", "Lý do nhập viện", check.admissionReason)}
-          ${checkArea("note", "Ghi chú", check.note)}
-          ${checkArea("abnormal", "Tình trạng bất thường (nếu có)", check.abnormal)}
-
-          ${radioGroup("receiveFrom", "Nhận bệnh từ", ["Phòng khám", "Khoa"], check.receiveFrom)}
-          ${radioGroup("transfer", "Phương tiện hỗ trợ di chuyển", ["Có", "Không"], check.transfer)}
-          ${radioGroup("general", "Toàn trạng", ["Tốt", "Trung bình", "Xấu"], check.general)}
-          ${radioGroup("allergy", "Tiền sử dị ứng", ["Chưa ghi nhận", "Có, loại dị ứng"], check.allergy)}
-          ${radioGroup("pain", "Đau", ["Có", "Không"], check.pain)}
-          ${radioGroup("digestiveStatus", "Tiêu hóa - Tình trạng", ["Bình thường", "Bụng bằng", "Chướng", "Khác"], check.digestiveStatus)}
-          ${radioGroup("bowelSound", "Nhu động ruột", ["Có", "Không"], check.bowelSound)}
-          ${radioGroup("otherDigestive", "Khác", ["Trung tiện", "Táo bón", "Tiêu chảy", "Khác"], check.otherDigestive)}
-          ${radioGroup("stoma", "HMNT", ["Có", "Không"], check.stoma)}
-          ${radioGroup("nutrition", "Dinh dưỡng", ["Nhịn", "Qua miệng", "Ống thông NG", "Ống thông PEG"], check.nutrition)}
-          ${radioGroup("diet", "Chế độ", ["Cơm", "Cháo", "Súp"], check.diet)}
-          ${checkField("dietOther", "Khác", check.dietOther)}
-        </div>
-
-        <div class="disease-checklist">
-          <div class="disease-checklist-head">
-            <strong>Nhận định theo mặt bệnh</strong>
-            <button class="btn" data-action="add-assessment">Thêm mục khác</button>
-          </div>
-          <div class="compact-check-grid">
-            ${
-              assessments.length
-                ? assessments
-                    .map(
-                      (item) => `
-                      <label class="compact-check">
-                        <input type="checkbox" ${state.selectedAssessments.has(item.id) ? "checked" : ""} data-assessment="${h(item.id)}" />
-                        <span>${h(item.prompt)}</span>
-                      </label>
-                    `,
-                    )
-                    .join("")
-                : `<div class="empty">Chưa có checklist gợi ý cho mặt bệnh này.</div>`
-            }
-            ${[...state.selectedAssessments]
-              .filter((id) => id.startsWith("custom-assessment-"))
-              .map(
-                (id) => `
-                <label class="compact-check custom-line">
-                  <input type="checkbox" checked data-assessment="${h(id)}" />
-                  <input value="${h(state.assessmentEdits[id] || "")}" placeholder="Nhập nhận định khác..." data-assessment-edit="${h(id)}" />
-                </label>
-              `,
-              )
-              .join("")}
           </div>
         </div>
       </div>
@@ -1111,6 +972,111 @@ function checkBool(key, label, value) {
       <input type="checkbox" ${value ? "checked" : ""} data-checklist-bool="${h(key)}" />
       <span>${h(label)}</span>
     </label>
+  `;
+}
+
+function renderScaleCheckItem(key, label, value) {
+  const result = state.scaleResults[key];
+  const hasResult = result && result.total !== undefined;
+  
+  // Extract base label name without any existing dynamic parentheses
+  const baseLabel = label.split(" (")[0];
+  const displayLabelHTML = hasResult
+    ? `${h(baseLabel)} <strong class="scale-inline-score">(${result.total} điểm - ${h(result.risk)})</strong>`
+    : h(label);
+
+  return `
+    <div class="scale-check-item ${hasResult ? 'has-result' : ''}">
+      <label class="handover-check">
+        <input type="checkbox" ${value ? "checked" : ""} data-scale-check="${h(key)}" />
+        <span class="scale-label-text">${displayLabelHTML}</span>
+      </label>
+      ${hasResult ? `
+        <button class="scale-edit-btn" data-action="open-scale" data-scale-key="${h(key)}" title="Chỉnh sửa" style="margin-left: 8px;">✎ Chỉnh sửa</button>
+      ` : (value ? `
+        <button class="scale-start-btn" data-action="open-scale" data-scale-key="${h(key)}" style="margin-left: 8px;">Bấm để chấm điểm →</button>
+      ` : "")}
+    </div>
+  `;
+}
+
+function getScaleForKey(key) {
+  const scaleId = scaleMapping[key];
+  return state.scaleData.find((s) => s.id === scaleId) || null;
+}
+
+function calculateScaleResult(key) {
+  const scale = getScaleForKey(key);
+  if (!scale || !scale.items) return null;
+  const scores = state.scaleScores[key] || {};
+  let total = 0;
+  let allFilled = true;
+  for (const item of scale.items) {
+    if (scores[item.key] !== undefined) {
+      total += scores[item.key];
+    } else {
+      allFilled = false;
+    }
+  }
+  let risk = "";
+  let riskClass = "";
+  if (allFilled && scale.riskInterpretation) {
+    for (const level of scale.riskInterpretation) {
+      if (total >= level.min && total <= level.max) {
+        risk = level.risk;
+        break;
+      }
+    }
+    if (risk.includes("rất cao") || risk.includes("nặng") || risk.includes("Nặng") || risk.includes("cấp cứu")) riskClass = "risk-very-high";
+    else if (risk.includes("cao") || risk.includes("tiến triển")) riskClass = "risk-high";
+    else if (risk.includes("trung bình") || risk.includes("vừa") || risk.includes("Trung bình")) riskClass = "risk-medium";
+    else riskClass = "risk-low";
+  }
+  return { total, risk, riskClass, allFilled };
+}
+
+function renderScaleModal() {
+  const key = state.activeScale;
+  const scale = getScaleForKey(key);
+  if (!scale) return "";
+  const scores = state.scaleScores[key] || {};
+  const result = calculateScaleResult(key);
+  return `
+    <div class="scale-modal-overlay" data-action="close-scale-overlay">
+      <div class="scale-modal">
+        <div class="scale-modal-header">
+          <h2>${h(scale.name)}</h2>
+          <button class="scale-modal-close" data-action="close-scale">✕</button>
+        </div>
+        <div class="scale-modal-body">
+          <p class="scale-rule">Quy tắc: ${h(scale.totalScoreRule)}</p>
+          ${scale.items.map((item) => `
+            <fieldset class="scale-fieldset">
+              <legend>${h(item.label)}</legend>
+              <div class="scale-options">
+                ${item.options.map((opt) => `
+                  <label class="scale-option ${scores[item.key] === opt.score ? 'selected' : ''}">
+                    <input type="radio" name="scale_${h(item.key)}" value="${opt.score}" ${scores[item.key] === opt.score ? 'checked' : ''} data-scale-item="${h(key)}:${h(item.key)}" />
+                    <span class="scale-option-label">${h(opt.label)}</span>
+                    <span class="scale-option-score">${opt.score}</span>
+                  </label>
+                `).join("")}
+              </div>
+            </fieldset>
+          `).join("")}
+        </div>
+        <div class="scale-modal-footer">
+          <div class="scale-modal-result">
+            <span class="scale-total">Tổng: <strong>${result ? result.total : 0}</strong> điểm</span>
+            ${result && result.allFilled && result.risk ? `<span class="scale-risk ${result.riskClass}">${h(result.risk)}</span>` : '<span class="scale-risk-pending">Chưa đánh giá đủ</span>'}
+          </div>
+          <div class="scale-modal-actions">
+            <button class="btn ghost" data-action="close-scale">Hủy</button>
+            <button class="btn primary" data-action="save-scale">Lưu kết quả</button>
+          </div>
+        </div>
+      </div>
+    </div>
   `;
 }
 
@@ -1240,7 +1206,7 @@ function renderSheet(condition) {
   const interventions = state.interventionRows.filter((row) => row.selected && row.content);
   
   // Build comprehensive assessment sections for sheet
-  const assessmentSections = buildAssessmentSectionsForSheet();
+  const sheetSections = buildAssessmentSectionsForSheet();
   
   return `
     <section class="panel printable-panel">
@@ -1261,12 +1227,12 @@ function renderSheet(condition) {
                 <span>Ngày: ${h(state.assessmentChecklist.evalTime.split('T')[0])}</span>
                 <span>Phòng: ${h((patients[state.selectedPatientIndex] || patients[0]).room)}</span>
                 <span>Giường: ${h((patients[state.selectedPatientIndex] || patients[0]).bed || ".....")}</span>
-                <span>Chẩn đoán y khoa: ${h((patients[state.selectedPatientIndex] || patients[0]).name)}</span>
+                <span>Chẩn đoán y khoa: ${h(condition.ten_mat_benh || ".....")}</span>
               </div>
             </div>
             <strong>${h(currentCategory().ten_nhom)} / ${h(currentDepartment().ten_khoa)}</strong>
           </header>
-          ${sheetList("I. Nhận định điều dưỡng", [...checklistItems, ...assessmentSections, ...assessments])}
+          ${sheetList("I. Nhận định điều dưỡng", [...checklistItems, ...sheetSections, ...assessments])}
           ${sheetDiagnosis(diagnoses)}
           ${sheetInterventions(interventions)}
         </article>
@@ -1329,13 +1295,24 @@ function assessmentChecklistSummary() {
     vasopressorAdrenaline: "Vận mạch: Adrenaline",
     vasopressorDobutamine: "Vận mạch: Dobutamine",
     vasopressorVasopressin: "Vận mạch: Vasopressin",
+    fallRiskAssessment: "Thang điểm đánh giá: Nguy cơ té ngã",
+    vteRiskAssessment: "Thang điểm đánh giá: Nguy cơ viêm tĩnh mạch",
+    painAssessment: "Thang điểm đánh giá: Đau",
+    pressureUlcerRiskAssessment: "Thang điểm đánh giá: Nguy cơ loét tỳ đè",
+    glasgowAssessment: "Thang điểm đánh giá: Glasgow",
   };
   return Object.entries(state.assessmentChecklist)
     .filter(([, value]) =>
       typeof value === "boolean" ? value : Array.isArray(value) ? value.length : cleanLine(value),
     )
     .map(([key, value]) => {
-      if (typeof value === "boolean") return booleanLabels[key];
+      if (typeof value === "boolean") {
+        const scaleRes = state.scaleResults[key];
+        if (scaleRes && scaleRes.total !== undefined) {
+          return `${booleanLabels[key]} - Kết quả: ${scaleRes.total} điểm (${scaleRes.risk})`;
+        }
+        return booleanLabels[key];
+      }
       if (Array.isArray(value)) return `${labels[key] || key}: ${value.join(", ")}`;
       return `${labels[key] || key}: ${value}`;
     });
@@ -1382,7 +1359,12 @@ function buildAssessmentSectionsForSheet() {
       if (value === undefined || value === null || value === "" || (Array.isArray(value) && value.length === 0) || (typeof value === "boolean" && !value)) continue;
       
       if (typeof value === "boolean") {
-        items.push(`${labels[field] || field}: Có`);
+        const scaleRes = state.scaleResults[field];
+        if (scaleRes && scaleRes.total !== undefined) {
+          items.push(`${labels[field] || field}: ${scaleRes.total} điểm (${scaleRes.risk})`);
+        } else {
+          items.push(`${labels[field] || field}: Có`);
+        }
       } else if (Array.isArray(value)) {
         items.push(`${labels[field] || field}: ${value.join(", ")}`);
       } else if (typeof value === "string" && value.trim()) {
@@ -1471,6 +1453,13 @@ function sheetInterventions(items) {
 }
 
 app.addEventListener("click", (event) => {
+  // Handle scale modal overlay click (div, not button)
+  if (event.target.dataset.action === "close-scale-overlay") {
+    state.activeScale = null;
+    render();
+    return;
+  }
+
   const target = event.target.closest("button");
   if (!target) return;
 
@@ -1580,6 +1569,37 @@ app.addEventListener("click", (event) => {
   if (target.dataset.action === "print") {
     window.print();
   }
+
+  if (target.dataset.action === "open-scale" && target.dataset.scaleKey) {
+    state.activeScale = target.dataset.scaleKey;
+    if (!state.scaleScores[target.dataset.scaleKey]) state.scaleScores[target.dataset.scaleKey] = {};
+    render();
+    return;
+  }
+
+  if (target.dataset.action === "close-scale" || target.dataset.action === "close-scale-overlay") {
+    state.activeScale = null;
+    render();
+    return;
+  }
+
+  if (target.dataset.action === "save-scale") {
+    const key = state.activeScale;
+    if (key) {
+      const result = calculateScaleResult(key);
+      if (result && result.allFilled) {
+        state.scaleResults[key] = result;
+        state.activeScale = null;
+        render();
+      } else {
+        alert("Vui lòng đánh giá đầy đủ tất cả các mục trước khi lưu kết quả!");
+      }
+    } else {
+      state.activeScale = null;
+      render();
+    }
+    return;
+  }
 });
 
 app.addEventListener("input", (event) => {
@@ -1641,8 +1661,33 @@ app.addEventListener("change", (event) => {
     return;
   }
 
+  if (target.dataset.scaleCheck) {
+    const scaleKey = target.dataset.scaleCheck;
+    state.assessmentChecklist[scaleKey] = target.checked;
+    if (target.checked) {
+      const scale = getScaleForKey(scaleKey);
+      if (scale) {
+        state.activeScale = scaleKey;
+        if (!state.scaleScores[scaleKey]) state.scaleScores[scaleKey] = {};
+      }
+    } else {
+      delete state.scaleResults[scaleKey];
+      delete state.scaleScores[scaleKey];
+    }
+    render();
+    return;
+  }
+
   if (target.dataset.checklistBool) {
     state.assessmentChecklist[target.dataset.checklistBool] = target.checked;
+    render();
+    return;
+  }
+
+  if (target.dataset.scaleItem) {
+    const [scaleKey, itemKey] = target.dataset.scaleItem.split(":");
+    if (!state.scaleScores[scaleKey]) state.scaleScores[scaleKey] = {};
+    state.scaleScores[scaleKey][itemKey] = Number(target.value);
     render();
     return;
   }
@@ -1705,10 +1750,16 @@ app.addEventListener("change", (event) => {
 
 async function init() {
   try {
-    const response = await fetch("./cd_deu_duong.json");
+    const [response, scaleResponse] = await Promise.all([
+      fetch("./cd_deu_duong.json"),
+      fetch("./thangdiem.json"),
+    ]);
     if (!response.ok) throw new Error(`Khong tai duoc cd_deu_duong.json (${response.status})`);
     state.raw = await response.json();
     state.data = deepFix(state.raw);
+    if (scaleResponse.ok) {
+      state.scaleData = await scaleResponse.json();
+    }
     state.categoryId = state.data.categories[0].id;
     state.departmentId = state.data.categories[0].khoa[0].id;
     state.conditionId = state.data.categories[0].khoa[0].mat_benh[0].id;

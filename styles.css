@@ -2008,3 +2008,278 @@ button {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
+
+/* ── Scale Check Items ── */
+.scale-check-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 6px 0;
+}
+.scale-check-item .handover-check { flex: 1 1 auto; min-width: 200px; }
+.scale-inline-score {
+  color: #2563eb;
+  font-weight: 800;
+  margin-left: 6px;
+  background: #eff6ff;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid #bfdbfe;
+  font-size: 13px;
+}
+.scale-result-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.scale-score-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #e5edff;
+  color: #1e40af;
+  font-weight: 800;
+  font-size: 13px;
+}
+.scale-risk-label {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 12px;
+}
+.scale-risk-label.risk-low { background: #dcfce7; color: #166534; }
+.scale-risk-label.risk-medium { background: #fef9c3; color: #854d0e; }
+.scale-risk-label.risk-high { background: #fee2e2; color: #991b1b; }
+.scale-risk-label.risk-very-high { background: #dc2626; color: #fff; }
+.scale-edit-btn {
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  padding: 2px 8px;
+  font-size: 14px;
+  cursor: pointer;
+  color: #475569;
+  transition: background .15s;
+}
+.scale-edit-btn:hover { background: #f1f5f9; }
+.scale-start-btn {
+  border: 1px dashed #3b82f6;
+  border-radius: 6px;
+  background: #eff6ff;
+  padding: 5px 14px;
+  color: #1d4ed8;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background .15s;
+  animation: scalePulse 2s ease-in-out infinite;
+}
+.scale-start-btn:hover { background: #dbeafe; }
+@keyframes scalePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .7; }
+}
+
+/* ── Scale Modal ── */
+.scale-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: grid;
+  place-items: center;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(4px);
+  padding: 20px;
+  overflow-y: auto;
+}
+.scale-modal {
+  width: 100%;
+  max-width: 620px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+.scale-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 22px;
+  border-bottom: 2px solid #e2e8f0;
+  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+  color: #fff;
+}
+.scale-modal-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+.scale-modal-close {
+  border: 0;
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 18px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background .15s;
+}
+.scale-modal-close:hover { background: rgba(255,255,255,0.35); }
+.scale-modal-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 18px 22px;
+}
+.scale-rule {
+  margin: 0 0 16px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border-left: 4px solid #3b82f6;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+}
+.scale-fieldset {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  margin: 0 0 14px;
+  padding: 0;
+  overflow: hidden;
+}
+.scale-fieldset legend {
+  float: left;
+  width: 100%;
+  margin: 0;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  font-weight: 700;
+  font-size: 14px;
+  color: #1e293b;
+}
+.scale-options {
+  clear: both;
+  display: flex;
+  flex-direction: column;
+}
+.scale-option {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  cursor: pointer;
+  transition: background .12s;
+}
+.scale-option:last-child { border-bottom: 0; }
+.scale-option:hover { background: #f0f7ff; }
+.scale-option.selected { background: #eff6ff; }
+.scale-option input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #2563eb;
+}
+.scale-option-label {
+  font-size: 14px;
+  color: #334155;
+}
+.scale-option-score {
+  display: inline-grid;
+  min-width: 30px;
+  height: 28px;
+  place-items: center;
+  border-radius: 6px;
+  background: #e2e8f0;
+  color: #475569;
+  font-weight: 800;
+  font-size: 13px;
+}
+.scale-option.selected .scale-option-score {
+  background: #2563eb;
+  color: #fff;
+}
+.scale-modal-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 22px;
+  border-top: 2px solid #e2e8f0;
+  background: #f8fafc;
+}
+.scale-modal-result {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.scale-total {
+  font-size: 16px;
+  color: #1e293b;
+}
+.scale-total strong { color: #1e40af; font-size: 22px; }
+.scale-risk {
+  padding: 4px 14px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 14px;
+}
+.scale-risk.risk-low { background: #dcfce7; color: #166534; }
+.scale-risk.risk-medium { background: #fef9c3; color: #854d0e; }
+.scale-risk.risk-high { background: #fee2e2; color: #991b1b; }
+.scale-risk.risk-very-high { background: #dc2626; color: #fff; }
+.scale-risk-pending {
+  color: #94a3b8;
+  font-size: 13px;
+  font-style: italic;
+}
+.scale-modal-actions {
+  display: flex;
+  gap: 8px;
+}
+.scale-modal-actions .btn {
+  min-width: 100px;
+  padding: 9px 18px;
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background .15s, opacity .15s;
+}
+.scale-modal-actions .btn[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.scale-modal-actions .btn.ghost {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #475569;
+}
+.scale-modal-actions .btn.primary {
+  border: 0;
+  background: #2563eb;
+  color: #fff;
+}
+.scale-modal-actions .btn.primary:hover:not([disabled]) { background: #1d4ed8; }
+
+@media (max-width: 640px) {
+  .scale-modal { max-width: 100%; border-radius: 12px; }
+  .scale-modal-header { padding: 14px 16px; }
+  .scale-modal-body { padding: 14px 16px; }
+  .scale-modal-footer { padding: 12px 16px; }
+}
