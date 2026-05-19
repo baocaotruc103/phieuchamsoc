@@ -1633,6 +1633,57 @@ button {
   font-weight: 900;
 }
 
+.report-care-plan-table {
+  overflow: hidden;
+  border: 1px solid #9ca3af;
+  border-radius: 2px;
+  background: #fff;
+}
+
+.report-care-plan-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 32%) minmax(0, 1fr);
+  min-height: 96px;
+  border-bottom: 1px dotted #9ca3af;
+}
+
+.report-care-plan-row:last-child {
+  border-bottom: 0;
+}
+
+.report-care-plan-row > strong {
+  border-right: 1px dotted #9ca3af;
+  background: #f8fafc;
+  padding: 16px 18px;
+  color: #0f172a;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.report-care-plan-row > span {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  padding: 16px 18px;
+  color: #0f172a;
+  font-size: 18px;
+  line-height: 1.55;
+}
+
+.report-care-plan-row em {
+  display: block;
+  font-style: normal;
+}
+
+.report-care-plan-row .care-plan-goal {
+  color: #0000ff;
+  font-style: italic;
+}
+
+.report-care-plan-interventions > span {
+  gap: 4px;
+}
+
 .report-value-list,
 .report-assessment-table {
   display: grid;
@@ -3271,9 +3322,15 @@ body {
 .goal-evaluation-row,
 .report-table table,
 .report-assessment-table div,
-.report-field span {
+.report-field span,
+.report-care-plan-row > span {
   font-size: var(--text-table-content);
   font-weight: 400;
+}
+
+.report-care-plan-row > strong {
+  font-size: var(--text-main-title);
+  font-weight: 700;
 }
 
 .patient-table-head,

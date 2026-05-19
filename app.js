@@ -1068,6 +1068,54 @@ function detailTable(rows) {
   `;
 }
 
+function detailDiagnosisGoalsInterventions(diagnoses = [], interventions = []) {
+  const diagnosisRows = diagnoses
+    .map((item, index) => {
+      const goals = Array.isArray(item.goals)
+        ? item.goals
+        : String(item.goal || "")
+            .split("\n")
+            .map(cleanLine)
+            .filter(Boolean);
+      return {
+        label: `Chẩn đoán ĐD ${index + 1}`,
+        diagnosis: cleanLine(item.diagnosis),
+        goals,
+      };
+    })
+    .filter((item) => item.diagnosis || item.goals.length);
+
+  const interventionLines = interventions
+    .map((item) => [cleanLine(item.code), cleanLine(item.content)].filter(Boolean).join(" - "))
+    .filter(Boolean);
+
+  if (!diagnosisRows.length && !interventionLines.length) {
+    return `<div class="empty">Chưa có chẩn đoán, mục tiêu hoặc can thiệp.</div>`;
+  }
+
+  return `
+    <div class="report-care-plan-table">
+      ${diagnosisRows.map((row) => `
+        <div class="report-care-plan-row">
+          <strong>${h(row.label)}</strong>
+          <span>
+            ${row.diagnosis ? `<em class="care-plan-diagnosis">${h(row.diagnosis)}</em>` : ""}
+            ${row.goals.map((goal, index) => `
+              <em class="care-plan-goal">Mục tiêu ${index + 1}: ${h(goal)}</em>
+            `).join("")}
+          </span>
+        </div>
+      `).join("")}
+      ${interventionLines.length ? `
+        <div class="report-care-plan-row report-care-plan-interventions">
+          <strong>Can thiệp điều dưỡng</strong>
+          <span>${interventionLines.map((line) => `<em>${h(line)}</em>`).join("")}</span>
+        </div>
+      ` : ""}
+    </div>
+  `;
+}
+
 function detailValueList(items = []) {
   const normalized = items
     .map((item) => {
@@ -1234,14 +1282,7 @@ function renderCareSheetDetailScreen() {
           </div>
         `)}
 
-        ${detailSection("X. Chẩn đoán điều dưỡng - mục tiêu - can thiệp", `
-          ${detailTable([
-            ["Chẩn đoán điều dưỡng", diagnoses.map((item) => item.diagnosis).filter(Boolean).join("\n")],
-            ["Mục tiêu chăm sóc", diagnoses.flatMap((item) => item.goals || []).filter(Boolean).join("\n")],
-            ["Mã can thiệp", interventions.map((item) => item.code).filter(Boolean).join("\n")],
-            ["Nội dung can thiệp", interventions.map((item) => item.content).filter(Boolean).join("\n")],
-          ])}
-        `)}
+        ${detailSection("X. Chẩn đoán điều dưỡng - mục tiêu - can thiệp", detailDiagnosisGoalsInterventions(diagnoses, interventions))}
 
         ${detailSection("XI. Bàn giao", handoverItems.length ? detailCheckGroup("Việc cần tiếp tục theo dõi/thực hiện", handoverItems) : `<div class="empty">Chưa có nội dung bàn giao.</div>`)}
 
