@@ -1,0 +1,137 @@
+[
+  {
+    "group": "Theo dõi - đánh giá",
+    "interventions": [
+      {"code": "TD001", "name": "Theo dõi dấu hiệu sinh tồn"},
+      {"code": "TD002", "name": "Theo dõi tri giác/GCS"},
+      {"code": "TD003", "name": "Theo dõi SpO2"},
+      {"code": "TD004", "name": "Theo dõi nhịp thở"},
+      {"code": "TD005", "name": "Theo dõi huyết áp động mạch"},
+      {"code": "TD006", "name": "Theo dõi mạch"},
+      {"code": "TD007", "name": "Theo dõi nhiệt độ"},
+      {"code": "TD008", "name": "Theo dõi lượng nước vào/ra"},
+      {"code": "TD009", "name": "Theo dõi lượng nước tiểu"},
+      {"code": "TD010", "name": "Theo dõi dẫn lưu"},
+      {"code": "TD011", "name": "Theo dõi đau (VAS/BPS/CPOT)"},
+      {"code": "TD012", "name": "Theo dõi đường huyết mao mạch"},
+      {"code": "TD013", "name": "Theo dõi dấu hiệu chảy máu"},
+      {"code": "TD014", "name": "Theo dõi phù"},
+      {"code": "TD015", "name": "Theo dõi tình trạng da"},
+      {"code": "TD016", "name": "Theo dõi dấu hiệu nhiễm trùng"}
+    ]
+  },
+  {
+    "group": "Hô hấp",
+    "interventions": [
+      {"code": "HH001", "name": "Cho người bệnh thở oxy"},
+      {"code": "HH002", "name": "Theo dõi thở oxy"},
+      {"code": "HH003", "name": "Hút đờm dãi"},
+      {"code": "HH004", "name": "Vỗ rung long đờm"},
+      {"code": "HH005", "name": "Tập thở"},
+      {"code": "HH006", "name": "Chăm sóc mở khí quản"},
+      {"code": "HH007", "name": "Theo dõi máy thở"},
+      {"code": "HH008", "name": "Hỗ trợ cai máy thở"},
+      {"code": "HH009", "name": "Lấy khí máu động mạch"},
+      {"code": "HH010", "name": "Đảm bảo thông thoáng đường thở"}
+    ]
+  },
+  {
+    "group": "Tuần hoàn",
+    "interventions": [
+      {"code": "TH001", "name": "Thiết lập đường truyền tĩnh mạch"},
+      {"code": "TH002", "name": "Theo dõi truyền dịch"},
+      {"code": "TH003", "name": "Theo dõi thuốc vận mạch"},
+      {"code": "TH004", "name": "Ép cầm máu"},
+      {"code": "TH005", "name": "Nâng cao chi phù"},
+      {"code": "TH006", "name": "Theo dõi tưới máu ngoại vi"}
+    ]
+  },
+  {
+    "group": "Thuốc - điều trị",
+    "interventions": [
+      {"code": "DT001", "name": "Thực hiện y lệnh thuốc uống"},
+      {"code": "DT002", "name": "Thực hiện y lệnh thuốc tiêm"},
+      {"code": "DT003", "name": "Truyền dịch"},
+      {"code": "DT004", "name": "Truyền máu/chế phẩm máu"},
+      {"code": "DT005", "name": "Khí dung"},
+      {"code": "DT006", "name": "Tiêm insulin"},
+      {"code": "DT007", "name": "Dùng thuốc giảm đau"},
+      {"code": "DT008", "name": "Dùng thuốc hạ sốt"},
+      {"code": "DT009", "name": "Dùng thuốc kháng sinh"}
+    ]
+  },
+  {
+    "group": "Dinh dưỡng",
+    "interventions": [
+      {"code": "DD001", "name": "Cho ăn đường miệng"},
+      {"code": "DD002", "name": "Nuôi ăn qua sonde dạ dày"},
+      {"code": "DD003", "name": "Theo dõi dung nạp dinh dưỡng"},
+      {"code": "DD004", "name": "Chăm sóc sonde dạ dày"},
+      {"code": "DD005", "name": "Hướng dẫn chế độ ăn"}
+    ]
+  },
+  {
+    "group": "Bài tiết",
+    "interventions": [
+      {"code": "BT001", "name": "Theo dõi bài tiết nước tiểu"},
+      {"code": "BT002", "name": "Đặt sonde tiểu"},
+      {"code": "BT003", "name": "Chăm sóc sonde tiểu"},
+      {"code": "BT004", "name": "Theo dõi đại tiện"},
+      {"code": "BT005", "name": "Thụt tháo"}
+    ]
+  },
+  {
+    "group": "Chăm sóc cơ bản",
+    "interventions": [
+      {"code": "CS001", "name": "Vệ sinh cá nhân"},
+      {"code": "CS002", "name": "Thay ga giường"},
+      {"code": "CS003", "name": "Chăm sóc răng miệng"},
+      {"code": "CS004", "name": "Chăm sóc mắt"},
+      {"code": "CS005", "name": "Chăm sóc da"},
+      {"code": "CS006", "name": "Thay đổi tư thế"},
+      {"code": "CS007", "name": "Phòng loét tỳ đè"},
+      {"code": "CS008", "name": "Giữ ấm người bệnh"}
+    ]
+  },
+  {
+    "group": "Vết thương - dẫn lưu",
+    "interventions": [
+      {"code": "VT001", "name": "Thay băng vết thương"},
+      {"code": "VT002", "name": "Chăm sóc vết mổ"},
+      {"code": "VT003", "name": "Theo dõi dẫn lưu"},
+      {"code": "VT004", "name": "Chăm sóc dẫn lưu"},
+      {"code": "VT005", "name": "Theo dõi chảy máu vết mổ"}
+    ]
+  },
+  {
+    "group": "Vận động - phục hồi chức năng",
+    "interventions": [
+      {"code": "PH001", "name": "Tập vận động thụ động"},
+      {"code": "PH002", "name": "Tập vận động chủ động"},
+      {"code": "PH003", "name": "Tập ngồi dậy"},
+      {"code": "PH004", "name": "Tập đứng"},
+      {"code": "PH005", "name": "Tập đi lại"},
+      {"code": "PH006", "name": "Hỗ trợ dụng cụ vận động"}
+    ]
+  },
+  {
+    "group": "An toàn người bệnh",
+    "interventions": [
+      {"code": "AT001", "name": "Phòng ngừa té ngã"},
+      {"code": "AT002", "name": "Phòng ngừa hít sặc"},
+      {"code": "AT003", "name": "Phòng ngừa loét tỳ đè"},
+      {"code": "AT004", "name": "Đảm bảo an toàn truyền dịch"},
+      {"code": "AT005", "name": "Kiểm tra nhận diện người bệnh"}
+    ]
+  },
+  {
+    "group": "Giáo dục sức khỏe",
+    "interventions": [
+      {"code": "GDSK001", "name": "Giáo dục sức khỏe cho người bệnh"},
+      {"code": "GDSK002", "name": "Hướng dẫn dùng thuốc"},
+      {"code": "GDSK003", "name": "Hướng dẫn chăm sóc tại nhà"},
+      {"code": "GDSK004", "name": "Hướng dẫn tái khám"},
+      {"code": "GDSK005", "name": "Tư vấn dinh dưỡng"}
+    ]
+  }
+]

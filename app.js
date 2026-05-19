@@ -1,10 +1,61 @@
 const app = document.querySelector("#app");
+let supabaseClient = null;
+const VIETNAM_TIME_ZONE = "Asia/Ho_Chi_Minh";
+
+function vietnamDateParts(date = new Date()) {
+  return Object.fromEntries(
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: VIETNAM_TIME_ZONE,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+      hourCycle: "h23",
+    })
+      .formatToParts(date)
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, part.value]),
+  );
+}
+
+function currentVietnamDateInput() {
+  const parts = vietnamDateParts();
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+function currentVietnamDateTimeInput(includeSeconds = false) {
+  const parts = vietnamDateParts();
+  const value = `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
+  return includeSeconds ? `${value}:${parts.second}` : value;
+}
+
+function parseDateTimeForVietnam(value) {
+  if (!value) return null;
+  const text = String(value);
+  const hasTimeZone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(text);
+  const normalized = hasTimeZone ? text : `${text.replace(" ", "T")}+07:00`;
+  const date = new Date(normalized);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
 
 const state = {
   raw: null,
   data: null,
   screen: "patients",
   hasCareSheet: false,
+  careSheets: [],
+  careSheetsLoadedFor: "",
+  careSheetsLoading: false,
+  careSheetsError: "",
+  selectedCareSheetId: null,
+  editingCareSheetId: null,
+  careGoalEvaluations: [],
+  careGoalEvaluationsLoadedFor: "",
+  careGoalEvaluationsLoading: false,
+  careGoalEvaluationsError: "",
   selectedPatientIndex: 0,
   categoryId: "",
   departmentId: "",
@@ -20,12 +71,12 @@ const state = {
     bed: "",
     department: "",
     diagnosis: "",
-    date: new Date().toISOString().slice(0, 10),
+    date: currentVietnamDateInput(),
   },
   selectedAssessments: new Set(),
   assessmentEdits: {},
   assessmentChecklist: {
-    evalTime: new Date().toISOString().slice(0, 16),
+    evalTime: currentVietnamDateTimeInput(),
     evaluator: "2272 | Nguyễn Văn Thiện",
     pulse: "",
     temperature: "",
@@ -33,11 +84,18 @@ const state = {
     weight: "",
     height: "",
     bmi: "",
+    allergy: "none",
+    allergy_note: "",
+    fluidIn: "",
+    fluidOut: "",
+    fluidBalance: "",
     bodyType: "",
     consciousness: "",
     mucosa: "",
     edema: "",
+    systemicNote: "",
     breathingMode: "",
+    ventilationAirway: [],
     oxygenFlow: "",
     ventilatorMode: "",
     fio2: "",
@@ -60,7 +118,20 @@ const state = {
     urinary: [],
     urineAmount: "",
     nutritionType: [],
-    menu: "",
+    menu: [],
+    neuroConsciousness: [],
+    neuroOrientation: [],
+    neuroBehavior: [],
+    neuroFocalSigns: [],
+    neuroSensory: "",
+    mobilityAbility: [],
+    muscleStrength: [],
+    movementStatus: [],
+    mobilityRehab: "",
+    treatmentEducation: [],
+    careEducation: [],
+    preventionEducation: [],
+    healthEducation: "",
     circulationNote: "",
     respiratoryNote: "",
     diseasedOrgan: "",
@@ -88,7 +159,20 @@ const state = {
   scaleScores: {},
   scaleResults: {},
   activeScale: null,
+  activeDiagnosisSuggest: null,
+  activeGoalSuggest: null,
+  interventionCatalog: [],
+  activeInterventionSuggest: null,
 };
+
+const initialAssessmentChecklist = JSON.parse(JSON.stringify(state.assessmentChecklist));
+
+function createDefaultAssessmentChecklist() {
+  return {
+    ...JSON.parse(JSON.stringify(initialAssessmentChecklist)),
+    evalTime: currentVietnamDateTimeInput(),
+  };
+}
 
 const scaleMapping = {
   fallRiskAssessment: "morse_fall_scale",
@@ -224,6 +308,32 @@ function byId(items, id) {
   return items.find((item) => item.id === id);
 }
 
+function supabaseConfig() {
+  return window.SUPABASE_CONFIG || {};
+}
+
+function isSupabaseConfigured() {
+  const config = supabaseConfig();
+  return Boolean(
+    window.supabase &&
+      config.url &&
+      config.anonKey &&
+      !config.url.includes("YOUR_PROJECT_ID") &&
+      !config.anonKey.includes("YOUR_SUPABASE_ANON_KEY"),
+  );
+}
+
+function getSupabaseClient() {
+  if (!isSupabaseConfigured()) {
+    throw new Error("Chưa cấu hình Supabase URL/anon key trong supabase-config.js");
+  }
+  if (!supabaseClient) {
+    const config = supabaseConfig();
+    supabaseClient = window.supabase.createClient(config.url, config.anonKey);
+  }
+  return supabaseClient;
+}
+
 function currentCategory() {
   return byId(state.data.categories, state.categoryId) || state.data.categories[0];
 }
@@ -340,7 +450,134 @@ function diagnosisSuggestions(condition) {
   return rows.length ? rows : [{ id: "dx-0", selected: true, diagnosis: "", goal: "" }];
 }
 
+function createDiagnosisRow() {
+  return {
+    id: `dx-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    selected: true,
+    diagnosis: "",
+    diagnosisQuery: "",
+    goalQuery: "",
+    goals: [],
+  };
+}
+
+function diagnosisSuggestionsForSearch(condition) {
+  const sections = condition.sections || {};
+  const items = diagnosisKeys.flatMap((key) => normalizeItems(sections[key]));
+  const lines = items.flatMap((item) => splitBullets([item.noi_dung, item.ket_qua].filter(Boolean).join("\n")));
+  const rows = [];
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    const next = lines[index + 1] || "";
+    if (isGoalLine(line)) continue;
+    rows.push({
+      diagnosis: stripDiagnosisPrefix(line),
+      goal: isGoalLine(next) ? stripGoalPrefix(next) : "",
+    });
+  }
+  return rows;
+}
+
+function diagnosisSuggestionBank() {
+  const grouped = new Map();
+  for (const item of diagnosisSuggestionsForSearch(currentCondition())) {
+    const diagnosis = cleanLine(item.diagnosis);
+    const goal = cleanLine(item.goal);
+    if (!diagnosis) continue;
+    if (!grouped.has(diagnosis)) grouped.set(diagnosis, { diagnosis, goals: [] });
+    if (goal && !grouped.get(diagnosis).goals.includes(goal)) grouped.get(diagnosis).goals.push(goal);
+  }
+  return [...grouped.values()];
+}
+
+function searchKey(text) {
+  return String(text || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function isGoalLine(text) {
+  const key = searchKey(text);
+  return key.includes("muc tieu") || key.includes("má»¥c tieu");
+}
+
+function stripGoalPrefix(text) {
+  return cleanLine(
+    String(text || "")
+      .replace(/^mục tiêu\s*\d*\s*:\s*/i, "")
+      .replace(/^má»¥c tiÃªu\s*\d*\s*:\s*/i, ""),
+  );
+}
+
+function stripDiagnosisPrefix(text) {
+  return cleanLine(
+    String(text || "")
+      .replace(/^chẩn đoán\s*\d*\s*:\s*/i, "")
+      .replace(/^cháº©n Ä‘oÃ¡n\s*\d*\s*:\s*/i, ""),
+  );
+}
+
+function filteredDiagnosisOptions(row) {
+  const query = searchKey(row.diagnosisQuery || row.diagnosis);
+  if (!query) return [];
+  return diagnosisSuggestionBank()
+    .filter((item) => !query || searchKey(item.diagnosis).includes(query))
+    .slice(0, 6);
+}
+
+function filteredGoalOptions(row, goalValue = "") {
+  const query = searchKey(goalValue);
+  if (!query) return [];
+  const bank = diagnosisSuggestionBank();
+  const selected = bank.find((item) => item.diagnosis === row.diagnosis);
+  const goals = [...(selected?.goals || []), ...bank.flatMap((item) => item.goals)];
+  return [...new Set(goals)]
+    .filter((goal) => !query || searchKey(goal).includes(query))
+    .slice(0, 6);
+}
+
+function interventionCatalogItems() {
+  return (state.interventionCatalog || []).flatMap((group) =>
+    (group.interventions || []).map((item) => ({
+      code: cleanLine(item.code),
+      name: cleanLine(item.name),
+      group: cleanLine(group.group),
+    })),
+  );
+}
+
+function findInterventionByCode(code) {
+  const key = searchKey(code);
+  return interventionCatalogItems().find((item) => searchKey(item.code) === key);
+}
+
+function findInterventionByName(name) {
+  const key = searchKey(name);
+  return interventionCatalogItems().find((item) => searchKey(item.name) === key);
+}
+
+function filteredInterventionOptions(value, mode) {
+  const query = searchKey(value);
+  if (!query) return [];
+  return interventionCatalogItems()
+    .filter((item) => {
+      const target = mode === "code" ? item.code : item.name;
+      return searchKey(target).includes(query);
+    })
+    .slice(0, 8);
+}
+
+function applyInterventionOption(row, item) {
+  if (!row || !item) return;
+  row.code = item.code;
+  row.content = item.name;
+  row.selected = true;
+}
+
 function codeForIntervention(text, index) {
+  const matched = interventionCatalogItems().find((item) => searchKey(text).includes(searchKey(item.name)));
+  if (matched) return matched.code;
   const source = text.toLowerCase();
   if (source.includes("tri giác") || source.includes("glasgow")) return "TD-S101";
   if (source.includes("dấu hiệu sinh tồn") || source.includes("mạch") || source.includes("huyết áp")) return "TD-S102";
@@ -367,12 +604,80 @@ function interventionSuggestions(condition) {
   }));
 }
 
-function resetForCondition() {
-  const condition = currentCondition();
+function resetCareFormState({ resetChecklist = false } = {}) {
+  if (resetChecklist) {
+    state.careLevel = "1";
+    state.assessmentChecklist = createDefaultAssessmentChecklist();
+    state.scaleScores = {};
+    state.scaleResults = {};
+    state.activeScale = null;
+  }
   state.selectedAssessments = new Set();
   state.assessmentEdits = {};
-  state.diagnosisRows = diagnosisSuggestions(condition);
-  state.interventionRows = interventionSuggestions(condition);
+  state.diagnosisRows = [createDiagnosisRow()];
+  state.interventionRows = [];
+  state.activeDiagnosisSuggest = null;
+  state.activeGoalSuggest = null;
+  state.activeInterventionSuggest = null;
+}
+
+function resetForCondition(options = {}) {
+  resetCareFormState(options);
+  render();
+}
+
+function hydrateCareFormFromSheet(sheet) {
+  if (!sheet) return;
+  const assessment = sheet.nhan_dinh_json || {};
+  const checklist = assessment.checklist || {};
+  const handover = sheet.ban_giao_json || {};
+  const diagnoses = Array.isArray(sheet.chan_doan_muc_tieu_json) ? sheet.chan_doan_muc_tieu_json : [];
+  const interventions = Array.isArray(sheet.can_thiep_json) ? sheet.can_thiep_json : [];
+
+  state.editingCareSheetId = sheet.id;
+  state.selectedCareSheetId = sheet.id;
+  state.careLevel = String(sheet.cap_cham_soc || state.careLevel || "1");
+  state.assessmentChecklist = {
+    ...createDefaultAssessmentChecklist(),
+    ...checklist,
+    ...handover,
+  };
+  state.assessmentChecklist.fluidBalance = calculateFluidBalance(
+    state.assessmentChecklist.fluidIn,
+    state.assessmentChecklist.fluidOut,
+  );
+  state.scaleResults = sheet.thang_diem_json || {};
+  state.activeScale = null;
+  state.selectedAssessments = new Set();
+  state.assessmentEdits = {};
+  state.activeDiagnosisSuggest = null;
+  state.activeGoalSuggest = null;
+  state.activeInterventionSuggest = null;
+  state.diagnosisRows = diagnoses.length
+    ? diagnoses.map((item, index) => {
+        const goals = Array.isArray(item.goals)
+          ? item.goals
+          : String(item.goal || "")
+              .split("\n")
+              .map(cleanLine)
+              .filter(Boolean);
+        return {
+          id: `dx-edit-${sheet.id}-${index}`,
+          selected: true,
+          diagnosis: item.diagnosis || "",
+          diagnosisQuery: item.diagnosis || "",
+          goalQuery: "",
+          goals,
+        };
+      })
+    : [createDiagnosisRow()];
+  state.interventionRows = interventions.map((item, index) => ({
+    id: `iv-edit-${sheet.id}-${index}`,
+    selected: true,
+    code: item.code || "",
+    content: item.content || "",
+  }));
+  state.screen = "careForm";
   render();
 }
 
@@ -392,6 +697,47 @@ function h(text) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function calculateFluidBalance(fluidIn, fluidOut) {
+  if (fluidIn === "" || fluidOut === "") return "";
+  const inValue = Number(fluidIn);
+  const outValue = Number(fluidOut);
+  if (!Number.isFinite(inValue) || !Number.isFinite(outValue)) return "";
+  return String(inValue - outValue);
+}
+
+function updateFluidBalanceField() {
+  state.assessmentChecklist.fluidBalance = calculateFluidBalance(
+    state.assessmentChecklist.fluidIn,
+    state.assessmentChecklist.fluidOut,
+  );
+  const balanceInput = app.querySelector('[data-checklist="fluidBalance"]');
+  if (balanceInput) balanceInput.value = state.assessmentChecklist.fluidBalance;
+}
+
+function fluidBalanceFromChecklist(check) {
+  const calculated = calculateFluidBalance(check.fluidIn, check.fluidOut);
+  return calculated !== "" ? calculated : check.fluidBalance;
+}
+
+function inputNextAttrs(type = "text") {
+  const inputMode = type === "number" ? ' inputmode="decimal"' : "";
+  return `enterkeyhint="next" autocomplete="off" autocapitalize="sentences"${inputMode}`;
+}
+
+function focusNextCareInput(current) {
+  const fields = [...app.querySelectorAll(`
+    .form-mode input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([readonly]):not([disabled]),
+    .form-mode textarea:not([readonly]):not([disabled]),
+    .form-mode select:not([disabled])
+  `)].filter((item) => item.offsetParent !== null);
+  const index = fields.indexOf(current);
+  const next = fields[index + 1];
+  if (!next) return false;
+  next.focus({ preventScroll: false });
+  if (typeof next.select === "function" && next.tagName !== "TEXTAREA") next.select();
+  return true;
 }
 
 function textPreview(text, max = 92) {
@@ -454,7 +800,7 @@ function renderPatientRow(patient, index) {
 
 function renderRecordScreen() {
   const patient = patients[state.selectedPatientIndex] || patients[0];
-  const birthYear = new Date().getFullYear() - patient.age;
+  const birthYear = Number(vietnamDateParts().year) - patient.age;
   return `
     <div class="mobile-app record-screen">
       ${appBar(`Hồ Sơ Bệnh Án - (${patient.code})`, "patients")}
@@ -530,16 +876,379 @@ function renderRecordMenuScreen() {
   `;
 }
 
-function renderCareEmptyScreen() {
+function renderCareSheetListScreen() {
+  const selected = patients[state.selectedPatientIndex] || patients[0];
+  const subtitle = `${selected.name} | Mã y tế: ${selected.code} | ${selected.age} tuổi`;
   return `
-    <div class="mobile-app empty-care-screen">
-      ${appBar("Phiếu Chăm Sóc", "recordMenu")}
-      <section class="empty-care">
+    <div class="mobile-app care-list-screen">
+      ${appBar("Phiếu Chăm Sóc", "patients")}
+      <section class="panel care-sheet-list-panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">Danh sách phiếu chăm sóc</h2>
+            <p class="panel-subtitle">${h(subtitle)}</p>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="care-list-actions">
+            <button class="btn primary" data-action="create-care">Thêm phiếu chăm sóc</button>
+            <button class="btn" data-action="evaluate-results">Đánh giá kết quả</button>
+          </div>
+          ${renderCareSheetListBody()}
+        </div>
+      </section>
+    </div>
+  `;
+}
+
+function renderCareSheetListBody() {
+  if (state.careSheetsLoading) {
+    return `<div class="empty care-list-empty">Đang tải danh sách phiếu chăm sóc...</div>`;
+  }
+  if (state.careSheetsError) {
+    return `<div class="empty care-list-empty">${h(state.careSheetsError)}</div>`;
+  }
+  if (!state.careSheets.length) {
+    return `
+      <div class="empty-care compact-empty-care">
         <div class="empty-doc-icon">+</div>
         <h2>Chưa có phiếu chăm sóc</h2>
-        <p>Bệnh nhân chưa có phiếu chăm sóc nào. Nhấn nút bên dưới để tạo phiếu mới.</p>
-        <button class="add-sheet-btn" data-action="create-care">⊕ Thêm phiếu mới</button>
+        <p>Bệnh nhân chưa có phiếu chăm sóc nào. Bấm “Thêm phiếu chăm sóc” để tạo phiếu mới.</p>
+      </div>
+    `;
+  }
+  return `
+    <div class="care-sheet-list">
+      ${state.careSheets.map((sheet) => `
+        <article class="care-sheet-row">
+          <div>
+            <strong>${h(sheet.ma_phieu || `Phiếu #${sheet.id}`)}</strong>
+            <span>Cấp chăm sóc: ${h(sheet.cap_cham_soc || "-")}</span>
+          </div>
+          <div>
+            <span>Thời gian đánh giá</span>
+            <strong>${h(formatDateTime(sheet.thoi_gian_danh_gia || sheet.created_at))}</strong>
+          </div>
+          <div>
+            <span>Người đánh giá</span>
+            <strong>${h(sheet.nguoi_danh_gia || "-")}</strong>
+          </div>
+          <div class="care-sheet-row-actions">
+            <button class="btn" data-action="edit-care-sheet" data-sheet-id="${h(sheet.id)}">Sửa</button>
+            <button class="btn" data-action="view-care-sheet" data-sheet-id="${h(sheet.id)}">Xem chi tiết</button>
+          </div>
+        </article>
+      `).join("")}
+    </div>
+  `;
+}
+
+function renderCareGoalEvaluationScreen() {
+  const selected = patients[state.selectedPatientIndex] || patients[0];
+  return `
+    <div class="mobile-app care-list-screen">
+      ${appBar("Đánh giá kết quả", "careEmpty")}
+      <section class="panel care-sheet-list-panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">Đánh giá kết quả mục tiêu chăm sóc</h2>
+            <p class="panel-subtitle">${h(selected.name)} | Mã y tế: ${h(selected.code)} | ${h(selected.age)} tuổi</p>
+          </div>
+        </div>
+        <div class="panel-body">
+          ${renderCareGoalEvaluationBody()}
+        </div>
       </section>
+    </div>
+  `;
+}
+
+function renderCareGoalEvaluationBody() {
+  if (state.careGoalEvaluationsLoading) {
+    return `<div class="empty care-list-empty">Đang tải mục tiêu chăm sóc...</div>`;
+  }
+  if (state.careGoalEvaluationsError) {
+    return `<div class="empty care-list-empty">${h(state.careGoalEvaluationsError)}</div>`;
+  }
+  if (!state.careGoalEvaluations.length) {
+    return `<div class="empty care-list-empty">Chưa có mục tiêu chăm sóc nào của người bệnh này.</div>`;
+  }
+  return `
+    <div class="goal-evaluation-table">
+      <div class="goal-evaluation-head">
+        <span>Thời gian đặt mục tiêu</span>
+        <span>Mục tiêu</span>
+        <span>Đánh giá</span>
+        <span>Thời gian kết thúc</span>
+      </div>
+      ${state.careGoalEvaluations.map((item) => `
+        <article class="goal-evaluation-row">
+          <span>${h(formatDateTime(item.thoi_gian_dat_muc_tieu))}</span>
+          <strong>${h(item.muc_tieu)}</strong>
+          <div class="goal-evaluation-buttons">
+            <button 
+              class="btn-eval ${item.danh_gia === "Đạt" ? "active" : ""}" 
+              data-action="set-goal-evaluation"
+              data-goal-id="${item.id}"
+              data-eval-value="Đạt">
+              Đạt
+            </button>
+            <button 
+              class="btn-eval ${item.danh_gia === "Không đạt" ? "active" : ""}" 
+              data-action="set-goal-evaluation"
+              data-goal-id="${item.id}"
+              data-eval-value="Không đạt">
+              Không đạt
+            </button>
+          </div>
+          <span class="goal-end-time">${item.thoi_gian_ket_thuc_muc_tieu ? h(formatDateTime(item.thoi_gian_ket_thuc_muc_tieu)) : ""}</span>
+        </article>
+      `).join("")}
+    </div>
+  `;
+}
+
+function formatDateTime(value) {
+  if (!value) return "-";
+  const date = parseDateTimeForVietnam(value);
+  if (!date) return value;
+  return date.toLocaleString("vi-VN", { timeZone: VIETNAM_TIME_ZONE });
+}
+
+function currentCareSheetDetail() {
+  return state.careSheets.find((sheet) => String(sheet.id) === String(state.selectedCareSheetId));
+}
+
+function detailField(label, value = "") {
+  return `
+    <div class="report-field">
+      <div>${h(label)}</div>
+      <span>${h(value || "................................")}</span>
+    </div>
+  `;
+}
+
+function detailSection(title, content) {
+  return `
+    <section class="report-section">
+      <h2>${h(title)}</h2>
+      ${content}
+    </section>
+  `;
+}
+
+function detailCheckGroup(title, items = []) {
+  if (!items.length) return "";
+  return `
+    <div class="report-check-group">
+      <strong>${h(title)}</strong>
+      <div>
+        ${items.map((item) => `
+          <span class="report-check checked"><i>✓</i>${h(item)}</span>
+        `).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function detailTable(rows) {
+  return `
+    <div class="report-table">
+      <table>
+        <tbody>
+          ${rows.map((row) => `
+            <tr>
+              <td>${h(row[0])}</td>
+              <td>${h(row[1] || "................................").replace(/\n/g, "<br />")}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function detailValueList(items = []) {
+  const normalized = items
+    .map((item) => {
+      const [label, ...rest] = String(item || "").split(":");
+      return {
+        label: cleanLine(label),
+        values: cleanLine(rest.join(":"))
+          .split(";")
+          .map(cleanLine)
+          .filter(Boolean),
+      };
+    })
+    .filter((item) => item.label || item.values.length);
+  if (!normalized.length) return `<div class="empty">Chưa có dữ liệu.</div>`;
+  return `
+    <div class="report-assessment-table">
+      ${normalized.map((item) => `
+        <div>
+          <strong>${h(item.label)}</strong>
+          <span>
+            ${item.values.length
+              ? item.values.map((value) => `<em>${h(value)}</em>`).join("")
+              : "<em>Có</em>"}
+          </span>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+function detailAssessmentItems(sections = []) {
+  return sections
+    .filter((item) =>
+      !/^A\.\s*Thông tin người bệnh/i.test(item) &&
+      !/^B\.\s*Theo dõi dịch/i.test(item) &&
+      !/^N\.\s*Thang điểm đánh giá/i.test(item) &&
+      !/^O\.\s*Bàn giao/i.test(item)
+    )
+    .map((item, index) => item.replace(/^[A-Z]\.\s*/, `${index + 1}. `));
+}
+
+function scaleDetailRows(results = {}) {
+  const labels = {
+    fallRiskAssessment: "Nguy cơ té ngã",
+    vteRiskAssessment: "Nguy cơ viêm tĩnh mạch",
+    painAssessment: "Đau",
+    pressureUlcerRiskAssessment: "Nguy cơ loét tỳ đè",
+    glasgowAssessment: "Glasgow",
+    current_pain: "Đau hiện tại",
+    glasgow_score: "Glasgow",
+    fall_risk_score: "Nguy cơ té ngã",
+    pain_score: "Đau",
+    vip_score: "Viêm tĩnh mạch",
+    braden_score: "Nguy cơ loét tỳ đè",
+  };
+  return Object.entries(results).map(([key, value]) => {
+    if (value && typeof value === "object") {
+      const details = [
+        value.total !== undefined ? `${value.total} điểm` : "",
+        value.risk,
+        value.conclusion,
+      ].filter(Boolean).join(" - ");
+      return [labels[key] || key, details || JSON.stringify(value)];
+    }
+    return [labels[key] || key, value];
+  });
+}
+
+function handoverDetailItems(handover = {}) {
+  const labels = {
+    handoverMedicineHalf: "Thuốc còn 1/2",
+    handoverLab: "Lấy xét nghiệm",
+    handoverWaitLab: "Chờ kết quả xét nghiệm",
+    handoverFilm: "Lấy phim",
+    handoverWaitFilm: "Chờ phim",
+    handoverDressing: "Thay băng",
+    handoverDrain: "Theo dõi dẫn lưu",
+    handoverVitals: "Theo dõi DHST",
+    handoverUrine: "Theo dõi nước tiểu",
+    handoverTube: "Chăm sóc sonde",
+    handoverOther: "Khác",
+  };
+  return Object.entries(handover)
+    .filter(([, value]) => value === true || (typeof value === "string" && value.trim()))
+    .map(([key, value]) => `${labels[key] || key}: ${value === true ? "Có" : value}`);
+}
+
+function renderCareSheetDetailScreen() {
+  const sheet = currentCareSheetDetail();
+  const selected = patients[state.selectedPatientIndex] || patients[0];
+  if (!sheet) {
+    return `
+      <div class="mobile-app care-detail-screen">
+        ${appBar("Chi tiết phiếu chăm sóc", "careEmpty")}
+        <section class="panel care-sheet-list-panel">
+          <div class="panel-body">
+            <div class="empty care-list-empty">Không tìm thấy phiếu chăm sóc.</div>
+          </div>
+        </section>
+      </div>
+    `;
+  }
+
+  const assessment = sheet.nhan_dinh_json || {};
+  const check = assessment.checklist || {};
+  const diagnoses = Array.isArray(sheet.chan_doan_muc_tieu_json) ? sheet.chan_doan_muc_tieu_json : [];
+  const interventions = Array.isArray(sheet.can_thiep_json) ? sheet.can_thiep_json : [];
+  const handover = sheet.ban_giao_json || {};
+  const assessmentItems = detailAssessmentItems(assessment.sections || []);
+  const scaleRows = scaleDetailRows(sheet.thang_diem_json || {});
+  const handoverItems = handoverDetailItems(handover);
+
+  return `
+    <div class="mobile-app care-detail-screen">
+      ${appBar("Chi tiết phiếu chăm sóc", "careEmpty")}
+      <div class="report-actions no-print">
+        <button class="btn" data-screen="careEmpty">Quay lại</button>
+        <button class="btn" data-action="edit-care-sheet" data-sheet-id="${h(sheet.id)}">Sửa phiếu</button>
+        <button class="btn primary" data-action="print">In báo cáo</button>
+      </div>
+      <main class="report-page">
+        <header class="report-head">
+          <h1>Phiếu theo dõi và chăm sóc</h1>
+          <div>[Phân cấp chăm sóc ${h(sheet.cap_cham_soc || "-")}]</div>
+        </header>
+
+        <section class="report-patient-card">
+          <div>
+            <h2>${h(selected.name)}</h2>
+            <p>Mã y tế: <b>${h(selected.code)}</b> | ${h(selected.sex)} | ${h(selected.age)} tuổi</p>
+          </div>
+        </section>
+
+        ${detailSection("I. Thông tin hành chính", `
+          <div class="report-grid cols-3">
+            ${detailField("Thời gian đánh giá", formatDateTime(sheet.thoi_gian_danh_gia))}
+            ${detailField("Người đánh giá", sheet.nguoi_danh_gia)}
+            ${detailField("Phân cấp chăm sóc", `CS cấp ${sheet.cap_cham_soc || "-"}`)}
+            ${detailField("Chiều cao (cm)", check.height)}
+            ${detailField("Cân nặng (kg)", check.weight)}
+            ${detailField("BMI", check.bmi)}
+            ${detailField("Dị ứng", check.allergy === "yes" ? `Có: ${check.allergy_note || ""}` : "Không")}
+          </div>
+        `)}
+
+        ${detailSection("II. Dấu hiệu sinh tồn", `
+          <div class="report-grid cols-4">
+            ${detailField("Mạch", check.pulse)}
+            ${detailField("Nhiệt độ", check.temperature)}
+            ${detailField("Huyết áp", check.bloodPressure)}
+            ${detailField("SpO2", check.spo2)}
+          </div>
+        `)}
+
+        ${detailSection("III. Nhận định điều dưỡng", detailValueList(assessmentItems))}
+
+        ${detailSection("VIII. Thang điểm đánh giá", scaleRows.length ? detailTable(scaleRows) : `<div class="empty">Chưa có thang điểm đánh giá.</div>`)}
+
+        ${detailSection("IX. Theo dõi dịch", `
+          <div class="report-grid cols-3">
+            ${detailField("Dịch vào", check.fluidIn)}
+            ${detailField("Dịch ra", check.fluidOut)}
+            ${detailField("Bilance", fluidBalanceFromChecklist(check))}
+          </div>
+        `)}
+
+        ${detailSection("X. Chẩn đoán điều dưỡng - mục tiêu - can thiệp", `
+          ${detailTable([
+            ["Chẩn đoán điều dưỡng", diagnoses.map((item) => item.diagnosis).filter(Boolean).join("\n")],
+            ["Mục tiêu chăm sóc", diagnoses.flatMap((item) => item.goals || []).filter(Boolean).join("\n")],
+            ["Mã can thiệp", interventions.map((item) => item.code).filter(Boolean).join("\n")],
+            ["Nội dung can thiệp", interventions.map((item) => item.content).filter(Boolean).join("\n")],
+          ])}
+        `)}
+
+        ${detailSection("XI. Bàn giao", handoverItems.length ? detailCheckGroup("Việc cần tiếp tục theo dõi/thực hiện", handoverItems) : `<div class="empty">Chưa có nội dung bàn giao.</div>`)}
+
+        <footer class="report-signatures">
+          <div><strong>Điều dưỡng ghi phiếu</strong><span>Ký, ghi rõ họ tên</span></div>
+        </footer>
+      </main>
     </div>
   `;
 }
@@ -559,12 +1268,18 @@ function render(focusSelector = "") {
     return;
   }
   if (state.screen === "careEmpty") {
-    if (state.hasCareSheet) {
-      state.screen = "careForm";
-    } else {
-      app.innerHTML = renderCareEmptyScreen();
-      return;
-    }
+    loadCareSheetsForSelectedPatient();
+    app.innerHTML = renderCareSheetListScreen();
+    return;
+  }
+  if (state.screen === "careDetail") {
+    app.innerHTML = renderCareSheetDetailScreen();
+    return;
+  }
+  if (state.screen === "careEvaluation") {
+    loadCareGoalEvaluationsForSelectedPatient();
+    app.innerHTML = renderCareGoalEvaluationScreen();
+    return;
   }
   const category = currentCategory();
   const department = currentDepartment();
@@ -582,84 +1297,21 @@ function render(focusSelector = "") {
     <div class="mobile-app form-mode">
       ${appBar("Phiếu Chăm Sóc", "careEmpty")}
       <div class="form-actions">
-        <button class="btn ghost" data-action="clear">Lưu phiếu và ký</button>
+        <button class="btn ghost" data-action="save-care">${state.editingCareSheetId ? "Cập nhật phiếu" : "Lưu phiếu và ký"}</button>
         <button class="btn primary" data-action="print">In phiếu</button>
       </div>
 
       <main class="layout">
         <aside class="rail">
           ${renderPatientPanel()}
-          <section class="panel">
-            <div class="panel-header">
-              <div>
-                <h2 class="panel-title">Chọn nhóm bệnh</h2>
-                <p class="panel-subtitle">Chọn khối, khoa và mặt bệnh để nạp gợi ý.</p>
-              </div>
-              <span class="step-badge">1</span>
-            </div>
-            <div class="panel-body">
-              <div class="filter-select-grid">
-                <label class="field">
-                  <span>Nhóm bệnh</span>
-                  <select data-category-select>
-                    ${state.data.categories.map((item) => `<option value="${h(item.id)}" ${item.id === category.id ? "selected" : ""}>${h(item.ten_nhom)}</option>`).join("")}
-                  </select>
-                </label>
-                <label class="field">
-                  <span>Khoa / nhóm mặt bệnh</span>
-                  <select data-department-select>
-                    ${category.khoa.map((item) => `<option value="${h(item.id)}" ${item.id === department.id ? "selected" : ""}>${h(item.ma_khoa || item.ten_khoa)} - ${h(item.ten_khoa)}</option>`).join("")}
-                  </select>
-                </label>
-              </div>
-              <div class="segmented">
-                ${state.data.categories
-                  .map(
-                    (item) => `
-                    <button class="btn ${item.id === category.id ? "active" : ""}" data-category="${h(item.id)}">
-                      ${h(item.ten_nhom)}
-                    </button>
-                  `,
-                  )
-                  .join("")}
-              </div>
-
-              <div class="department-list">
-                ${category.khoa
-                  .map(
-                    (item) => `
-                    <button class="department-btn ${item.id === department.id ? "active" : ""}" data-department="${h(item.id)}">
-                      <strong>${h(item.ma_khoa || item.ten_khoa)}</strong>
-                      <span>${h(item.ten_khoa)} - ${item.mat_benh.length} mặt bệnh</span>
-                    </button>
-                  `,
-                  )
-                  .join("")}
-              </div>
-
-              <input class="search" type="search" placeholder="Tìm mặt bệnh..." value="${h(state.search)}" data-input="search" />
-              <div class="condition-list">
-                ${filteredConditions
-                  .map(
-                    (item) => `
-                    <button class="condition-btn ${item.id === condition.id ? "active" : ""}" data-condition="${h(item.id)}" data-category-ref="${h(item.categoryRef)}" data-department-ref="${h(item.departmentRef)}">
-                      <strong>${h(item.ten_mat_benh)}</strong>
-                      <span>${h(item.departmentLabel)} · STT ${h(item.stt || "")}</span>
-                    </button>
-                  `,
-                  )
-                  .join("")}
-              </div>
-            </div>
-          </section>
         </aside>
 
         <section class="workspace">
           ${renderAssessmentPanel(assessments)}
+          ${renderFluidBalancePanel()}
           ${renderDiagnosisPanel()}
           ${renderInterventionPanel()}
           ${renderHandoverPanel()}
-          ${renderSheet(condition)}
         </section>
       </main>
     </div>
@@ -693,9 +1345,19 @@ function renderCareHeaderPanel() {
         </div>
       </div>
       <div class="panel-body">
-        <div class="care-info-grid">
+        <div class="care-info-grid care-header-grid">
           ${checkField("evalTime", "Thời gian đánh giá", state.assessmentChecklist.evalTime, "datetime-local")}
           ${checkField("evaluator", "Người đánh giá", state.assessmentChecklist.evaluator)}
+          ${checkField("height", "Chiều cao (cm)", state.assessmentChecklist.height, "number")}
+          ${checkField("weight", "Cân nặng (kg)", state.assessmentChecklist.weight, "number")}
+          ${readonlyCheckField("bmi", "BMI (tự động tính)", state.assessmentChecklist.bmi)}
+        </div>
+        <div class="patient-allergy-block">
+          ${radioGroup("allergy", "Dị ứng", ["none", "yes"], state.assessmentChecklist.allergy, [
+            { label: "Không", value: "none" },
+            { label: "Có", value: "yes" },
+          ])}
+          ${state.assessmentChecklist.allergy === "yes" ? checkField("allergy_note", "Thông tin dị ứng", state.assessmentChecklist.allergy_note) : ""}
         </div>
       </div>
     </section>
@@ -716,6 +1378,27 @@ function renderCareLevelPanel() {
           ${["1", "2", "3"].map((level) => `
             <button class="btn level-${level} ${state.careLevel === level ? "active" : ""}" data-level="${level}">CS cấp ${level}</button>
           `).join("")}
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function renderFluidBalancePanel() {
+  if (state.careLevel !== "1") return "";
+  return `
+    <section class="panel care-fluid-card">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title">Theo dõi dịch</h2>
+          <p class="panel-subtitle">Hiển thị khi phân cấp chăm sóc cấp 1.</p>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="care-info-grid fluid-balance-grid">
+          ${checkField("fluidIn", "Dịch vào (ml)", state.assessmentChecklist.fluidIn, "number")}
+          ${checkField("fluidOut", "Dịch ra (ml)", state.assessmentChecklist.fluidOut, "number")}
+          ${readonlyCheckField("fluidBalance", "Bilance: Dịch vào - dịch ra (ml)", state.assessmentChecklist.fluidBalance)}
         </div>
       </div>
     </section>
@@ -766,10 +1449,6 @@ function field(key, label, value, type = "text") {
 }
 
 function renderAssessmentPanel(assessments) {
-  if (state.assessmentTemplate?.assessment?.length) {
-    return renderTemplateAssessmentPanel(assessments);
-  }
-
   const check = state.assessmentChecklist;
   return `
     <section class="panel assessment-checklist-panel structured-assessment">
@@ -786,30 +1465,28 @@ function renderAssessmentPanel(assessments) {
             ${checkField("pulse", "Mạch (lần/phút)", check.pulse)}
             ${checkField("temperature", "Nhiệt độ (°C)", check.temperature)}
             ${checkField("bloodPressure", "Huyết áp (mmHg)", check.bloodPressure)}
-            ${checkField("respiratoryRate", "Nhịp thở (lần/phút)", check.respiratoryRate)}
             ${checkField("spo2", "SpO2 (%)", check.spo2)}
-            ${checkField("weight", "Cân nặng (kg)", check.weight)}
-            ${checkField("height", "Chiều cao (cm)", check.height)}
-            ${checkField("bmi", "BMI tự tính", check.bmi)}
           </div>
         </div>
 
         <div class="assessment-section-card">
-          <h3>Toàn thân</h3>
+          <h3>Toàn thân <span class="section-hint">(bao gồm da, niêm mạc)</span></h3>
           <div class="assessment-form compact-form">
             ${radioGroup("bodyType", "Thể trạng", ["Gầy", "Trung bình", "Béo"], check.bodyType)}
             ${radioGroup("consciousness", "Ý thức", ["Tỉnh", "Lơ mơ", "Hôn mê", "Kích thích", "An thần"], check.consciousness)}
             ${radioGroup("mucosa", "Da niêm mạc", ["Hồng", "Nhợt"], check.mucosa)}
             ${radioGroup("edema", "Phù", ["Có", "Không"], check.edema)}
+            ${checkArea("systemicNote", "Ghi chú toàn thân", check.systemicNote)}
           </div>
         </div>
 
-        <div class="assessment-section-card">
+        <div class="assessment-section-card respiratory-section">
           <h3>Hô hấp</h3>
-          <div class="assessment-form compact-form">
+          <div class="assessment-form compact-form respiratory-form">
             ${radioGroup("breathingMode", "Tình trạng thở", ["Tự thở", "Thở oxy", "HFNC", "NIV", "Thở máy"], check.breathingMode)}
+            ${checkField("respiratoryRate", "Nhịp thở (lần/phút)", check.respiratoryRate, "text", "respiratory-rate-field")}
+            ${checkArea("respiratoryNote", "Ghi chú hô hấp", check.respiratoryNote, "respiratory-note-field")}
             ${renderRespiratoryDetails(check)}
-            ${checkArea("respiratoryNote", "Ghi chú hô hấp", check.respiratoryNote)}
           </div>
         </div>
 
@@ -827,6 +1504,16 @@ function renderAssessmentPanel(assessments) {
         </div>
 
         <div class="assessment-section-card">
+          <h3>Thần kinh cảm giác</h3>
+          <div class="assessment-form compact-form">
+            ${multiCheckGroup("neuroConsciousness", "Ý thức", ["Tỉnh táo, tiếp xúc tốt", "Lơ mơ", "Kích thích", "Ngủ gà", "Hôn mê"], check.neuroConsciousness)}
+            ${multiCheckGroup("neuroOrientation", "Định hướng", ["Định hướng tốt thời gian, không gian, bản thân", "Rối loạn định hướng thời gian", "Rối loạn định hướng không gian", "Rối loạn định hướng bản thân"], check.neuroOrientation)}
+            ${multiCheckGroup("neuroBehavior", "Tri giác - hành vi", ["Kích thích", "Vật vã", "Lo âu", "Không hợp tác", "Rối loạn hành vi", "Ảo giác", "Lú lẫn"], check.neuroBehavior)}
+            ${multiCheckGroup("neuroFocalSigns", "Dấu hiệu thần kinh khu trú", ["Méo miệng", "Nói khó", "Nuốt khó", "Liệt dây thần kinh sọ", "Giảm phản xạ", "Tăng phản xạ gân xương"], check.neuroFocalSigns)}
+          </div>
+        </div>
+
+        <div class="assessment-section-card">
           <h3>Tiêu hóa</h3>
           <div class="assessment-form compact-form">
             ${radioGroup("abdomen", "Bụng", ["Mềm", "Chướng", "Đau", "Có dẫn lưu"], check.abdomen)}
@@ -835,10 +1522,10 @@ function renderAssessmentPanel(assessments) {
         </div>
 
         <div class="assessment-section-card">
-          <h3>Tiết niệu</h3>
+          <h3>Bài tiết</h3>
           <div class="assessment-form compact-form">
-            ${multiCheckGroup("urinary", "Tiểu tiện", ["Tự đi tiểu", "Tiểu qua sonde", "Thiểu niệu", "Vô niệu"], check.urinary)}
-            ${checkField("urineAmount", "Số lượng (ml)", check.urineAmount)}
+            ${multiCheckGroup("urinary", "Bài tiết nước tiểu", ["Tự đi tiểu", "Tiểu qua sonde", "Thiểu niệu", "Vô niệu"], check.urinary)}
+            ${checkField("urineAmount", "Số lượng nước tiểu (ml)", check.urineAmount)}
           </div>
         </div>
 
@@ -846,12 +1533,30 @@ function renderAssessmentPanel(assessments) {
           <h3>Dinh dưỡng</h3>
           <div class="assessment-form compact-form">
             ${multiCheckGroup("nutritionType", "Dinh dưỡng", ["Cơm", "Cháo", "Soup", "Sonde dạ dày", "Tĩnh mạch", "Nhịn ăn"], check.nutritionType)}
-            ${checkField("menu", "Thực đơn", check.menu)}
+            ${multiCheckGroup("menu", "Thực đơn", ["Cơm", "Cháo", "Soup", "Sữa", "Dịch nuôi ăn", "Khác"], check.menu)}
           </div>
         </div>
 
         <div class="assessment-section-card">
-          <h3>Cơ quan bệnh</h3>
+          <h3>Vận động/Phục hồi chức năng</h3>
+          <div class="assessment-form compact-form mobility-rehab-form">
+            ${multiCheckGroup("mobilityAbility", "Khả năng vận động", ["Tự đi lại bình thường", "Đi lại cần hỗ trợ", "Đi lại bằng dụng cụ hỗ trợ", "Không tự đi lại được", "Nằm bất động tại giường"], check.mobilityAbility)}
+            ${multiCheckGroup("muscleStrength", "Tình trạng cơ lực", ["Cơ lực bình thường", "Yếu nhẹ", "Yếu 1 chi", "Yếu 2 chi", "Liệt nửa người", "Liệt tứ chi"], check.muscleStrength)}
+            ${multiCheckGroup("movementStatus", "Tình trạng vận động", ["Hạn chế vận động", "Đau khi vận động", "Co cứng cơ", "Run tay chân", "Giảm thăng bằng"], check.movementStatus)}
+          </div>
+        </div>
+
+        <div class="assessment-section-card">
+          <h3>Giáo dục sức khỏe</h3>
+          <div class="assessment-form compact-form">
+            ${multiCheckGroup("treatmentEducation", "Hướng dẫn điều trị", ["Giải thích tình trạng bệnh", "Hướng dẫn dùng thuốc", "Hướng dẫn theo dõi dấu hiệu bất thường", "Hướng dẫn tái khám"], check.treatmentEducation)}
+            ${multiCheckGroup("careEducation", "Hướng dẫn chăm sóc", ["Chế độ dinh dưỡng", "Chế độ vận động", "Vệ sinh cá nhân", "Chăm sóc vết mổ/vết thương", "Phòng ngừa loét tỳ đè", "Phòng ngừa té ngã"], check.careEducation)}
+            ${multiCheckGroup("preventionEducation", "Giáo dục phòng bệnh", ["Không hút thuốc", "Hạn chế rượu bia", "Tuân thủ điều trị", "Kiểm soát đường huyết", "Kiểm soát huyết áp"], check.preventionEducation)}
+          </div>
+        </div>
+
+        <div class="assessment-section-card">
+          <h3>Cơ quan bị bệnh</h3>
           ${checkArea("diseasedOrgan", "Nhập nhận định cơ quan tổn thương", check.diseasedOrgan)}
         </div>
 
@@ -887,7 +1592,7 @@ function renderAssessmentPanel(assessments) {
               .map((id) => `
                 <label class="compact-check custom-line">
                   <input type="checkbox" checked data-assessment="${h(id)}" />
-                  <input value="${h(state.assessmentEdits[id] || "")}" placeholder="Nhập nhận định khác..." data-assessment-edit="${h(id)}" />
+                  <input value="${h(state.assessmentEdits[id] || "")}" placeholder="Nhập nhận định khác..." data-assessment-edit="${h(id)}" ${inputNextAttrs()} />
                 </label>
               `).join("")}
           </div>
@@ -962,7 +1667,7 @@ function renderGlasgowScoreField(fieldDef) {
     <label class="assessment-field glasgow-score-field">
       <span>${h(withUnit(fieldDef.label, fieldDef.unit))}</span>
       <div class="score-input-action">
-        <input type="number" value="${h(value)}" data-checklist="glasgow_score" />
+        <input type="number" value="${h(value)}" data-checklist="glasgow_score" ${inputNextAttrs("number")} />
         <button type="button" class="pain-score-btn" data-action="open-scale" data-scale-key="glasgow_score">
           ${result ? `Chấm lại: ${result.total} điểm` : "Chấm điểm Glasgow"}
         </button>
@@ -979,7 +1684,7 @@ function renderFallRiskScoreField(fieldDef) {
     <label class="assessment-field fall-risk-score-field">
       <span>${h(withUnit(fieldDef.label, fieldDef.unit))}</span>
       <div class="score-input-action">
-        <input type="number" value="${h(value)}" data-checklist="fall_risk_score" />
+        <input type="number" value="${h(value)}" data-checklist="fall_risk_score" ${inputNextAttrs("number")} />
         <button type="button" class="pain-score-btn" data-action="open-scale" data-scale-key="fall_risk_score">
           ${result ? `Đánh giá lại: ${result.total} điểm` : "Đánh giá té ngã"}
         </button>
@@ -1004,7 +1709,7 @@ function renderScaleResultScoreField(fieldDef) {
     <label class="assessment-field scale-result-score-field">
       <span>${h(withUnit(fieldDef.label, fieldDef.unit))}</span>
       <div class="score-input-action">
-        <input type="number" value="${h(value)}" data-checklist="${h(fieldDef.id)}" />
+        <input type="number" value="${h(value)}" data-checklist="${h(fieldDef.id)}" ${inputNextAttrs("number")} />
         <button type="button" class="pain-score-btn" data-action="open-scale" data-scale-key="${h(fieldDef.id)}">
           ${result ? `Đánh giá lại: ${result.total} điểm` : "Đánh giá"}
         </button>
@@ -1120,7 +1825,7 @@ function renderDiseaseAssessmentChecklist(assessments) {
           .map((id) => `
             <label class="compact-check custom-line">
               <input type="checkbox" checked data-assessment="${h(id)}" />
-              <input value="${h(state.assessmentEdits[id] || "")}" placeholder="Nhập nhận định khác..." data-assessment-edit="${h(id)}" />
+              <input value="${h(state.assessmentEdits[id] || "")}" placeholder="Nhập nhận định khác..." data-assessment-edit="${h(id)}" ${inputNextAttrs()} />
             </label>
           `).join("")}
       </div>
@@ -1128,20 +1833,29 @@ function renderDiseaseAssessmentChecklist(assessments) {
   `;
 }
 
-function checkField(key, label, value, type = "text") {
+function checkField(key, label, value, type = "text", className = "") {
   return `
-    <label class="assessment-field">
+    <label class="assessment-field ${h(className)}">
       <span>${h(label)}</span>
-      <input type="${type}" value="${h(value)}" data-checklist="${key}" />
+      <input type="${type}" value="${h(value)}" data-checklist="${key}" ${inputNextAttrs(type)} />
     </label>
   `;
 }
 
-function checkArea(key, label, value) {
+function readonlyCheckField(key, label, value) {
   return `
-    <label class="assessment-field assessment-full">
+    <label class="assessment-field">
       <span>${h(label)}</span>
-      <textarea data-checklist="${key}">${h(value)}</textarea>
+      <input type="text" value="${h(value)}" data-checklist="${key}" readonly tabindex="-1" />
+    </label>
+  `;
+}
+
+function checkArea(key, label, value, className = "") {
+  return `
+    <label class="assessment-field assessment-full ${h(className)}">
+      <span>${h(label)}</span>
+      <textarea data-checklist="${key}" enterkeyhint="next" autocomplete="off" autocapitalize="sentences">${h(value)}</textarea>
     </label>
   `;
 }
@@ -1158,10 +1872,11 @@ function renderRespiratoryDetails(check) {
   }
   if (check.breathingMode === "NIV" || check.breathingMode === "Thở máy") {
     return `
-      ${checkField("ventilatorMode", "Mode", check.ventilatorMode)}
-      ${checkField("fio2", "FiO2", check.fio2)}
-      ${checkField("peep", "PEEP", check.peep)}
-      ${checkField("vt", "VT", check.vt)}
+      ${check.breathingMode === "Thở máy" ? multiCheckGroup("ventilationAirway", "Đường thở", ["NKQ", "MKQ"], check.ventilationAirway) : ""}
+      ${checkField("ventilatorMode", "Mode", check.ventilatorMode, "text", "ventilator-setting-field")}
+      ${checkField("fio2", "FiO2", check.fio2, "text", "ventilator-setting-field")}
+      ${checkField("peep", "PEEP", check.peep, "text", "ventilator-setting-field")}
+      ${checkField("vt", "VT", check.vt, "text", "ventilator-setting-field")}
     `;
   }
   return "";
@@ -1343,7 +2058,7 @@ function renderDiagnosisPanel() {
       <div class="panel-header">
         <div>
           <h2 class="panel-title">Chẩn đoán điều dưỡng & mục tiêu</h2>
-          <p class="panel-subtitle">Gợi ý tự nạp theo mặt bệnh; có thể chọn, sửa hoặc thêm mới.</p>
+          <p class="panel-subtitle">Gõ keyword để tìm chẩn đoán và mục tiêu từ danh sách gợi ý theo mặt bệnh.</p>
         </div>
         <span class="step-badge">3</span>
       </div>
@@ -1351,22 +2066,51 @@ function renderDiagnosisPanel() {
         <div class="diagnosis-grid">
           ${state.diagnosisRows
             .map(
-              (row, index) => `
+              (row, index) => {
+                const diagnosisOptions = state.activeDiagnosisSuggest === index ? filteredDiagnosisOptions(row) : [];
+                const goals = (Array.isArray(row.goals) && row.goals.length ? row.goals : row.goalQuery ? [row.goalQuery] : [""]);
+                return `
               <div class="diagnosis-item">
-                <input type="checkbox" ${row.selected ? "checked" : ""} data-dx-selected="${index}" />
-                <div class="two-col">
-                  <div class="field">
-                    <label>Chẩn đoán</label>
-                    <textarea data-dx-field="${index}:diagnosis">${h(row.diagnosis)}</textarea>
+                <div class="diagnosis-row-main">
+                  <div class="field diagnosis-search-field">
+                    <label>Chẩn đoán điều dưỡng</label>
+                    <input type="search" value="${h(row.diagnosisQuery || row.diagnosis || "")}" placeholder="Gõ keyword tìm chẩn đoán..." data-dx-query="${index}" ${inputNextAttrs("search")} />
+                    ${diagnosisOptions.length ? `
+                      <div class="suggestion-list">
+                        ${diagnosisOptions.map((item) => `
+                          <button type="button" data-dx-suggestion="${index}" data-value="${h(item.diagnosis)}">${h(item.diagnosis)}</button>
+                        `).join("")}
+                      </div>
+                    ` : ""}
                   </div>
-                  <div class="field">
-                    <label>Mục tiêu</label>
-                    <textarea data-dx-field="${index}:goal">${h(row.goal)}</textarea>
-                  </div>
+                  <button class="remove-row-btn" data-action="remove-diagnosis" data-index="${index}" aria-label="Xóa chẩn đoán">Xóa</button>
                 </div>
-                <button class="remove-row-btn" data-action="remove-diagnosis" data-index="${index}" aria-label="Xóa gợi ý">Xóa</button>
+                <div class="diagnosis-goals">
+                  ${goals.map((goal, goalIndex) => {
+                    const goalKey = `${index}:${goalIndex}`;
+                    const goalOptions = state.activeGoalSuggest === goalKey ? filteredGoalOptions(row, goal) : [];
+                    return `
+                      <div class="diagnosis-goal-block">
+                        <div class="field diagnosis-search-field">
+                          <label>Mục tiêu ${goalIndex + 1}</label>
+                          <input type="search" value="${h(goal)}" placeholder="Gõ keyword tìm mục tiêu..." data-goal-query="${goalKey}" ${inputNextAttrs("search")} />
+                          ${goalOptions.length ? `
+                            <div class="suggestion-list">
+                              ${goalOptions.map((option) => `
+                                <button type="button" data-goal-suggestion="${goalKey}" data-value="${h(option)}">${h(option)}</button>
+                              `).join("")}
+                            </div>
+                          ` : ""}
+                        </div>
+                        ${goals.length > 1 ? `<button class="remove-row-btn" data-action="remove-goal" data-index="${index}" data-goal-index="${goalIndex}" aria-label="Xóa mục tiêu">Xóa</button>` : ""}
+                      </div>
+                    `;
+                  }).join("")}
+                </div>
+                <button class="btn diagnosis-add-goal-btn" data-action="add-goal" data-index="${index}">Thêm mục tiêu</button>
               </div>
-            `,
+            `;
+              },
             )
             .join("")}
         </div>
@@ -1387,31 +2131,55 @@ function renderInterventionPanel() {
         <span class="step-badge">4</span>
       </div>
       <div class="panel-body">
-        <div class="intervention-grid">
-          ${state.interventionRows
-            .map(
-              (row, index) => `
-              <div class="intervention-item">
-                <input type="checkbox" ${row.selected ? "checked" : ""} data-iv-selected="${index}" />
-                <div>
-                  <span class="code-pill">${h(row.code)}</span>
-                  <div class="two-col">
-                    <div class="field">
+        ${state.interventionRows.length ? `
+          <div class="intervention-grid">
+            ${state.interventionRows
+              .map(
+                (row, index) => {
+                  const codeOptions = state.activeInterventionSuggest === `code:${index}`
+                    ? filteredInterventionOptions(row.code, "code")
+                    : [];
+                  const contentOptions = state.activeInterventionSuggest === `content:${index}`
+                    ? filteredInterventionOptions(row.content, "content")
+                    : [];
+                  return `
+                <div class="intervention-item">
+                  <div class="intervention-row-fields">
+                    <div class="field intervention-search-field intervention-code-field">
                       <label>Mã can thiệp</label>
-                      <input value="${h(row.code)}" data-iv-field="${index}:code" />
+                      <input value="${h(row.code)}" placeholder="Nhập mã..." data-iv-code-query="${index}" ${inputNextAttrs()} />
+                      ${codeOptions.length ? `
+                        <div class="suggestion-list">
+                          ${codeOptions.map((item) => `
+                            <button type="button" data-iv-suggestion="${index}" data-code="${h(item.code)}" data-content="${h(item.name)}">
+                              <strong>${h(item.code)}</strong> - ${h(item.name)}
+                            </button>
+                          `).join("")}
+                        </div>
+                      ` : ""}
                     </div>
-                    <div class="field">
+                    <div class="field intervention-search-field">
                       <label>Nội dung can thiệp</label>
-                    <textarea data-iv-field="${index}:content">${h(row.content)}</textarea>
+                      <input value="${h(row.content)}" placeholder="Nhập nội dung..." data-iv-content-query="${index}" ${inputNextAttrs()} />
+                      ${contentOptions.length ? `
+                        <div class="suggestion-list">
+                          ${contentOptions.map((item) => `
+                            <button type="button" data-iv-suggestion="${index}" data-code="${h(item.code)}" data-content="${h(item.name)}">
+                              <strong>${h(item.code)}</strong> - ${h(item.name)}
+                            </button>
+                          `).join("")}
+                        </div>
+                      ` : ""}
                     </div>
                   </div>
+                  <button class="remove-row-btn" data-action="remove-intervention" data-index="${index}" aria-label="Xóa gợi ý">Xóa</button>
                 </div>
-                <button class="remove-row-btn" data-action="remove-intervention" data-index="${index}" aria-label="Xóa gợi ý">Xóa</button>
-              </div>
-            `,
-            )
-            .join("")}
-        </div>
+              `;
+                },
+              )
+              .join("")}
+          </div>
+        ` : ""}
         <button class="btn" style="margin-top: 12px;" data-action="add-intervention">Thêm can thiệp tùy chọn</button>
       </div>
     </section>
@@ -1459,8 +2227,11 @@ function renderSheet(condition) {
     .forEach((id) => {
       if (state.assessmentEdits[id]) assessments.push(state.assessmentEdits[id]);
     });
-  const diagnoses = state.diagnosisRows.filter((row) => row.selected && (row.diagnosis || row.goal));
-  const interventions = state.interventionRows.filter((row) => row.selected && row.content);
+  const diagnoses = selectedCareDiagnoses().map((row) => ({
+    diagnosis: row.diagnosis,
+    goal: row.goals.join("\n"),
+  }));
+  const interventions = selectedCareInterventions();
   
   // Build comprehensive assessment sections for sheet
   const sheetSections = buildAssessmentSectionsForSheet();
@@ -1498,6 +2269,326 @@ function renderSheet(condition) {
   `;
 }
 
+function selectedCareDiagnoses() {
+  return state.diagnosisRows
+    .map((row) => ({
+      diagnosis: cleanLine(row.diagnosis),
+      goals: (Array.isArray(row.goals) ? row.goals : row.goal ? [row.goal] : [])
+        .map(cleanLine)
+        .filter(Boolean)
+        .filter((value, index, values) => values.indexOf(value) === index),
+    }))
+    .filter((row) => row.diagnosis || row.goals.length);
+}
+
+function selectedCareInterventions() {
+  return state.interventionRows
+    .filter((row) => row.selected && (cleanLine(row.code) || cleanLine(row.content)))
+    .map((row) => ({
+      code: cleanLine(row.code),
+      content: cleanLine(row.content),
+    }));
+}
+
+function handoverPayload() {
+  const check = state.assessmentChecklist;
+  return {
+    handoverMedicineHalf: check.handoverMedicineHalf,
+    handoverLab: check.handoverLab,
+    handoverWaitLab: check.handoverWaitLab,
+    handoverFilm: check.handoverFilm,
+    handoverWaitFilm: check.handoverWaitFilm,
+    handoverDressing: check.handoverDressing,
+    handoverDrain: check.handoverDrain,
+    handoverVitals: check.handoverVitals,
+    handoverUrine: check.handoverUrine,
+    handoverTube: check.handoverTube,
+    handoverOther: check.handoverOther,
+  };
+}
+
+async function saveCareSheetToSupabase() {
+  const client = getSupabaseClient();
+  const selected = patients[state.selectedPatientIndex] || patients[0];
+  const condition = currentCondition();
+  const department = currentDepartment();
+  const category = currentCategory();
+  const diagnoses = selectedCareDiagnoses();
+  const interventions = selectedCareInterventions();
+  const evalTime = state.assessmentChecklist.evalTime || currentVietnamDateTimeInput();
+  const editingSheetId = state.editingCareSheetId;
+  state.assessmentChecklist.fluidBalance = calculateFluidBalance(
+    state.assessmentChecklist.fluidIn,
+    state.assessmentChecklist.fluidOut,
+  );
+
+  const patientPayload = {
+    ma_benh_nhan: selected.code,
+    ho_ten: selected.name,
+    tuoi: selected.age,
+    gioi_tinh: selected.sex,
+    phong: selected.room,
+    giuong: selected.bed || null,
+    khoa: department.ten_khoa,
+    chan_doan_y_khoa: condition.ten_mat_benh,
+  };
+
+  const { data: existingPatient, error: findPatientError } = await client
+    .from("dsbn")
+    .select("id")
+    .eq("ma_benh_nhan", selected.code)
+    .maybeSingle();
+  if (findPatientError) throw findPatientError;
+
+  let patientId = existingPatient?.id;
+  if (patientId) {
+    const { error } = await client.from("dsbn").update(patientPayload).eq("id", patientId);
+    if (error) throw error;
+  } else {
+    const { data, error } = await client.from("dsbn").insert(patientPayload).select("id").single();
+    if (error) throw error;
+    patientId = data.id;
+  }
+
+  const sheetPayload = {
+    benh_nhan_id: patientId,
+    cap_cham_soc: state.careLevel,
+    thoi_gian_danh_gia: evalTime,
+    nguoi_danh_gia: state.assessmentChecklist.evaluator,
+    nhan_dinh_json: {
+      checklist: state.assessmentChecklist,
+      sections: buildAssessmentSectionsForSheet(),
+      category: category.ten_nhom,
+      department: department.ten_khoa,
+      condition: condition.ten_mat_benh,
+    },
+    chan_doan_muc_tieu_json: diagnoses,
+    can_thiep_json: interventions,
+    ban_giao_json: handoverPayload(),
+    thang_diem_json: state.scaleResults,
+  };
+
+  let sheetId = editingSheetId;
+  if (editingSheetId) {
+    const { error: sheetError } = await client
+      .from("danh_sach_phieu_cs")
+      .update(sheetPayload)
+      .eq("id", editingSheetId);
+    if (sheetError) throw sheetError;
+  } else {
+    const { data: sheet, error: sheetError } = await client
+      .from("danh_sach_phieu_cs")
+      .insert({
+        ...sheetPayload,
+        ma_phieu: `CS-${Date.now()}`,
+      })
+      .select("id")
+      .single();
+    if (sheetError) throw sheetError;
+    sheetId = sheet.id;
+  }
+
+  await syncCareSheetGoals(client, sheetId, diagnoses, evalTime);
+
+  return sheetId;
+}
+
+async function syncCareSheetGoals(client, sheetId, diagnoses, evalTime) {
+  const goalRows = diagnoses.flatMap((row) =>
+    row.goals.map((goal) => ({
+      phieu_cs_id: sheetId,
+      thoi_gian_dat_muc_tieu: evalTime,
+      muc_tieu: goal,
+    })),
+  );
+
+  if (!state.editingCareSheetId) {
+    if (goalRows.length) {
+      const { error } = await client.from("danh_gia_ket_qua").insert(goalRows);
+      if (error) throw error;
+    }
+    return;
+  }
+
+  const { data: existingGoals, error: loadGoalsError } = await client
+    .from("danh_gia_ket_qua")
+    .select("id, muc_tieu")
+    .eq("phieu_cs_id", sheetId)
+    .order("id", { ascending: true });
+  if (loadGoalsError) throw loadGoalsError;
+
+  const usedGoalIds = new Set();
+  const rowsToInsert = [];
+  for (const row of goalRows) {
+    const matched = (existingGoals || []).find(
+      (item) => !usedGoalIds.has(item.id) && cleanLine(item.muc_tieu) === cleanLine(row.muc_tieu),
+    );
+    if (matched) {
+      usedGoalIds.add(matched.id);
+      const { error } = await client
+        .from("danh_gia_ket_qua")
+        .update({ thoi_gian_dat_muc_tieu: evalTime, muc_tieu: row.muc_tieu })
+        .eq("id", matched.id);
+      if (error) throw error;
+    } else {
+      rowsToInsert.push(row);
+    }
+  }
+
+  const removedGoalIds = (existingGoals || [])
+    .filter((item) => !usedGoalIds.has(item.id))
+    .map((item) => item.id);
+  if (removedGoalIds.length) {
+    const { error } = await client.from("danh_gia_ket_qua").delete().in("id", removedGoalIds);
+    if (error) throw error;
+  }
+  if (rowsToInsert.length) {
+    const { error } = await client.from("danh_gia_ket_qua").insert(rowsToInsert);
+    if (error) throw error;
+  }
+}
+
+async function updateGoalEvaluation(goalId, evalValue) {
+  if (!isSupabaseConfigured()) {
+    alert("Chưa cấu hình Supabase");
+    return;
+  }
+
+  try {
+    const currentTime = currentVietnamDateTimeInput(true);
+    const { error } = await supabaseClient
+      .from("danh_gia_ket_qua")
+      .update({
+        danh_gia: evalValue,
+        thoi_gian_ket_thuc_muc_tieu: currentTime,
+      })
+      .eq("id", goalId);
+
+    if (error) throw error;
+
+    // Update local state
+    const goalItem = state.careGoalEvaluations.find((item) => String(item.id) === String(goalId));
+    if (goalItem) {
+      goalItem.danh_gia = evalValue;
+      goalItem.thoi_gian_ket_thuc_muc_tieu = currentTime;
+    }
+
+    render();
+  } catch (error) {
+    alert(`Không cập nhật được đánh giá: ${error.message || error}`);
+  }
+}
+
+async function loadCareSheetsForSelectedPatient(force = false) {
+  const selected = patients[state.selectedPatientIndex] || patients[0];
+  if (!selected?.code) return;
+  if (!force && (state.careSheetsLoading || state.careSheetsLoadedFor === selected.code)) return;
+
+  state.careSheetsLoading = true;
+  state.careSheetsError = "";
+  state.careSheetsLoadedFor = selected.code;
+
+  if (!isSupabaseConfigured()) {
+    state.careSheets = [];
+    state.careSheetsLoading = false;
+    state.careSheetsError = "Chưa cấu hình Supabase nên chưa tải được danh sách phiếu.";
+    setTimeout(() => {
+      if (state.screen === "careEmpty") render();
+    }, 0);
+    return;
+  }
+
+  try {
+    const client = getSupabaseClient();
+    const { data: patient, error: patientError } = await client
+      .from("dsbn")
+      .select("id")
+      .eq("ma_benh_nhan", selected.code)
+      .maybeSingle();
+    if (patientError) throw patientError;
+
+    if (!patient) {
+      state.careSheets = [];
+      return;
+    }
+
+    const { data, error } = await client
+      .from("danh_sach_phieu_cs")
+      .select("id, ma_phieu, cap_cham_soc, thoi_gian_danh_gia, nguoi_danh_gia, nhan_dinh_json, chan_doan_muc_tieu_json, can_thiep_json, ban_giao_json, thang_diem_json, created_at")
+      .eq("benh_nhan_id", patient.id)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    state.careSheets = data || [];
+  } catch (error) {
+    state.careSheets = [];
+    state.careSheetsError = `Không tải được danh sách phiếu: ${error.message || error}`;
+  } finally {
+    state.careSheetsLoading = false;
+    if (state.screen === "careEmpty") render();
+  }
+}
+
+async function loadCareGoalEvaluationsForSelectedPatient(force = false) {
+  const selected = patients[state.selectedPatientIndex] || patients[0];
+  if (!selected?.code) return;
+  if (!force && (state.careGoalEvaluationsLoading || state.careGoalEvaluationsLoadedFor === selected.code)) return;
+
+  state.careGoalEvaluationsLoading = true;
+  state.careGoalEvaluationsError = "";
+  state.careGoalEvaluationsLoadedFor = selected.code;
+
+  if (!isSupabaseConfigured()) {
+    state.careGoalEvaluations = [];
+    state.careGoalEvaluationsLoading = false;
+    state.careGoalEvaluationsError = "Chưa cấu hình Supabase nên chưa tải được mục tiêu chăm sóc.";
+    setTimeout(() => {
+      if (state.screen === "careEvaluation") render();
+    }, 0);
+    return;
+  }
+
+  try {
+    const client = getSupabaseClient();
+    const { data: patient, error: patientError } = await client
+      .from("dsbn")
+      .select("id")
+      .eq("ma_benh_nhan", selected.code)
+      .maybeSingle();
+    if (patientError) throw patientError;
+
+    if (!patient) {
+      state.careGoalEvaluations = [];
+      return;
+    }
+
+    const { data: sheets, error: sheetsError } = await client
+      .from("danh_sach_phieu_cs")
+      .select("id")
+      .eq("benh_nhan_id", patient.id);
+    if (sheetsError) throw sheetsError;
+
+    const sheetIds = (sheets || []).map((sheet) => sheet.id);
+    if (!sheetIds.length) {
+      state.careGoalEvaluations = [];
+      return;
+    }
+
+    const { data, error } = await client
+      .from("danh_gia_ket_qua")
+      .select("id, phieu_cs_id, thoi_gian_dat_muc_tieu, muc_tieu, danh_gia, thoi_gian_ket_thuc_muc_tieu")
+      .in("phieu_cs_id", sheetIds)
+      .order("thoi_gian_dat_muc_tieu", { ascending: false });
+    if (error) throw error;
+    state.careGoalEvaluations = data || [];
+  } catch (error) {
+    state.careGoalEvaluations = [];
+    state.careGoalEvaluationsError = `Không tải được mục tiêu chăm sóc: ${error.message || error}`;
+  } finally {
+    state.careGoalEvaluationsLoading = false;
+    if (state.screen === "careEvaluation") render();
+  }
+}
+
 function assessmentChecklistSummary() {
   const labels = {
     evalTime: "Thời gian đánh giá",
@@ -1513,6 +2604,7 @@ function assessmentChecklistSummary() {
     mucosa: "Da niêm mạc",
     edema: "Phù",
     breathingMode: "Hô hấp",
+    ventilationAirway: "Đường thở",
     oxygenFlow: "Lưu lượng oxy",
     ventilatorMode: "Mode thở máy",
     fio2: "FiO2",
@@ -1527,8 +2619,18 @@ function assessmentChecklistSummary() {
     urineAmount: "Số lượng nước tiểu",
     nutritionType: "Dinh dưỡng",
     menu: "Thực đơn",
+    mobilityAbility: "Khả năng vận động",
+    muscleStrength: "Tình trạng cơ lực",
+    movementStatus: "Tình trạng vận động",
+    treatmentEducation: "Hướng dẫn điều trị",
+    careEducation: "Hướng dẫn chăm sóc",
+    preventionEducation: "Giáo dục phòng bệnh",
     circulationNote: "Tuần hoàn",
     respiratoryNote: "Ghi chú hô hấp",
+    neuroConsciousness: "Ý thức",
+    neuroOrientation: "Định hướng",
+    neuroBehavior: "Tri giác - hành vi",
+    neuroFocalSigns: "Dấu hiệu thần kinh khu trú",
     diseasedOrgan: "Cơ quan bệnh",
     handoverOther: "Bàn giao khác",
   };
@@ -1576,34 +2678,39 @@ function assessmentChecklistSummary() {
 }
 
 function buildAssessmentSectionsForSheet() {
-  if (state.assessmentTemplate?.assessment?.length) {
-    return buildTemplateAssessmentSectionsForSheet(state.assessmentTemplate.assessment);
-  }
-
   const check = state.assessmentChecklist;
   const sections = [];
   
   const sectionGroups = {
-    "A. Dấu hiệu sinh tồn": ["pulse", "temperature", "bloodPressure", "respiratoryRate", "spo2", "weight", "height", "bmi"],
-    "B. Toàn thân": ["bodyType", "consciousness", "mucosa", "edema"],
-    "C. Hô hấp": ["breathingMode", "oxygenFlow", "ventilatorMode", "fio2", "peep", "vt", "respiratoryNote"],
-    "D. Tuần hoàn": ["circulationStable", "circulationFastPulse", "circulationHypotension", "circulationShock", "circulationVasopressor", "vasopressorNoradrenaline", "vasopressorAdrenaline", "vasopressorDobutamine", "vasopressorVasopressin", "vasopressorOther", "circulationNote"],
-    "E. Tiêu hóa": ["abdomen", "stool"],
-    "F. Tiết niệu": ["urinary", "urineAmount"],
-    "G. Dinh dưỡng": ["nutritionType", "menu"],
-    "H. Bàn giao": ["handoverMedicineHalf", "handoverLab", "handoverWaitLab", "handoverFilm", "handoverWaitFilm", "handoverDressing", "handoverDrain", "handoverVitals", "handoverUrine", "handoverTube", "handoverOther"],
-    "I. Khác": ["diseasedOrgan"],
-    "J. Thang điểm đánh giá": ["fallRiskAssessment", "vteRiskAssessment", "painAssessment", "pressureUlcerRiskAssessment", "glasgowAssessment"]
+    "A. Thông tin người bệnh": ["evalTime", "evaluator", "height", "weight", "bmi", "allergy", "allergy_note"],
+    ...(state.careLevel === "1" ? { "B. Theo dõi dịch": ["fluidIn", "fluidOut", "fluidBalance"] } : {}),
+    "C. Dấu hiệu sinh tồn": ["pulse", "temperature", "bloodPressure", "spo2"],
+    "D. Toàn thân": ["bodyType", "consciousness", "mucosa", "edema", "systemicNote"],
+    "E. Hô hấp": ["breathingMode", "respiratoryRate", "respiratoryNote", "oxygenFlow", "ventilationAirway", "ventilatorMode", "fio2", "peep", "vt"],
+    "F. Tuần hoàn": ["circulationStable", "circulationFastPulse", "circulationHypotension", "circulationShock", "circulationVasopressor", "vasopressorNoradrenaline", "vasopressorAdrenaline", "vasopressorDobutamine", "vasopressorVasopressin", "vasopressorOther", "circulationNote"],
+    "G. Thần kinh cảm giác": ["neuroConsciousness", "neuroOrientation", "neuroBehavior", "neuroFocalSigns"],
+    "H. Tiêu hóa": ["abdomen", "stool"],
+    "I. Bài tiết": ["urinary", "urineAmount"],
+    "J. Dinh dưỡng": ["nutritionType", "menu"],
+    "K. Vận động/Phục hồi chức năng": ["mobilityAbility", "muscleStrength", "movementStatus"],
+    "L. Giáo dục sức khỏe": ["treatmentEducation", "careEducation", "preventionEducation"],
+    "M. Cơ quan bị bệnh": ["diseasedOrgan"],
+    "N. Thang điểm đánh giá": ["fallRiskAssessment", "vteRiskAssessment", "painAssessment", "pressureUlcerRiskAssessment", "glasgowAssessment"],
+    "O. Bàn giao": ["handoverMedicineHalf", "handoverLab", "handoverWaitLab", "handoverFilm", "handoverWaitFilm", "handoverDressing", "handoverDrain", "handoverVitals", "handoverUrine", "handoverTube", "handoverOther"]
   };
   
   const labels = {
-    pulse: "Mạch", temperature: "Nhiệt độ", bloodPressure: "Huyết áp", weight: "Cân nặng", height: "Chiều cao", bmi: "BMI",
-    bodyType: "Thể trạng", consciousness: "Ý thức", mucosa: "Da niêm mạc", edema: "Phù",
-    breathingMode: "Hô hấp", oxygenFlow: "Lưu lượng oxy", ventilatorMode: "Mode thở máy", fio2: "FiO2", peep: "PEEP", vt: "VT", respiratoryNote: "Ghi chú",
+    evalTime: "Thời gian đánh giá", evaluator: "Người đánh giá", height: "Chiều cao", weight: "Cân nặng", bmi: "BMI", allergy: "Dị ứng", allergy_note: "Thông tin dị ứng",
+    fluidIn: "Dịch vào", fluidOut: "Dịch ra", fluidBalance: "Bilance",
+    pulse: "Mạch", temperature: "Nhiệt độ", bloodPressure: "Huyết áp", spo2: "SpO2",
+    bodyType: "Thể trạng", consciousness: "Ý thức", mucosa: "Da niêm mạc", edema: "Phù", systemicNote: "Ghi chú",
+    breathingMode: "Hô hấp", respiratoryRate: "Nhịp thở", respiratoryNote: "Ghi chú", oxygenFlow: "Lưu lượng oxy", ventilationAirway: "Đường thở", ventilatorMode: "Mode thở máy", fio2: "FiO2", peep: "PEEP", vt: "VT",
     circulationStable: "Ổn định", circulationFastPulse: "Mạch nhanh", circulationHypotension: "Hạ huyết áp", circulationShock: "Sốc", circulationVasopressor: "Có vận mạch", vasopressorNoradrenaline: "Noradrenaline", vasopressorAdrenaline: "Adrenaline", vasopressorDobutamine: "Dobutamine", vasopressorVasopressin: "Vasopressin", vasopressorOther: "Khác", circulationNote: "Ghi chú",
+    neuroSensory: "Thần kinh cảm giác", neuroConsciousness: "Ý thức", neuroOrientation: "Định hướng", neuroBehavior: "Tri giác - hành vi", neuroFocalSigns: "Dấu hiệu thần kinh khu trú",
     abdomen: "Bụng", stool: "Đại tiện",
-    urinary: "Tiểu tiện", urineAmount: "Số lượng",
+    urinary: "Bài tiết nước tiểu", urineAmount: "Số lượng nước tiểu",
     nutritionType: "Loại", menu: "Thực đơn",
+    mobilityAbility: "Khả năng vận động", muscleStrength: "Tình trạng cơ lực", movementStatus: "Tình trạng vận động", mobilityRehab: "Vận động/PHCN", treatmentEducation: "Hướng dẫn điều trị", careEducation: "Hướng dẫn chăm sóc", preventionEducation: "Giáo dục phòng bệnh", healthEducation: "Giáo dục sức khỏe",
     handoverMedicineHalf: "Thuốc còn 1/2", handoverLab: "Lấy xét nghiệm", handoverWaitLab: "Chờ xét nghiệm", handoverFilm: "Lấy phim", handoverWaitFilm: "Chờ phim", handoverDressing: "Thay băng", handoverDrain: "Theo dõi dẫn lưu", handoverVitals: "Theo dõi DHST", handoverUrine: "Theo dõi nước tiểu", handoverTube: "Chăm sóc sonde", handoverOther: "Khác",
     diseasedOrgan: "Cơ quan bị bệnh",
     fallRiskAssessment: "Đánh giá nguy cơ té ngã",
@@ -1628,6 +2735,8 @@ function buildAssessmentSectionsForSheet() {
         }
       } else if (Array.isArray(value)) {
         items.push(`${labels[field] || field}: ${value.join(", ")}`);
+      } else if (field === "allergy") {
+        items.push(`${labels[field]}: ${value === "yes" ? "Có" : "Không"}`);
       } else if (typeof value === "string" && value.trim()) {
         items.push(`${labels[field] || field}: ${value}`);
       }
@@ -1769,6 +2878,15 @@ app.addEventListener("click", (event) => {
 
   if (target.dataset.patientIndex) {
     state.selectedPatientIndex = Number(target.dataset.patientIndex);
+    state.careSheets = [];
+    state.careSheetsLoadedFor = "";
+    state.careSheetsError = "";
+    state.careGoalEvaluations = [];
+    state.careGoalEvaluationsLoadedFor = "";
+    state.careGoalEvaluationsError = "";
+    state.editingCareSheetId = null;
+    state.selectedCareSheetId = null;
+    resetCareFormState({ resetChecklist: true });
     state.screen = "record";
     render();
     return;
@@ -1788,8 +2906,33 @@ app.addEventListener("click", (event) => {
 
   if (target.dataset.action === "create-care") {
     state.hasCareSheet = true;
+    state.editingCareSheetId = null;
+    state.selectedCareSheetId = null;
     state.screen = "careForm";
+    resetForCondition({ resetChecklist: true });
+    return;
+  }
+
+  if (target.dataset.action === "evaluate-results") {
+    state.screen = "careEvaluation";
     render();
+    return;
+  }
+
+  if (target.dataset.action === "view-care-sheet") {
+    state.selectedCareSheetId = target.dataset.sheetId;
+    state.screen = "careDetail";
+    render();
+    return;
+  }
+
+  if (target.dataset.action === "edit-care-sheet") {
+    const sheet = state.careSheets.find((item) => String(item.id) === String(target.dataset.sheetId));
+    if (!sheet) {
+      alert("Không tìm thấy phiếu chăm sóc để sửa.");
+      return;
+    }
+    hydrateCareFormFromSheet(sheet);
     return;
   }
 
@@ -1830,6 +2973,44 @@ app.addEventListener("click", (event) => {
     return;
   }
 
+  if (target.dataset.dxSuggestion) {
+    const row = state.diagnosisRows[Number(target.dataset.dxSuggestion)];
+    if (row) {
+      row.diagnosis = target.dataset.value || "";
+      row.diagnosisQuery = row.diagnosis;
+      row.goalQuery = "";
+      state.activeDiagnosisSuggest = null;
+      state.activeGoalSuggest = null;
+      if (!Array.isArray(row.goals)) row.goals = row.goal ? [row.goal] : [];
+    }
+    render();
+    return;
+  }
+
+  if (target.dataset.goalSuggestion) {
+    const [rowIndex, goalIndex] = target.dataset.goalSuggestion.split(":").map(Number);
+    const row = state.diagnosisRows[rowIndex];
+    const goal = cleanLine(target.dataset.value);
+    if (row && goal) {
+      if (!Array.isArray(row.goals)) row.goals = row.goal ? [row.goal] : [];
+      row.goals[goalIndex] = goal;
+      state.activeGoalSuggest = null;
+    }
+    render();
+    return;
+  }
+
+  if (target.dataset.ivSuggestion) {
+    const row = state.interventionRows[Number(target.dataset.ivSuggestion)];
+    applyInterventionOption(row, {
+      code: target.dataset.code || "",
+      name: target.dataset.content || "",
+    });
+    state.activeInterventionSuggest = null;
+    render();
+    return;
+  }
+
   if (target.dataset.action === "add-assessment") {
     const id = `custom-assessment-${Date.now()}`;
     state.selectedAssessments.add(id);
@@ -1839,19 +3020,40 @@ app.addEventListener("click", (event) => {
   }
 
   if (target.dataset.action === "add-diagnosis") {
-    state.diagnosisRows.push({ id: `dx-${Date.now()}`, selected: true, diagnosis: "", goal: "" });
+    state.diagnosisRows.push(createDiagnosisRow());
     render();
     return;
   }
 
   if (target.dataset.action === "remove-diagnosis") {
     state.diagnosisRows.splice(Number(target.dataset.index), 1);
+    if (!state.diagnosisRows.length) state.diagnosisRows.push(createDiagnosisRow());
+    render();
+    return;
+  }
+
+  if (target.dataset.action === "add-goal") {
+    const row = state.diagnosisRows[Number(target.dataset.index)];
+    if (row) {
+      if (!Array.isArray(row.goals)) row.goals = row.goal ? [row.goal] : [];
+      row.goals.push("");
+      state.activeGoalSuggest = `${target.dataset.index}:${row.goals.length - 1}`;
+    }
+    render();
+    return;
+  }
+
+  if (target.dataset.action === "remove-goal") {
+    const row = state.diagnosisRows[Number(target.dataset.index)];
+    if (row && Array.isArray(row.goals)) {
+      row.goals.splice(Number(target.dataset.goalIndex), 1);
+    }
     render();
     return;
   }
 
   if (target.dataset.action === "add-intervention") {
-    state.interventionRows.push({ id: `iv-${Date.now()}`, selected: true, code: "CS-T999", content: "" });
+    state.interventionRows.push({ id: `iv-${Date.now()}`, selected: true, code: "", content: "" });
     render();
     return;
   }
@@ -1867,6 +3069,35 @@ app.addEventListener("click", (event) => {
     state.assessmentEdits = {};
     state.patient = { ...state.patient, name: "", code: "", age: "", sex: "", room: "", bed: "", department: "", diagnosis: "" };
     resetForCondition();
+    return;
+  }
+
+  if (target.dataset.action === "set-goal-evaluation") {
+    const goalId = target.dataset.goalId;
+    const evalValue = target.dataset.evalValue;
+    if (goalId && evalValue) {
+      updateGoalEvaluation(goalId, evalValue);
+    }
+    return;
+  }
+
+  if (target.dataset.action === "save-care") {
+    const originalText = target.textContent;
+    target.disabled = true;
+    target.textContent = "Đang lưu...";
+    saveCareSheetToSupabase()
+      .then((sheetId) => {
+        state.careSheetsLoadedFor = "";
+        state.careGoalEvaluationsLoadedFor = "";
+        alert(`${state.editingCareSheetId ? "Đã cập nhật" : "Đã lưu"} phiếu chăm sóc #${sheetId}`);
+      })
+      .catch((error) => {
+        alert(`Không lưu được phiếu: ${error.message || error}`);
+      })
+      .finally(() => {
+        target.disabled = false;
+        target.textContent = originalText;
+      });
     return;
   }
 
@@ -1924,6 +3155,19 @@ app.addEventListener("click", (event) => {
   }
 });
 
+app.addEventListener("keydown", (event) => {
+  const target = event.target;
+  if (!target.closest?.(".form-mode")) return;
+  const isEditableInput = target.matches?.(
+    'input:not([type="checkbox"]):not([type="radio"]):not([readonly]):not([disabled]), textarea:not([readonly]):not([disabled])',
+  );
+  if (!isEditableInput) return;
+
+  if (event.key === "Enter" && !event.ctrlKey && !event.altKey && !event.metaKey && !event.shiftKey) {
+    if (focusNextCareInput(target)) event.preventDefault();
+  }
+});
+
 app.addEventListener("input", (event) => {
   const target = event.target;
   if (target.dataset.input === "search") {
@@ -1942,19 +3186,79 @@ app.addEventListener("input", (event) => {
     return;
   }
 
+  if (target.dataset.dxQuery) {
+    const row = state.diagnosisRows[Number(target.dataset.dxQuery)];
+    if (row) {
+      row.diagnosisQuery = target.value;
+      row.diagnosis = target.value;
+      state.activeDiagnosisSuggest = Number(target.dataset.dxQuery);
+      state.activeGoalSuggest = null;
+      render(`[data-dx-query="${target.dataset.dxQuery}"]`);
+    }
+    return;
+  }
+
+  if (target.dataset.goalQuery) {
+    const [rowIndex, goalIndex] = target.dataset.goalQuery.split(":").map(Number);
+    const row = state.diagnosisRows[rowIndex];
+    if (row) {
+      if (!Array.isArray(row.goals)) row.goals = row.goal ? [row.goal] : [];
+      row.goals[goalIndex] = target.value;
+      state.activeGoalSuggest = target.dataset.goalQuery;
+      state.activeDiagnosisSuggest = null;
+      render(`[data-goal-query="${target.dataset.goalQuery}"]`);
+    }
+    return;
+  }
+
+  if (target.dataset.ivCodeQuery) {
+    const row = state.interventionRows[Number(target.dataset.ivCodeQuery)];
+    if (row) {
+      row.code = target.value;
+      row.selected = true;
+      const matched = findInterventionByCode(target.value);
+      if (matched) row.content = matched.name;
+      state.activeInterventionSuggest = matched ? null : `code:${target.dataset.ivCodeQuery}`;
+      render(`[data-iv-code-query="${target.dataset.ivCodeQuery}"]`);
+    }
+    return;
+  }
+
+  if (target.dataset.ivContentQuery) {
+    const row = state.interventionRows[Number(target.dataset.ivContentQuery)];
+    if (row) {
+      row.content = target.value;
+      row.selected = true;
+      const matched = findInterventionByName(target.value);
+      if (matched) row.code = matched.code;
+      state.activeInterventionSuggest = matched ? null : `content:${target.dataset.ivContentQuery}`;
+      render(`[data-iv-content-query="${target.dataset.ivContentQuery}"]`);
+    }
+    return;
+  }
+
   if (target.dataset.checklist) {
     state.assessmentChecklist[target.dataset.checklist] = target.value;
     if (target.dataset.checklist === "weight" || target.dataset.checklist === "height") {
       const weight = Number(state.assessmentChecklist.weight);
       const height = Number(state.assessmentChecklist.height);
       state.assessmentChecklist.bmi = weight > 0 && height > 0 ? (weight / (height / 100) ** 2).toFixed(1) : "";
+      const bmiInput = app.querySelector('[data-checklist="bmi"]');
+      if (bmiInput) bmiInput.value = state.assessmentChecklist.bmi;
+    }
+    if (target.dataset.checklist === "fluidIn" || target.dataset.checklist === "fluidOut") {
+      updateFluidBalanceField();
     }
     return;
   }
 
   if (target.dataset.dxField) {
     const [index, key] = target.dataset.dxField.split(":");
-    state.diagnosisRows[Number(index)][key] = target.value;
+    const row = state.diagnosisRows[Number(index)];
+    if (row) {
+      row[key] = target.value;
+      if (key === "goal") row.goals = target.value ? [target.value] : [];
+    }
     return;
   }
 
@@ -2042,7 +3346,8 @@ app.addEventListener("change", (event) => {
   }
 
   if (target.dataset.dxSelected) {
-    state.diagnosisRows[Number(target.dataset.dxSelected)].selected = target.checked;
+    const row = state.diagnosisRows[Number(target.dataset.dxSelected)];
+    if (row) row.selected = target.checked;
     render();
     return;
   }
@@ -2059,6 +3364,12 @@ app.addEventListener("change", (event) => {
       state.assessmentChecklist.pain_score = "";
       delete state.scaleResults.current_pain;
       delete state.scaleScores.current_pain;
+    }
+    if (target.dataset.checklistRadio === "allergy" && target.value !== "yes") {
+      state.assessmentChecklist.allergy_note = "";
+    }
+    if (target.dataset.checklistRadio === "breathingMode" && target.value !== "Thở máy") {
+      state.assessmentChecklist.ventilationAirway = [];
     }
     render();
     return;
@@ -2077,10 +3388,11 @@ app.addEventListener("change", (event) => {
 
 async function init() {
   try {
-    const [response, scaleResponse, assessmentResponse] = await Promise.all([
+    const [response, scaleResponse, assessmentResponse, interventionCodeResponse] = await Promise.all([
       fetch("./cd_deu_duong.json"),
       fetch("./thangdiem.json"),
       fetch("./nhan_dinh.json"),
+      fetch("./ma_can_thiep.json"),
     ]);
     if (!response.ok) throw new Error(`Khong tai duoc cd_deu_duong.json (${response.status})`);
     state.raw = await response.json();
@@ -2090,6 +3402,9 @@ async function init() {
     }
     if (assessmentResponse.ok) {
       state.assessmentTemplate = deepFix(await assessmentResponse.json());
+    }
+    if (interventionCodeResponse.ok) {
+      state.interventionCatalog = deepFix(await interventionCodeResponse.json());
     }
     state.categoryId = state.data.categories[0].id;
     state.departmentId = state.data.categories[0].khoa[0].id;

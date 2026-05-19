@@ -1,4 +1,11 @@
 :root {
+  --font-system: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  --text-table-header: 12px;
+  --text-table-content: 13px;
+  --text-sidebar: 12px;
+  --text-action: 11px;
+  --text-main-title: 13pt;
+  --text-subtitle: 11px;
   --bg: #f6f8fb;
   --surface: #ffffff;
   --surface-2: #eef5f3;
@@ -22,7 +29,8 @@ body {
   margin: 0;
   background: #f7f7fb;
   color: var(--text);
-  font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+  font-family: var(--font-system);
+  font-size: var(--text-table-content);
   line-height: 1.45;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -545,6 +553,10 @@ button {
   gap: 10px;
 }
 
+.intervention-grid + .btn {
+  margin-top: 12px;
+}
+
 .diagnosis-item,
 .intervention-item {
   display: grid;
@@ -559,6 +571,16 @@ button {
 .diagnosis-item input[type="checkbox"],
 .intervention-item input[type="checkbox"] {
   margin-top: 4px;
+}
+
+.intervention-row-fields {
+  display: grid;
+  grid-template-columns: minmax(140px, 180px) minmax(0, 1fr);
+  gap: 10px;
+}
+
+.intervention-search-field {
+  position: relative;
 }
 
 .two-col {
@@ -1233,6 +1255,458 @@ button {
   font-weight: 800;
 }
 
+.care-list-screen {
+  background: #f3f6fa;
+  min-height: 100vh;
+}
+
+.care-sheet-list-panel {
+  margin: 18px;
+}
+
+.care-list-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.care-list-actions .btn {
+  min-height: 44px;
+  padding: 0 16px;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.compact-empty-care {
+  min-height: 220px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  background: #f8fafc;
+  padding: 26px 18px;
+}
+
+.compact-empty-care .empty-doc-icon {
+  width: 72px;
+  height: 72px;
+  font-size: 32px;
+}
+
+.compact-empty-care h2 {
+  margin-top: 14px;
+  font-size: 20px;
+}
+
+.compact-empty-care p {
+  margin-bottom: 0;
+  font-size: 14px;
+}
+
+.care-list-empty {
+  border: 1px solid #dbe4ee;
+  border-radius: 10px;
+  background: #f8fafc;
+  padding: 18px;
+}
+
+.care-sheet-list {
+  display: grid;
+  gap: 10px;
+}
+
+.care-sheet-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(180px, 0.8fr) minmax(180px, 0.8fr) auto;
+  gap: 12px;
+  border: 1px solid #dbe4ee;
+  border-radius: 10px;
+  background: #fff;
+  padding: 12px;
+}
+
+.care-sheet-row div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.care-sheet-row span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.care-sheet-row strong {
+  min-width: 0;
+  color: #0f172a;
+  overflow-wrap: anywhere;
+}
+
+.care-sheet-row .care-sheet-row-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.goal-evaluation-table {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid #dbe4ee;
+  border-radius: 10px;
+}
+
+.goal-evaluation-head,
+.goal-evaluation-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.9fr) minmax(0, 1.5fr) minmax(140px, 0.8fr) minmax(150px, 0.9fr);
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+}
+
+.goal-evaluation-head {
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.goal-evaluation-row {
+  border-top: 1px solid #dbe4ee;
+  background: #fff;
+}
+
+.goal-evaluation-row strong {
+  color: #0f172a;
+  overflow-wrap: anywhere;
+}
+
+.goal-evaluation-row span {
+  color: #475569;
+  font-size: 13px;
+}
+
+.goal-evaluation-buttons {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.btn-eval {
+  flex: 1;
+  min-width: 60px;
+  padding: 6px 10px;
+  border: 1.5px solid #cbd5e1;
+  background: #fff;
+  color: #475569;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-eval:hover {
+  border-color: #94a3b8;
+  background: #f1f5f9;
+}
+
+.btn-eval.active {
+  background: #10b981;
+  color: #fff;
+  border-color: #10b981;
+}
+
+.goal-evaluation-row em {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-style: normal;
+  font-weight: 800;
+  font-size: 12px;
+}
+
+.goal-evaluation-row em.passed {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.goal-evaluation-row em.failed {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.care-detail-screen {
+  min-height: 100vh;
+  background: #e8edf3;
+}
+
+.report-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 16px 18px 0;
+}
+
+.report-page {
+  max-width: 1080px;
+  margin: 16px auto 32px;
+  border: 1px solid #dbe4ee;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.13);
+  padding: 24px;
+  color: #0f172a;
+}
+
+.report-head {
+  border-bottom: 4px solid #047857;
+  padding-bottom: 16px;
+  text-align: center;
+}
+
+.report-head div {
+  margin-top: 6px;
+  color: #64748b;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.report-head h1 {
+  margin: 0;
+  color: #065f46;
+  font-size: 24px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.report-patient-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 16px;
+  border: 1px solid #a7f3d0;
+  border-radius: 12px;
+  background: #ecfdf5;
+  padding: 16px;
+}
+
+.report-patient-card h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.report-patient-card p {
+  margin: 4px 0 0;
+  color: #334155;
+}
+
+.report-patient-card > span {
+  border-radius: 999px;
+  background: #047857;
+  color: #fff;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.report-section {
+  break-inside: avoid;
+  margin-top: 16px;
+  border: 1px solid #dbe4ee;
+  border-radius: 14px;
+  background: #fff;
+  padding: 16px;
+  box-shadow: 0 5px 14px rgba(15, 23, 42, 0.05);
+}
+
+.report-section h2 {
+  margin: 0 0 12px;
+  border-bottom: 1px solid #dbe4ee;
+  padding-bottom: 8px;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.report-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.report-grid.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.report-grid.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.report-grid.cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+.report-field {
+  display: grid;
+  gap: 4px;
+}
+
+.report-field div {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.report-field span {
+  min-height: 34px;
+  border: 1px solid #dbe4ee;
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 8px 10px;
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.report-check-group {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.report-check-group > strong {
+  font-size: 14px;
+}
+
+.report-check-group > div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.report-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #dbe4ee;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
+.report-check i {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  background: #059669;
+  color: #fff;
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.report-table {
+  overflow: hidden;
+  border: 1px solid #dbe4ee;
+  border-radius: 12px;
+}
+
+.report-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.report-table tr + tr {
+  border-top: 1px solid #dbe4ee;
+}
+
+.report-table td {
+  padding: 10px;
+  vertical-align: top;
+}
+
+.report-table td:first-child {
+  width: 32%;
+  background: #f8fafc;
+  color: #334155;
+  font-weight: 900;
+}
+
+.report-value-list,
+.report-assessment-table {
+  display: grid;
+}
+
+.report-value-list div,
+.report-assessment-table div {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.35fr) minmax(0, 1fr);
+  border: 1px solid #dbe4ee;
+  border-bottom: 0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.report-value-list div:last-child,
+.report-assessment-table div:last-child {
+  border-bottom: 1px solid #dbe4ee;
+}
+
+.report-assessment-table div {
+  border-radius: 0;
+}
+
+.report-assessment-table div:first-child {
+  border-radius: 8px 8px 0 0;
+}
+
+.report-assessment-table div:last-child {
+  border-radius: 0 0 8px 8px;
+}
+
+.report-value-list strong,
+.report-assessment-table strong {
+  border-right: 1px solid #dbe4ee;
+  padding: 9px 12px;
+  color: #334155;
+  font-size: 15px;
+}
+
+.report-value-list span,
+.report-assessment-table span {
+  min-width: 0;
+  padding: 9px 12px;
+  overflow-wrap: anywhere;
+}
+
+.report-assessment-table span {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 34px;
+}
+
+.report-assessment-table em {
+  color: #0f172a;
+  font-style: normal;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.report-signatures {
+  display: grid;
+  grid-template-columns: minmax(220px, 320px);
+  justify-content: end;
+  gap: 32px;
+  padding-top: 32px;
+  text-align: center;
+}
+
+.report-signatures div {
+  display: grid;
+  gap: 56px;
+}
+
 .form-actions {
   position: sticky;
   top: 72px;
@@ -1461,6 +1935,15 @@ button {
   .sheet-meta {
     grid-template-columns: 1fr;
   }
+
+  .goal-evaluation-head,
+  .goal-evaluation-row {
+    grid-template-columns: minmax(120px, 0.6fr) minmax(0, 1.4fr) minmax(100px, 0.6fr);
+  }
+
+  .goal-evaluation-row {
+    gap: 8px;
+  }
 }
 
 @media (max-width: 640px) {
@@ -1654,6 +2137,77 @@ button {
     min-height: calc(100vh - 60px);
   }
 
+  .care-sheet-list-panel {
+    margin: 10px;
+  }
+
+  .care-list-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .care-sheet-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .goal-evaluation-head {
+    display: none;
+  }
+
+  .goal-evaluation-row {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    row-gap: 8px;
+  }
+
+  .goal-evaluation-buttons {
+    width: 100%;
+  }
+
+  .btn-eval {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+  .report-actions {
+    justify-content: stretch;
+    padding: 10px;
+  }
+
+  .report-actions .btn {
+    flex: 1;
+  }
+
+  .report-page {
+    margin: 10px;
+    border-radius: 12px;
+    padding: 14px;
+  }
+
+  .report-patient-card,
+  .report-signatures {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .report-patient-card {
+    display: grid;
+  }
+
+  .report-grid.cols-2,
+  .report-grid.cols-3,
+  .report-grid.cols-4,
+  .report-check-group > div,
+  .report-value-list div,
+  .report-assessment-table div,
+  .report-assessment-table span {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .report-assessment-table strong {
+    border-right: 0;
+    border-bottom: 1px solid #dbe4ee;
+  }
+
   .form-actions {
     position: fixed;
     top: auto;
@@ -1842,6 +2396,25 @@ button {
   gap: 12px;
 }
 
+.care-header-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.care-header-grid .assessment-field:nth-child(1),
+.care-header-grid .assessment-field:nth-child(2) {
+  grid-column: span 3;
+}
+
+.care-header-grid .assessment-field:nth-child(3),
+.care-header-grid .assessment-field:nth-child(4),
+.care-header-grid .assessment-field:nth-child(5) {
+  grid-column: span 2;
+}
+
+.fluid-balance-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .care-info-grid .assessment-field,
 .filter-select-grid .field {
   padding: 0;
@@ -1886,6 +2459,17 @@ button {
   border-color: #059669;
 }
 
+.patient-allergy-block {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.assessment-field input[readonly] {
+  background: #f1f5f9;
+  color: #475569;
+}
+
 .structured-assessment .panel-body {
   display: grid;
   gap: 12px;
@@ -1906,6 +2490,11 @@ button {
   color: #0f172a;
 }
 
+.section-hint {
+  color: #64748b;
+  font-weight: 500;
+}
+
 .compact-form {
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   border: 0;
@@ -1919,6 +2508,59 @@ button {
 
 .compact-form .assessment-full {
   grid-column: 1 / -1;
+}
+
+.vital-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.respiratory-form {
+  grid-template-columns: minmax(120px, 150px) repeat(3, minmax(0, 1fr));
+  align-items: start;
+}
+
+.respiratory-form .assessment-radio {
+  grid-column: 1 / -1;
+}
+
+.respiratory-form .assessment-radio > div {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(max-content, 1fr));
+  gap: 10px;
+}
+
+.respiratory-form .assessment-radio label {
+  white-space: nowrap;
+}
+
+.respiratory-form .assessment-radio label span {
+  overflow-wrap: normal;
+}
+
+.respiratory-form .respiratory-rate-field {
+  grid-column: 1;
+}
+
+.respiratory-form .respiratory-note-field {
+  grid-column: 2 / -1;
+}
+
+.respiratory-form .respiratory-note-field textarea {
+  min-height: 38px;
+}
+
+.respiratory-form .ventilator-setting-field {
+  grid-column: auto;
+}
+
+.mobility-rehab-form {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.mobility-rehab-form .assessment-radio > div {
+  align-items: stretch;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .assessment-template-group {
@@ -1967,8 +2609,97 @@ button {
 
 .diagnosis-item,
 .intervention-item {
-  grid-template-columns: 24px minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
+}
+
+.diagnosis-item {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.diagnosis-row-main,
+.diagnosis-goal-block {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+}
+
+.diagnosis-goal-block {
+  margin-top: 10px;
+}
+
+.diagnosis-goals {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.diagnosis-goals .diagnosis-goal-block {
+  margin-top: 0;
+}
+
+.diagnosis-add-goal-btn {
+  margin-top: 10px;
+  width: fit-content;
+}
+
+.diagnosis-search-field {
+  position: relative;
+}
+
+.suggestion-list {
+  display: grid;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.suggestion-list button {
+  width: 100%;
+  border: 1px solid #dbe4ee;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #1f2937;
+  padding: 8px 10px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.suggestion-list button:hover {
+  border-color: #0f766e;
+  background: #ecfdf5;
+}
+
+.selected-goals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.selected-goals span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  border: 1px solid #c7d2fe;
+  border-radius: 8px;
+  background: #eef2ff;
+  color: #312e81;
+  padding: 6px 9px;
+  font-size: 12px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.selected-goals button {
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  color: #4338ca;
+  font: inherit;
+  cursor: pointer;
 }
 
 .remove-row-btn {
@@ -2077,13 +2808,43 @@ button {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .respiratory-form {
+    grid-template-columns: minmax(120px, 150px) repeat(3, minmax(0, 1fr));
+  }
+
+  .vital-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .care-header-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .fluid-balance-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .mobility-rehab-form {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .respiratory-form .assessment-radio > div {
+    grid-template-columns: repeat(3, minmax(max-content, 1fr));
+  }
+
   .diagnosis-item,
   .intervention-item {
-    grid-template-columns: 24px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .diagnosis-item,
+  .diagnosis-row-main,
+  .diagnosis-goal-block,
+  .intervention-row-fields {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .remove-row-btn {
-    grid-column: 2;
     justify-self: end;
   }
 }
@@ -2111,12 +2872,52 @@ button {
   }
 
   .remove-row-btn {
-    grid-column: 1 / -1;
     justify-self: stretch;
   }
 
   .vital-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .respiratory-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .care-header-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .care-header-grid .assessment-field:nth-child(n) {
+    grid-column: auto;
+  }
+
+  .care-header-grid .assessment-field:nth-child(5) {
+    grid-column: 1 / -1;
+  }
+
+  .fluid-balance-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .fluid-balance-grid .assessment-field:nth-child(3) {
+    grid-column: 1 / -1;
+  }
+
+  .mobility-rehab-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .respiratory-form .assessment-radio > div {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .respiratory-form .assessment-radio label {
+    white-space: normal;
+  }
+
+  .respiratory-form .respiratory-rate-field,
+  .respiratory-form .respiratory-note-field {
+    grid-column: 1 / -1;
   }
 
   .assessment-field-intermittent_catheter-grid,
@@ -2393,6 +3194,96 @@ button {
   color: #fff;
 }
 .scale-modal-actions .btn.primary:hover:not([disabled]) { background: #1d4ed8; }
+
+/* UI typography standard from style.md */
+html,
+body,
+button,
+input,
+textarea,
+select {
+  font-family: var(--font-system);
+}
+
+body {
+  font-size: var(--text-table-content);
+  font-weight: 400;
+}
+
+.rail,
+.rail *,
+.department-list,
+.condition-list,
+.menu-row,
+.menu-row em,
+.condition-btn,
+.department-btn {
+  font-size: var(--text-sidebar);
+}
+
+.panel-title,
+.module-item strong,
+.menu-row strong,
+.report-section h2 {
+  font-size: var(--text-main-title);
+  font-weight: 700;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.panel-subtitle,
+.brand p,
+.condition-btn span,
+.department-btn span,
+.check-row span,
+.report-field div {
+  font-size: var(--text-subtitle);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.btn,
+.btn-eval,
+.pain-score-btn,
+.scale-edit-btn,
+.scale-start-btn,
+.remove-row-btn,
+.step-badge,
+.day-badge,
+.object-pill,
+.scale-score-badge,
+.report-check i,
+.goal-evaluation-row em {
+  font-size: var(--text-action);
+}
+
+.patient-table-head,
+.goal-evaluation-head,
+.report-table td:first-child,
+.report-assessment-table div:first-child,
+.report-field div {
+  font-size: var(--text-table-header);
+  font-weight: 600;
+}
+
+.patient-row,
+.care-sheet-row,
+.goal-evaluation-row,
+.report-table table,
+.report-assessment-table div,
+.report-field span {
+  font-size: var(--text-table-content);
+  font-weight: 400;
+}
+
+.patient-table-head,
+.goal-evaluation-head,
+.report-table caption,
+.table-title {
+  text-align: center;
+  text-transform: uppercase;
+  font-weight: 700;
+}
 
 @media (max-width: 640px) {
   .scale-modal { max-width: 100%; border-radius: 12px; }
