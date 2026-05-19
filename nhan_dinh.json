@@ -1,0 +1,485 @@
+{
+  "assessment": [
+    {
+      "id": "allergy",
+      "label": "Dị ứng",
+      "type": "radio_with_note",
+      "options": [
+        { "label": "Không", "value": "none" },
+        { "label": "Có", "value": "yes", "hasNote": true, "noteLabel": "Ghi rõ" }
+      ]
+    },
+    {
+      "id": "pain_assessment",
+      "label": "Đánh giá đau",
+      "type": "group",
+      "fields": [
+        {
+          "id": "current_pain",
+          "label": "Hiện đang đau",
+          "type": "radio",
+          "options": [
+            { "label": "Không", "value": "no" },
+            { "label": "Có", "value": "yes" }
+          ]
+        },
+        {
+          "id": "pain_score",
+          "label": "Thang điểm đau",
+          "type": "number",
+          "unit": "điểm"
+        },
+        {
+          "id": "pain_start_time",
+          "label": "Thời gian bắt đầu đau",
+          "type": "text"
+        },
+        {
+          "id": "pain_location",
+          "label": "Vị trí",
+          "type": "text"
+        },
+        {
+          "id": "pain_medication",
+          "label": "Sử dụng thuốc giảm đau",
+          "type": "radio",
+          "options": [
+            { "label": "Không", "value": "no" },
+            { "label": "Có", "value": "yes" }
+          ]
+        },
+        {
+          "id": "pain_frequency",
+          "label": "Tần suất",
+          "type": "checkbox",
+          "options": [
+            { "label": "Đau từng cơn", "value": "intermittent" },
+            { "label": "Đau liên tục", "value": "continuous" },
+            { "label": "Đau khi kích thích", "value": "stimulated" },
+            { "label": "Khác", "value": "other", "hasNote": true }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "skin_mucosa",
+      "label": "Da, niêm mạc",
+      "type": "group",
+      "fields": [
+        {
+          "id": "skin_color",
+          "label": "Màu sắc da",
+          "type": "radio",
+          "options": [
+            { "label": "Bình thường", "value": "normal" },
+            { "label": "Nhợt nhạt", "value": "pale" },
+            { "label": "Vàng da", "value": "jaundice" },
+            { "label": "Đỏ", "value": "red" }
+          ]
+        },
+        {
+          "id": "mucosa_color",
+          "label": "Màu sắc niêm mạc",
+          "type": "radio",
+          "options": [
+            { "label": "Hồng", "value": "pink" },
+            { "label": "Vàng", "value": "yellow" },
+            { "label": "Nhợt nhạt", "value": "pale" },
+            { "label": "Khác", "value": "other", "hasNote": true }
+          ]
+        },
+        {
+          "id": "pressure_ulcer_risk",
+          "label": "Nguy cơ loét do tỳ đè",
+          "type": "radio",
+          "options": [
+            { "label": "Không", "value": "no" },
+            { "label": "Có", "value": "yes" }
+          ]
+        },
+        {
+          "id": "skin_condition",
+          "label": "Tình trạng da",
+          "type": "radio_with_note",
+          "options": [
+            { "label": "Bình thường", "value": "normal" },
+            { "label": "Bất thường", "value": "abnormal", "hasNote": true }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "respiratory",
+      "label": "Hô hấp",
+      "type": "group",
+      "fields": [
+        {
+          "id": "breathing_status",
+          "label": "Tình trạng hô hấp",
+          "type": "checkbox",
+          "options": [
+            { "label": "Bình thường", "value": "normal" },
+            { "label": "Khó thở", "value": "dyspnea" },
+            { "label": "Khó thở nằm", "value": "orthopnea" },
+            { "label": "Thở khò khè", "value": "wheezing" }
+          ]
+        },
+        {
+          "id": "cough",
+          "label": "Ho",
+          "type": "checkbox",
+          "options": [
+            { "label": "Không", "value": "no" },
+            { "label": "Có", "value": "yes" },
+            { "label": "Có đờm", "value": "productive" },
+            { "label": "Không có đờm", "value": "dry" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cardiovascular",
+      "label": "Tim mạch",
+      "type": "group",
+      "fields": [
+        {
+          "id": "pulse_character",
+          "label": "Tính chất mạch",
+          "type": "radio",
+          "options": [
+            { "label": "Đều", "value": "regular" },
+            { "label": "Không đều", "value": "irregular" }
+          ]
+        },
+        {
+          "id": "cardiac_symptoms",
+          "label": "Tình trạng",
+          "type": "checkbox",
+          "options": [
+            { "label": "Đau ngực", "value": "chest_pain" },
+            { "label": "Chóng mặt", "value": "dizziness" },
+            { "label": "Đau bắp chân", "value": "calf_pain" },
+            { "label": "Phù ngoại biên", "value": "peripheral_edema" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "neurological",
+      "label": "Thần kinh cảm giác",
+      "type": "group",
+      "fields": [
+        {
+          "id": "orientation",
+          "label": "Định hướng được",
+          "type": "checkbox",
+          "options": [
+            { "label": "Thời gian", "value": "time" },
+            { "label": "Người", "value": "person" },
+            { "label": "Nơi chốn", "value": "place" }
+          ]
+        },
+        {
+          "id": "consciousness",
+          "label": "Tình trạng ý thức",
+          "type": "radio",
+          "options": [
+            { "label": "A - Tỉnh táo hoàn toàn", "value": "A" },
+            { "label": "C - Lơ mơ, mất phương hướng", "value": "C" },
+            { "label": "V - Đáp ứng khi lay gọi", "value": "V" },
+            { "label": "P - Đáp ứng với đau", "value": "P" },
+        { "label": "U - Mê, không đáp ứng", "value": "U" }
+      ]
+    },
+    {
+      "id": "glasgow_score",
+      "label": "Điểm Glasgow",
+      "type": "number",
+      "unit": "điểm"
+    },
+    {
+      "id": "hearing",
+      "label": "Thính giác",
+          "type": "checkbox",
+          "options": [
+            { "label": "Bình thường", "value": "normal" },
+            { "label": "Khiếm thính", "value": "hearing_loss" },
+            { "label": "Dùng máy trợ thính", "value": "hearing_aid" }
+          ]
+        },
+        {
+          "id": "vision",
+          "label": "Thị giác",
+          "type": "radio_with_note",
+          "options": [
+            { "label": "Bình thường", "value": "normal" },
+            { "label": "Khác", "value": "other", "hasNote": true }
+          ]
+        },
+        {
+          "id": "speech",
+          "label": "Khả năng ngôn ngữ",
+          "type": "radio_with_note",
+          "options": [
+            { "label": "Bình thường", "value": "normal" },
+            { "label": "Bất thường", "value": "abnormal", "hasNote": true }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "digestive",
+      "label": "Tiêu hóa",
+      "type": "group",
+      "fields": [
+        {
+          "id": "diet",
+          "label": "Chế độ ăn kiêng",
+          "type": "checkbox",
+          "options": [
+            { "label": "Không", "value": "none" },
+            { "label": "Tiểu đường", "value": "diabetes" },
+            { "label": "Ăn nhạt", "value": "low_salt" },
+            { "label": "Khác", "value": "other", "hasNote": true }
+          ]
+        },
+        {
+          "id": "digestive_symptoms",
+          "label": "Tình trạng",
+          "type": "checkbox",
+          "options": [
+            { "label": "Nôn", "value": "vomiting" },
+            { "label": "Buồn nôn", "value": "nausea" },
+            { "label": "Nuốt khó", "value": "dysphagia" }
+          ]
+        },
+        {
+          "id": "bowel_frequency",
+          "label": "Đại tiện",
+          "type": "radio",
+          "options": [
+            { "label": "1 lần/ngày", "value": "1_per_day" },
+            { "label": "2 lần/ngày", "value": "2_per_day" },
+            { "label": "Cách ngày", "value": "alternate_day" },
+            { "label": "Khác", "value": "other", "hasNote": true }
+          ]
+        },
+        {
+          "id": "stool_character",
+          "label": "Tính chất phân",
+          "type": "checkbox",
+          "options": [
+            { "label": "Tiêu chảy", "value": "diarrhea" },
+            { "label": "Lỏng", "value": "loose" },
+            { "label": "Có hình dạng", "value": "formed" },
+            { "label": "Cứng", "value": "hard" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "genitourinary",
+      "label": "Hệ tiết niệu - sinh dục",
+      "type": "group",
+      "fields": [
+        {
+          "id": "urination",
+          "label": "Tiểu tiện",
+          "type": "checkbox",
+          "options": [
+            { "label": "Bình thường", "value": "normal" },
+            { "label": "Tiểu đêm", "value": "nocturia" },
+            { "label": "Thường xuyên", "value": "frequency" },
+            { "label": "Khó tiểu", "value": "difficulty" },
+            { "label": "Không tự chủ", "value": "incontinence" }
+          ]
+        },
+        {
+          "id": "catheter",
+          "label": "Ống thông",
+          "type": "group",
+          "fields": [
+            {
+              "id": "intermittent_catheter",
+              "label": "Ống thông tiểu ngắt quãng",
+              "type": "object",
+              "fields": [
+                { "id": "times_per_day", "label": "Lần/ngày", "type": "number" },
+                { "id": "start_date", "label": "Bắt đầu từ ngày", "type": "date" }
+              ]
+            },
+            {
+              "id": "indwelling_catheter",
+              "label": "Ống thông tiểu lưu",
+              "type": "object",
+              "fields": [
+                { "id": "size", "label": "Kích cỡ", "type": "text" },
+                { "id": "last_change", "label": "Ngày thay cuối cùng", "type": "date" }
+              ]
+            },
+            {
+              "id": "suprapubic_catheter",
+              "label": "Ống thông bàng quang qua da",
+              "type": "object",
+              "fields": [
+                { "id": "size", "label": "Kích cỡ", "type": "text" },
+                { "id": "last_change", "label": "Ngày thay cuối cùng", "type": "date" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "female_only",
+      "label": "Dành cho người bệnh nữ",
+      "type": "group",
+      "fields": [
+        {
+          "id": "menstruation",
+          "label": "Kinh nguyệt",
+          "type": "radio",
+          "options": [
+            { "label": "Có", "value": "yes" },
+            { "label": "Mãn kinh", "value": "menopause" },
+            { "label": "Vô kinh", "value": "amenorrhea" }
+          ]
+        },
+        {
+          "id": "pregnancy",
+          "label": "Mang thai",
+          "type": "radio_with_note",
+          "options": [
+            { "label": "Không", "value": "no" },
+            { "label": "Có", "value": "yes", "hasNote": true, "noteLabel": "Số tuần" }
+          ]
+        },
+    {
+      "id": "contraception",
+      "label": "Trành thai",
+      "type": "radio",
+      "options": [
+        { "label": "Không", "value": "no" },
+            { "label": "Có", "value": "yes" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "musculoskeletal",
+      "label": "Hệ cơ - xương - khớp",
+      "type": "radio_with_note",
+      "options": [
+        { "label": "Bình thường", "value": "normal" },
+        { "label": "Bất thường", "value": "abnormal", "hasNote": true }
+      ]
+    },
+  {
+    "id": "fall_risk_score",
+    "label": "Điểm nguy cơ té ngã",
+    "type": "number",
+    "unit": "điểm"
+  },
+  {
+    "id": "fall_risk",
+    "label": "Nguy cơ té ngã",
+    "type": "radio",
+      "options": [
+        { "label": "Không có nguy cơ", "value": "none" },
+        { "label": "Nguy cơ thấp", "value": "low" },
+        { "label": "Nguy cơ trung bình", "value": "medium" },
+        { "label": "Nguy cơ cao", "value": "high" }
+      ]
+    },
+    {
+      "id": "adl",
+      "label": "Khả năng thực hiện các hoạt động sinh hoạt hàng ngày",
+      "type": "group",
+      "fields": [
+        {
+          "id": "eating",
+          "label": "Ăn, uống",
+          "type": "radio",
+          "options": ["Độc lập", "Cần hỗ trợ", "Phụ thuộc hoàn toàn"]
+        },
+        {
+          "id": "walking",
+          "label": "Đi lại",
+          "type": "radio",
+          "options": ["Độc lập", "Cần hỗ trợ", "Nằm liệt giường"]
+        },
+        {
+          "id": "position_change",
+          "label": "Thay đổi tư thế tại giường",
+          "type": "radio",
+          "options": ["Độc lập", "Cần hỗ trợ"]
+        },
+        {
+          "id": "bathing",
+          "label": "Tắm",
+          "type": "radio",
+          "options": ["Độc lập", "Cần hỗ trợ", "Phụ thuộc hoàn toàn"]
+        },
+        {
+          "id": "oral_care",
+          "label": "Chăm sóc răng miệng",
+          "type": "radio",
+          "options": ["Độc lập", "Cần hỗ trợ", "Phụ thuộc hoàn toàn"]
+        },
+        {
+          "id": "dressing",
+          "label": "Thay quần áo",
+          "type": "radio",
+          "options": ["Độc lập", "Cần hỗ trợ", "Phụ thuộc hoàn toàn"]
+        },
+        {
+          "id": "toileting",
+          "label": "Đi vệ sinh",
+          "type": "radio",
+          "options": ["Độc lập", "Cần hỗ trợ", "Phụ thuộc hoàn toàn"]
+        }
+      ]
+    },
+    {
+      "id": "other_assessment_scales",
+      "label": "Thang điểm đánh giá khác",
+      "type": "group",
+      "fields": [
+        {
+          "id": "vip_score_assessment",
+          "label": "Đánh giá nguy cơ viêm tĩnh mạch (Vipscore)",
+          "type": "object",
+          "fields": [
+            {
+              "id": "vip_score_point",
+              "label": "Điểm",
+              "type": "number"
+            },
+            {
+              "id": "vip_score_conclusion",
+              "label": "Kết luận",
+              "type": "text"
+            }
+          ]
+        },
+        {
+          "id": "braden_assessment",
+          "label": "Đánh giá nguy cơ loét tỳ đè (Braden)",
+          "type": "object",
+          "fields": [
+            {
+              "id": "braden_score",
+              "label": "Điểm",
+              "type": "number"
+            },
+            {
+              "id": "braden_conclusion",
+              "label": "Kết luận",
+              "type": "text"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -83,6 +83,7 @@ const state = {
   },
   diagnosisRows: [],
   interventionRows: [],
+  assessmentTemplate: null,
   scaleData: [],
   scaleScores: {},
   scaleResults: {},
@@ -93,8 +94,18 @@ const scaleMapping = {
   fallRiskAssessment: "morse_fall_scale",
   vteRiskAssessment: "vip_score",
   painAssessment: "flacc_pain_scale",
+  current_pain: "flacc_pain_scale",
+  glasgow_score: "glasgow_coma_scale",
+  fall_risk_score: "morse_fall_scale",
+  vip_score_point: "vip_score",
+  braden_score: "lawrence_braden_scale",
   pressureUlcerRiskAssessment: "lawrence_braden_scale",
   glasgowAssessment: "glasgow_coma_scale",
+};
+
+const scaleResultFields = {
+  vip_score_point: "vip_score_conclusion",
+  braden_score: "braden_conclusion",
 };
 
 const patients = [
@@ -292,6 +303,15 @@ function cleanLine(text) {
     .trim();
 }
 
+function normalizeVietnameseText(text) {
+  return String(text ?? "")
+    .replaceAll("C�ch ng�y", "Cách ngày")
+    .replaceAll("Kh�c", "Khác")
+    .replaceAll("Th�nh gi�c", "Thính giác")
+    .replaceAll("Tr�nh thai", "Trành thai")
+    .replaceAll("Tránh thai", "Trành thai");
+}
+
 function splitBullets(text) {
   return String(text || "")
     .split(/\n|(?=\s*-\s+)/)
@@ -366,7 +386,7 @@ function ensureSelection() {
 }
 
 function h(text) {
-  return String(text ?? "")
+  return normalizeVietnameseText(text)
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
@@ -746,6 +766,10 @@ function field(key, label, value, type = "text") {
 }
 
 function renderAssessmentPanel(assessments) {
+  if (state.assessmentTemplate?.assessment?.length) {
+    return renderTemplateAssessmentPanel(assessments);
+  }
+
   const check = state.assessmentChecklist;
   return `
     <section class="panel assessment-checklist-panel structured-assessment">
@@ -873,6 +897,237 @@ function renderAssessmentPanel(assessments) {
   `;
 }
 
+function renderTemplateAssessmentPanel(assessments) {
+  const sections = state.assessmentTemplate.assessment;
+  return `
+    <section class="panel assessment-checklist-panel structured-assessment">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title">Nhận định điều dưỡng</h2>
+          <p class="panel-subtitle">Cấu trúc theo mẫu nhan_dinh.json.</p>
+        </div>
+      </div>
+      <div class="panel-body">
+        ${sections.map((section) => renderAssessmentTemplateField(section, true)).join("")}
+        ${renderDiseaseAssessmentChecklist(assessments)}
+      </div>
+    </section>
+  `;
+}
+
+function renderAssessmentTemplateField(fieldDef, asCard = false) {
+  const idClass = templateFieldClass(fieldDef.id);
+  const wrapperClass = asCard ? `assessment-section-card ${idClass}` : `assessment-template-group ${idClass}`;
+  const formClass = `assessment-form compact-form template-field-grid ${idClass}-grid`;
+  const heading = asCard ? "h3" : "h4";
+  if (fieldDef.type === "group" || fieldDef.type === "object") {
+    return `
+      <div class="${wrapperClass}">
+        <${heading}>${h(fieldDef.label)}</${heading}>
+        <div class="${formClass}">
+          ${(fieldDef.fields || []).map((field) => renderAssessmentTemplateField(field)).join("")}
+        </div>
+      </div>
+    `;
+  }
+  if (fieldDef.type === "radio" || fieldDef.type === "radio_with_note") {
+    return renderTemplateRadio(fieldDef);
+  }
+  if (fieldDef.type === "checkbox") {
+    return renderTemplateCheckbox(fieldDef);
+  }
+  if (["text", "number", "date"].includes(fieldDef.type)) {
+    if (fieldDef.id === "glasgow_score") {
+      return renderGlasgowScoreField(fieldDef);
+    }
+    if (fieldDef.id === "fall_risk_score") {
+      return renderFallRiskScoreField(fieldDef);
+    }
+    if (scaleResultFields[fieldDef.id]) {
+      return renderScaleResultScoreField(fieldDef);
+    }
+    return checkField(fieldDef.id, withUnit(fieldDef.label, fieldDef.unit), state.assessmentChecklist[fieldDef.id] || "", fieldDef.type);
+  }
+  return checkField(fieldDef.id, fieldDef.label, state.assessmentChecklist[fieldDef.id] || "");
+}
+
+function templateFieldClass(id) {
+  return `assessment-field-${String(id || "item").replace(/[^a-z0-9_-]/gi, "-")}`;
+}
+
+function renderGlasgowScoreField(fieldDef) {
+  const result = state.scaleResults.glasgow_score;
+  const value = state.assessmentChecklist.glasgow_score || "";
+  return `
+    <label class="assessment-field glasgow-score-field">
+      <span>${h(withUnit(fieldDef.label, fieldDef.unit))}</span>
+      <div class="score-input-action">
+        <input type="number" value="${h(value)}" data-checklist="glasgow_score" />
+        <button type="button" class="pain-score-btn" data-action="open-scale" data-scale-key="glasgow_score">
+          ${result ? `Chấm lại: ${result.total} điểm` : "Chấm điểm Glasgow"}
+        </button>
+      </div>
+      ${result ? `<span class="pain-score-summary">${h(result.risk)} - ${result.total} điểm</span>` : ""}
+    </label>
+  `;
+}
+
+function renderFallRiskScoreField(fieldDef) {
+  const result = state.scaleResults.fall_risk_score;
+  const value = state.assessmentChecklist.fall_risk_score || "";
+  return `
+    <label class="assessment-field fall-risk-score-field">
+      <span>${h(withUnit(fieldDef.label, fieldDef.unit))}</span>
+      <div class="score-input-action">
+        <input type="number" value="${h(value)}" data-checklist="fall_risk_score" />
+        <button type="button" class="pain-score-btn" data-action="open-scale" data-scale-key="fall_risk_score">
+          ${result ? `Đánh giá lại: ${result.total} điểm` : "Đánh giá té ngã"}
+        </button>
+      </div>
+      ${result ? `<span class="pain-score-summary">${h(result.risk)} - ${result.total} điểm</span>` : ""}
+    </label>
+  `;
+}
+
+function fallRiskValueFromResult(result) {
+  if (!result || result.total === undefined) return "";
+  if (result.total === 0) return "none";
+  if (result.risk.includes("trung bình")) return "medium";
+  if (result.risk.includes("cao")) return "high";
+  return "low";
+}
+
+function renderScaleResultScoreField(fieldDef) {
+  const result = state.scaleResults[fieldDef.id];
+  const value = state.assessmentChecklist[fieldDef.id] || "";
+  return `
+    <label class="assessment-field scale-result-score-field">
+      <span>${h(withUnit(fieldDef.label, fieldDef.unit))}</span>
+      <div class="score-input-action">
+        <input type="number" value="${h(value)}" data-checklist="${h(fieldDef.id)}" />
+        <button type="button" class="pain-score-btn" data-action="open-scale" data-scale-key="${h(fieldDef.id)}">
+          ${result ? `Đánh giá lại: ${result.total} điểm` : "Đánh giá"}
+        </button>
+      </div>
+      ${result ? `<span class="pain-score-summary">${h(result.risk)} - ${result.total} điểm</span>` : ""}
+    </label>
+  `;
+}
+
+function normalizedOptions(options = []) {
+  return options.map((option) =>
+    typeof option === "string"
+      ? { label: option, value: option }
+      : { ...option, value: option.value ?? option.label },
+  );
+}
+
+function withUnit(label, unit) {
+  return unit ? `${label} (${unit})` : label;
+}
+
+function renderTemplateRadio(fieldDef) {
+  const value = state.assessmentChecklist[fieldDef.id] || "";
+  if (fieldDef.id === "current_pain") {
+    return renderPainAssessmentRadio(fieldDef, value);
+  }
+  const options = normalizedOptions(fieldDef.options);
+  const selectedOption = options.find((option) => option.value === value);
+  return `
+    <div class="assessment-full">
+      ${radioGroup(fieldDef.id, fieldDef.label, options.map((option) => option.value), value, options)}
+      ${
+        selectedOption?.hasNote
+          ? checkField(`${fieldDef.id}_note`, selectedOption.noteLabel || "Ghi rõ", state.assessmentChecklist[`${fieldDef.id}_note`] || "")
+          : ""
+      }
+    </div>
+  `;
+}
+
+function renderPainAssessmentRadio(fieldDef, value) {
+  const options = normalizedOptions(fieldDef.options);
+  const result = state.scaleResults.current_pain;
+  return `
+    <div class="assessment-full pain-assessment-row">
+      <fieldset class="assessment-radio">
+        <legend>${h(fieldDef.label)}</legend>
+        <div>
+          ${options
+            .map((option) => `
+              <label>
+                <input type="radio" name="${h(fieldDef.id)}" value="${h(option.value)}" ${value === option.value ? "checked" : ""} data-checklist-radio="${h(fieldDef.id)}" />
+                <span>${h(option.label)}</span>
+                ${
+                  option.value === "yes"
+                    ? `<button type="button" class="pain-score-btn" data-action="open-scale" data-scale-key="current_pain">${result ? `Chấm lại: ${result.total} điểm` : "Chấm điểm đau"}</button>`
+                    : ""
+                }
+              </label>
+            `)
+            .join("")}
+        </div>
+      </fieldset>
+      ${
+        result
+          ? `<span class="pain-score-summary">${h(result.risk)} - ${result.total} điểm</span>`
+          : ""
+      }
+    </div>
+  `;
+}
+
+function renderTemplateCheckbox(fieldDef) {
+  const selected = state.assessmentChecklist[fieldDef.id] || [];
+  const options = normalizedOptions(fieldDef.options);
+  return `
+    <div class="assessment-full">
+      ${multiCheckGroup(fieldDef.id, fieldDef.label, options.map((option) => option.value), selected, options)}
+      ${options
+        .filter((option) => option.hasNote && selected.includes(option.value))
+        .map((option) =>
+          checkField(
+            `${fieldDef.id}_${option.value}_note`,
+            option.noteLabel || `${option.label} - ghi rõ`,
+            state.assessmentChecklist[`${fieldDef.id}_${option.value}_note`] || "",
+          ),
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+function renderDiseaseAssessmentChecklist(assessments) {
+  return `
+    <div class="disease-checklist" style="display: none;">
+      <div class="disease-checklist-head">
+        <strong>Gợi ý nhận định theo mặt bệnh</strong>
+        <button class="btn" data-action="add-assessment">Thêm mục khác</button>
+      </div>
+      <div class="compact-check-grid">
+        ${
+          assessments.length
+            ? assessments.map((item) => `
+              <label class="compact-check">
+                <input type="checkbox" ${state.selectedAssessments.has(item.id) ? "checked" : ""} data-assessment="${h(item.id)}" />
+                <span>${h(item.prompt)}</span>
+              </label>
+            `).join("")
+            : `<div class="empty">Chưa có gợi ý nhận định cho mặt bệnh này.</div>`
+        }
+        ${[...state.selectedAssessments]
+          .filter((id) => id.startsWith("custom-assessment-"))
+          .map((id) => `
+            <label class="compact-check custom-line">
+              <input type="checkbox" checked data-assessment="${h(id)}" />
+              <input value="${h(state.assessmentEdits[id] || "")}" placeholder="Nhập nhận định khác..." data-assessment-edit="${h(id)}" />
+            </label>
+          `).join("")}
+      </div>
+    </div>
+  `;
+}
+
 function checkField(key, label, value, type = "text") {
   return `
     <label class="assessment-field">
@@ -925,41 +1180,43 @@ function renderVasopressorDetails(check) {
   `;
 }
 
-function radioGroup(key, label, options, value) {
+function radioGroup(key, label, options, value, optionDefs = null) {
   return `
     <fieldset class="assessment-radio">
       <legend>${h(label)}</legend>
       <div>
         ${options
-          .map(
-            (option) => `
+          .map((option, index) => {
+            const optionLabel = optionDefs?.[index]?.label || option;
+            return `
             <label>
               <input type="radio" name="${h(key)}" value="${h(option)}" ${value === option ? "checked" : ""} data-checklist-radio="${h(key)}" />
-              <span>${h(option)}</span>
+              <span>${h(optionLabel)}</span>
             </label>
-          `,
-          )
+          `;
+          })
           .join("")}
       </div>
     </fieldset>
   `;
 }
 
-function multiCheckGroup(key, label, options, value = []) {
+function multiCheckGroup(key, label, options, value = [], optionDefs = null) {
   const selected = Array.isArray(value) ? value : value ? [value] : [];
   return `
     <fieldset class="assessment-radio">
       <legend>${h(label)}</legend>
       <div>
         ${options
-          .map(
-            (option) => `
+          .map((option, index) => {
+            const optionLabel = optionDefs?.[index]?.label || option;
+            return `
             <label>
               <input type="checkbox" value="${h(option)}" ${selected.includes(option) ? "checked" : ""} data-checklist-multi="${h(key)}" />
-              <span>${h(option)}</span>
+              <span>${h(optionLabel)}</span>
             </label>
-          `,
-          )
+          `;
+          })
           .join("")}
       </div>
     </fieldset>
@@ -1192,7 +1449,7 @@ function renderHandoverPanel() {
 
 function renderSheet(condition) {
   const assessmentIds = assessmentSections(condition);
-  const checklistItems = assessmentChecklistSummary();
+  const checklistItems = state.assessmentTemplate ? [] : assessmentChecklistSummary();
   const assessments = assessmentIds
     .filter((item) => state.selectedAssessments.has(item.id))
     .map((item) => state.assessmentEdits[item.id] ?? item.result)
@@ -1319,6 +1576,10 @@ function assessmentChecklistSummary() {
 }
 
 function buildAssessmentSectionsForSheet() {
+  if (state.assessmentTemplate?.assessment?.length) {
+    return buildTemplateAssessmentSectionsForSheet(state.assessmentTemplate.assessment);
+  }
+
   const check = state.assessmentChecklist;
   const sections = [];
   
@@ -1377,6 +1638,49 @@ function buildAssessmentSectionsForSheet() {
   }
   
   return sections;
+}
+
+function buildTemplateAssessmentSectionsForSheet(fields, prefix = "") {
+  return fields.flatMap((fieldDef) => {
+    const label = prefix ? `${prefix} - ${fieldDef.label}` : fieldDef.label;
+    if (fieldDef.type === "group" || fieldDef.type === "object") {
+      return buildTemplateAssessmentSectionsForSheet(fieldDef.fields || [], label);
+    }
+
+    const value = state.assessmentChecklist[fieldDef.id];
+    if (value === undefined || value === null || value === "" || (Array.isArray(value) && value.length === 0)) {
+      return [];
+    }
+
+    const options = normalizedOptions(fieldDef.options);
+    const displayValue = Array.isArray(value)
+      ? value.map((item) => optionText(options, item)).join(", ")
+      : optionText(options, value);
+    const notes = templateNotesForField(fieldDef, value);
+    return [`${label}: ${[displayValue, ...notes].filter(Boolean).join("; ")}`];
+  });
+}
+
+function optionText(options, value) {
+  return options.find((option) => option.value === value)?.label || value;
+}
+
+function templateNotesForField(fieldDef, value) {
+  const options = normalizedOptions(fieldDef.options);
+  if (!options.length) {
+    const note = state.assessmentChecklist[`${fieldDef.id}_note`];
+    return note ? [`Ghi rõ: ${note}`] : [];
+  }
+
+  const selectedValues = Array.isArray(value) ? value : [value];
+  return options
+    .filter((option) => option.hasNote && selectedValues.includes(option.value))
+    .map((option) => {
+      const noteKey = Array.isArray(value) ? `${fieldDef.id}_${option.value}_note` : `${fieldDef.id}_note`;
+      const note = state.assessmentChecklist[noteKey];
+      return note ? `${option.noteLabel || "Ghi rõ"}: ${note}` : "";
+    })
+    .filter(Boolean);
 }
 
 function oldAssessmentChecklistSummary() {
@@ -1571,6 +1875,9 @@ app.addEventListener("click", (event) => {
   }
 
   if (target.dataset.action === "open-scale" && target.dataset.scaleKey) {
+    if (target.dataset.scaleKey === "current_pain") {
+      state.assessmentChecklist.current_pain = "yes";
+    }
     state.activeScale = target.dataset.scaleKey;
     if (!state.scaleScores[target.dataset.scaleKey]) state.scaleScores[target.dataset.scaleKey] = {};
     render();
@@ -1589,6 +1896,21 @@ app.addEventListener("click", (event) => {
       const result = calculateScaleResult(key);
       if (result && result.allFilled) {
         state.scaleResults[key] = result;
+        if (key === "current_pain") {
+          state.assessmentChecklist.current_pain = "yes";
+          state.assessmentChecklist.pain_score = String(result.total);
+        }
+        if (key === "glasgow_score") {
+          state.assessmentChecklist.glasgow_score = String(result.total);
+        }
+        if (key === "fall_risk_score") {
+          state.assessmentChecklist.fall_risk_score = String(result.total);
+          state.assessmentChecklist.fall_risk = fallRiskValueFromResult(result);
+        }
+        if (scaleResultFields[key]) {
+          state.assessmentChecklist[key] = String(result.total);
+          state.assessmentChecklist[scaleResultFields[key]] = result.risk;
+        }
         state.activeScale = null;
         render();
       } else {
@@ -1733,6 +2055,11 @@ app.addEventListener("change", (event) => {
 
   if (target.dataset.checklistRadio) {
     state.assessmentChecklist[target.dataset.checklistRadio] = target.value;
+    if (target.dataset.checklistRadio === "current_pain" && target.value !== "yes") {
+      state.assessmentChecklist.pain_score = "";
+      delete state.scaleResults.current_pain;
+      delete state.scaleScores.current_pain;
+    }
     render();
     return;
   }
@@ -1750,15 +2077,19 @@ app.addEventListener("change", (event) => {
 
 async function init() {
   try {
-    const [response, scaleResponse] = await Promise.all([
+    const [response, scaleResponse, assessmentResponse] = await Promise.all([
       fetch("./cd_deu_duong.json"),
       fetch("./thangdiem.json"),
+      fetch("./nhan_dinh.json"),
     ]);
     if (!response.ok) throw new Error(`Khong tai duoc cd_deu_duong.json (${response.status})`);
     state.raw = await response.json();
     state.data = deepFix(state.raw);
     if (scaleResponse.ok) {
       state.scaleData = await scaleResponse.json();
+    }
+    if (assessmentResponse.ok) {
+      state.assessmentTemplate = deepFix(await assessmentResponse.json());
     }
     state.categoryId = state.data.categories[0].id;
     state.departmentId = state.data.categories[0].khoa[0].id;
