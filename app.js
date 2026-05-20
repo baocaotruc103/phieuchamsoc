@@ -2309,7 +2309,7 @@ function renderDiseasedOrganDropdown() {
         <button type="button" class="diagnosis-dropdown-toggle" data-action="toggle-diseased-organ-dropdown" aria-label="Hiển thị danh sách nhận định cơ quan bị bệnh">▼</button>
       </div>
       ${state.activeDiseasedOrganSuggest ? `
-        <div class="suggestion-list diagnosis-dropdown-list">
+        <div class="suggestion-list diagnosis-dropdown-list" data-diseased-organ-list>
           ${options.length ? options.map((item) => `
             <label class="diagnosis-dropdown-option">
               <input type="checkbox" ${selectedSet.has(searchKey(item.nanda)) ? "checked" : ""} data-diseased-organ-check data-value="${h(item.nanda)}" />
@@ -2992,6 +2992,34 @@ function renderSavedDiagnosisRows() {
   `;
 }
 
+function htmlFromRendered(renderedHtml, selector) {
+  const wrapper = document.createElement("div");
+  wrapper.innerHTML = renderedHtml;
+  return wrapper.querySelector(selector)?.innerHTML || "";
+}
+
+function replaceDropdownHtml(selector, html) {
+  const node = app.querySelector(selector);
+  if (node) node.innerHTML = html;
+}
+
+function refreshDiagnosisDropdown(index, listName) {
+  const row = state.diagnosisRows[Number(index)];
+  if (!row) return;
+  const selector = `[data-${listName}-list="${index}"]`;
+  replaceDropdownHtml(selector, htmlFromRendered(renderDiagnosisRowV2(row, Number(index)), selector));
+}
+
+function refreshDiseasedOrganDropdown() {
+  const selector = "[data-diseased-organ-list]";
+  replaceDropdownHtml(selector, htmlFromRendered(renderDiseasedOrganDropdown(), selector));
+}
+
+function refreshInterventionDropdown(kind) {
+  const selector = `[data-iv-list="${kind}"]`;
+  replaceDropdownHtml(selector, htmlFromRendered(renderInterventionPanel(), selector));
+}
+
 function renderDiagnosisRowV2(row, index) {
   const causes = causeOptionsForDiagnosis(row);
   const goals = goalOptionsForDiagnosisRow(row);
@@ -3020,7 +3048,7 @@ function renderDiagnosisRowV2(row, index) {
             <button type="button" class="diagnosis-dropdown-toggle" data-action="toggle-dx-dropdown" data-index="${index}" aria-label="Hiển thị danh sách nhận định">▼</button>
           </div>
           ${diagnosisOptions.length || showAddDiagnosisOption ? `
-            <div class="suggestion-list diagnosis-dropdown-list">
+            <div class="suggestion-list diagnosis-dropdown-list" data-dx-list="${index}">
               ${diagnosisOptions.slice(0, 10).map((item) => `
                 <label class="diagnosis-dropdown-option">
                   <input type="checkbox" ${selectedNandas.has(item.nanda) ? "checked" : ""} data-dx-catalog-check="${index}" data-nanda="${h(item.nanda)}" />
@@ -3052,7 +3080,7 @@ function renderDiagnosisRowV2(row, index) {
             <button type="button" class="diagnosis-dropdown-toggle" data-action="toggle-dx-cause-dropdown" data-index="${index}" aria-label="Hiển thị danh sách nguyên nhân">▼</button>
           </div>
           ${state.activeCauseSuggest === index ? `
-            <div class="suggestion-list diagnosis-dropdown-list">
+            <div class="suggestion-list diagnosis-dropdown-list" data-cause-list="${index}">
               ${causeOptions.length ? causeOptions.map((item) => `
                 <label class="diagnosis-dropdown-option">
                   <input type="checkbox" value="${h(item.cause)}" ${row.causes?.includes(item.cause) ? "checked" : ""} data-dx-cause="${index}" />
@@ -3075,7 +3103,7 @@ function renderDiagnosisRowV2(row, index) {
             <button type="button" class="diagnosis-dropdown-toggle" data-action="toggle-dx-goal-dropdown" data-index="${index}" aria-label="Hiển thị danh sách mục tiêu">▼</button>
           </div>
           ${state.activeGoalSuggest === `goal:${index}` ? `
-            <div class="suggestion-list diagnosis-dropdown-list">
+            <div class="suggestion-list diagnosis-dropdown-list" data-goal-list="${index}">
               ${goalOptions.length ? goalOptions.map((goal) => `
                 <label class="diagnosis-dropdown-option">
                   <input type="checkbox" value="${h(goal)}" ${selectedGoals.has(goal) ? "checked" : ""} data-dx-goal="${index}" />
@@ -3170,7 +3198,7 @@ function renderInterventionPanel() {
                 <button type="button" class="diagnosis-dropdown-toggle" data-action="toggle-iv-code-dropdown" aria-label="Hiển thị danh sách mã can thiệp">▼</button>
               </div>
               ${codeOptions.length ? `
-                <div class="suggestion-list diagnosis-dropdown-list">
+                <div class="suggestion-list diagnosis-dropdown-list" data-iv-list="code">
                   ${codeOptions.map((item) => `
                     <label class="diagnosis-dropdown-option">
                       <input type="checkbox" ${isInterventionDraftSelected(item) ? "checked" : ""} data-iv-option-check="code" data-code="${h(item.code)}" data-content="${h(item.name)}" />
@@ -3190,7 +3218,7 @@ function renderInterventionPanel() {
                 <button type="button" class="diagnosis-dropdown-toggle" data-action="toggle-iv-content-dropdown" aria-label="Hiển thị danh sách nội dung can thiệp">▼</button>
               </div>
               ${contentOptions.length ? `
-                <div class="suggestion-list diagnosis-dropdown-list">
+                <div class="suggestion-list diagnosis-dropdown-list" data-iv-list="content">
                   ${contentOptions.map((item) => `
                     <label class="diagnosis-dropdown-option">
                       <input type="checkbox" ${isInterventionDraftSelected(item) ? "checked" : ""} data-iv-option-check="content" data-code="${h(item.code)}" data-content="${h(item.name)}" />
@@ -4836,6 +4864,9 @@ app.addEventListener("input", (event) => {
         row.causes = [];
         row.goals = [];
       }
+      if (state.activeDiagnosisSuggest === Number(target.dataset.dxQuery)) {
+        refreshDiagnosisDropdown(target.dataset.dxQuery, "dx");
+      }
     }
     return;
   }
@@ -4844,6 +4875,9 @@ app.addEventListener("input", (event) => {
     const row = state.diagnosisRows[Number(target.dataset.dxCauseQuery)];
     if (row) {
       row.causeQuery = target.value;
+      if (state.activeCauseSuggest === Number(target.dataset.dxCauseQuery)) {
+        refreshDiagnosisDropdown(target.dataset.dxCauseQuery, "cause");
+      }
     }
     return;
   }
@@ -4852,12 +4886,16 @@ app.addEventListener("input", (event) => {
     const row = state.diagnosisRows[Number(target.dataset.dxGoalQuery)];
     if (row) {
       row.goalQuery = target.value;
+      if (state.activeGoalSuggest === `goal:${target.dataset.dxGoalQuery}`) {
+        refreshDiagnosisDropdown(target.dataset.dxGoalQuery, "goal");
+      }
     }
     return;
   }
 
   if (target.dataset.diseasedOrganQuery !== undefined) {
     state.diseasedOrganQuery = target.value;
+    if (state.activeDiseasedOrganSuggest) refreshDiseasedOrganDropdown();
     return;
   }
 
@@ -4885,6 +4923,7 @@ app.addEventListener("input", (event) => {
   if (target.dataset.ivCodeQuery) {
     if (target.dataset.ivCodeQuery === "draft") {
       state.interventionDraft.codeQuery = target.value;
+      if (state.activeInterventionSuggest === "draft-code") refreshInterventionDropdown("code");
       return;
     }
     const row = state.interventionRows[Number(target.dataset.ivCodeQuery)];
@@ -4902,6 +4941,7 @@ app.addEventListener("input", (event) => {
   if (target.dataset.ivContentQuery) {
     if (target.dataset.ivContentQuery === "draft") {
       state.interventionDraft.contentQuery = target.value;
+      if (state.activeInterventionSuggest === "draft-content") refreshInterventionDropdown("content");
       return;
     }
     const row = state.interventionRows[Number(target.dataset.ivContentQuery)];
