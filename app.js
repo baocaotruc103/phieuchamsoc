@@ -1170,7 +1170,6 @@ function focusNextCareInput(current) {
   const next = fields[index + 1];
   if (!next) return false;
   next.focus({ preventScroll: false });
-  if (typeof next.select === "function" && next.tagName !== "TEXTAREA") next.select();
   return true;
 }
 
@@ -4757,41 +4756,26 @@ app.addEventListener("keydown", (event) => {
   if (!isEditableInput) return;
 
   if (event.key === "Enter" && !event.ctrlKey && !event.altKey && !event.metaKey && !event.shiftKey) {
-    if (focusNextCareInput(target)) event.preventDefault();
+    if (focusNextCareInput(target)) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
   }
 });
 
 app.addEventListener("focusin", (event) => {
   const target = event.target;
   if (target.dataset.diseasedOrganQuery !== undefined) {
-    if (state.activeDiseasedOrganSuggest) return;
-    state.activeDiseasedOrganSuggest = true;
-    render("[data-diseased-organ-query]");
     return;
   }
   if (target.dataset.dxQuery) {
-    const rowIndex = Number(target.dataset.dxQuery);
-    if (state.activeDiagnosisSuggest === rowIndex) return;
-    state.activeDiagnosisSuggest = rowIndex;
-    state.activeCauseSuggest = null;
-    state.activeGoalSuggest = null;
-    render(`[data-dx-query="${target.dataset.dxQuery}"]`);
+    return;
   }
   if (target.dataset.dxCauseQuery !== undefined) {
-    const rowIndex = Number(target.dataset.dxCauseQuery);
-    if (state.activeCauseSuggest === rowIndex) return;
-    state.activeCauseSuggest = rowIndex;
-    state.activeDiagnosisSuggest = null;
-    state.activeGoalSuggest = null;
-    render(`[data-dx-cause-query="${target.dataset.dxCauseQuery}"]`);
+    return;
   }
   if (target.dataset.dxGoalQuery !== undefined) {
-    const key = `goal:${target.dataset.dxGoalQuery}`;
-    if (state.activeGoalSuggest === key) return;
-    state.activeGoalSuggest = key;
-    state.activeDiagnosisSuggest = null;
-    state.activeCauseSuggest = null;
-    render(`[data-dx-goal-query="${target.dataset.dxGoalQuery}"]`);
+    return;
   }
 });
 
@@ -4852,10 +4836,6 @@ app.addEventListener("input", (event) => {
         row.causes = [];
         row.goals = [];
       }
-      state.activeDiagnosisSuggest = Number(target.dataset.dxQuery);
-      state.activeCauseSuggest = null;
-      state.activeGoalSuggest = null;
-      render(`[data-dx-query="${target.dataset.dxQuery}"]`);
     }
     return;
   }
@@ -4864,10 +4844,6 @@ app.addEventListener("input", (event) => {
     const row = state.diagnosisRows[Number(target.dataset.dxCauseQuery)];
     if (row) {
       row.causeQuery = target.value;
-      state.activeCauseSuggest = Number(target.dataset.dxCauseQuery);
-      state.activeDiagnosisSuggest = null;
-      state.activeGoalSuggest = null;
-      render(`[data-dx-cause-query="${target.dataset.dxCauseQuery}"]`);
     }
     return;
   }
@@ -4876,18 +4852,12 @@ app.addEventListener("input", (event) => {
     const row = state.diagnosisRows[Number(target.dataset.dxGoalQuery)];
     if (row) {
       row.goalQuery = target.value;
-      state.activeGoalSuggest = `goal:${target.dataset.dxGoalQuery}`;
-      state.activeDiagnosisSuggest = null;
-      state.activeCauseSuggest = null;
-      render(`[data-dx-goal-query="${target.dataset.dxGoalQuery}"]`);
     }
     return;
   }
 
   if (target.dataset.diseasedOrganQuery !== undefined) {
     state.diseasedOrganQuery = target.value;
-    state.activeDiseasedOrganSuggest = true;
-    render("[data-diseased-organ-query]");
     return;
   }
 
@@ -4915,8 +4885,6 @@ app.addEventListener("input", (event) => {
   if (target.dataset.ivCodeQuery) {
     if (target.dataset.ivCodeQuery === "draft") {
       state.interventionDraft.codeQuery = target.value;
-      state.activeInterventionSuggest = "draft-code";
-      render('[data-iv-code-query="draft"]');
       return;
     }
     const row = state.interventionRows[Number(target.dataset.ivCodeQuery)];
@@ -4934,8 +4902,6 @@ app.addEventListener("input", (event) => {
   if (target.dataset.ivContentQuery) {
     if (target.dataset.ivContentQuery === "draft") {
       state.interventionDraft.contentQuery = target.value;
-      state.activeInterventionSuggest = "draft-content";
-      render('[data-iv-content-query="draft"]');
       return;
     }
     const row = state.interventionRows[Number(target.dataset.ivContentQuery)];
