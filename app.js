@@ -263,6 +263,7 @@ const state = {
   scaleScores: {},
   scaleResults: {},
   activeScale: null,
+  activeCareFormTab: "patient",
   activeDiagnosisSuggest: null,
   activeDiseasedOrganSuggest: false,
   diseasedOrganQuery: "",
@@ -1030,6 +1031,7 @@ function resetCareFormState({ resetChecklist = false } = {}) {
   if (resetChecklist) {
     state.careLevel = "1";
     state.assessmentChecklist = createDefaultAssessmentChecklist();
+    state.patient = defaultCarePatientState();
     state.scaleScores = {};
     state.scaleResults = {};
     state.activeScale = null;
@@ -1044,6 +1046,7 @@ function resetCareFormState({ resetChecklist = false } = {}) {
   state.activeCauseSuggest = null;
   state.activeGoalSuggest = null;
   state.activeInterventionSuggest = null;
+  state.activeCareFormTab = "patient";
 }
 
 function resetForCondition(options = {}) {
@@ -1110,6 +1113,18 @@ function hydrateCareFormFromSheet(sheet) {
     code: item.code || "",
     content: item.content || "",
   }));
+  if (state.careSheetsPatient) {
+    state.patient = {
+      ...state.patient,
+      name: state.careSheetsPatient.ho_ten || state.patient.name,
+      code: state.careSheetsPatient.ma_benh_nhan || state.patient.code,
+      age: state.careSheetsPatient.tuoi || state.patient.age,
+      sex: state.careSheetsPatient.gioi_tinh || state.patient.sex,
+      room: state.careSheetsPatient.phong || state.patient.room,
+      bed: state.careSheetsPatient.giuong || state.patient.bed,
+      department: state.careSheetsPatient.khoa || state.patient.department,
+    };
+  }
   state.interventionDraft = createInterventionDraft();
   state.screen = "careForm";
   render();
@@ -1148,6 +1163,41 @@ function updateFluidBalanceField() {
   );
   const balanceInput = app.querySelector('[data-checklist="fluidBalance"]');
   if (balanceInput) balanceInput.value = state.assessmentChecklist.fluidBalance;
+}
+
+function currentCarePatientInfo() {
+  const selected = patients[state.selectedPatientIndex] || patients[0] || {};
+  const department = state.data ? currentDepartment() : {};
+  const condition = state.data ? currentCondition() : {};
+  const previous = state.careSheetsPatient || {};
+  return {
+    name: cleanLine(state.patient.name) || previous.ho_ten || selected.name || "",
+    code: cleanLine(state.patient.code) || previous.ma_benh_nhan || selected.code || "",
+    age: cleanLine(state.patient.age) || previous.tuoi || selected.age || "",
+    sex: cleanLine(state.patient.sex) || previous.gioi_tinh || selected.sex || "",
+    room: cleanLine(state.patient.room) || previous.phong || selected.room || "",
+    bed: cleanLine(state.patient.bed) || previous.giuong || selected.bed || "",
+    department: cleanLine(state.patient.department) || previous.khoa || selected.department || department.ten_khoa || "",
+    diagnosis: cleanLine(state.patient.diagnosis) || condition.ten_mat_benh || "",
+    date: cleanLine(state.patient.date) || currentVietnamDateInput(),
+  };
+}
+
+function defaultCarePatientState() {
+  const selected = patients[state.selectedPatientIndex] || patients[0] || {};
+  const department = state.data ? currentDepartment() : {};
+  const condition = state.data ? currentCondition() : {};
+  return {
+    name: selected.name || "",
+    code: selected.code || "",
+    age: selected.age || "",
+    sex: selected.sex || "",
+    room: selected.room || "",
+    bed: selected.bed || "",
+    department: selected.department || department.ten_khoa || "",
+    diagnosis: condition.ten_mat_benh || "",
+    date: currentVietnamDateInput(),
+  };
 }
 
 function fluidBalanceFromChecklist(check) {
@@ -1982,17 +2032,11 @@ function render(focusSelector = "") {
       </div>
 
       <main class="layout">
-        <aside class="rail">
-          ${renderPatientPanel()}
-        </aside>
-
-        <section class="workspace">
-          ${renderAssessmentPanel(assessments)}
-          ${renderFluidBalancePanel()}
-          ${renderDiagnosisPanelV2()}
-          ${renderInterventionPanel()}
-          ${renderHealthEducationPanel()}
-          ${renderHandoverPanel()}
+        <section class="workspace care-tab-workspace">
+          ${renderCareFormTabs()}
+          <div class="care-tab-content">
+            ${renderActiveCareFormTab(assessments)}
+          </div>
         </section>
       </main>
     </div>
@@ -2012,12 +2056,59 @@ function render(focusSelector = "") {
   }
 }
 
+function careFormTabs() {
+  return [
+    { id: "patient", label: "Thông tin người bệnh" },
+    { id: "assessment", label: "Nhận định" },
+    { id: "diagnosis", label: "Chẩn đoán điều dưỡng" },
+    { id: "intervention", label: "Can thiệp điều dưỡng" },
+    { id: "education", label: "Tư vấn HD GDSK / Bàn giao" },
+  ];
+}
+
+function renderCareFormTabs() {
+  const activeTab = careFormTabs().some((tab) => tab.id === state.activeCareFormTab)
+    ? state.activeCareFormTab
+    : "patient";
+  return `
+    <nav class="care-form-tabs" aria-label="Các phần phiếu chăm sóc">
+      ${careFormTabs().map((tab) => `
+        <button
+          type="button"
+          class="care-form-tab ${activeTab === tab.id ? "active" : ""}"
+          data-care-form-tab="${h(tab.id)}"
+          aria-selected="${activeTab === tab.id ? "true" : "false"}"
+        >${h(tab.label)}</button>
+      `).join("")}
+    </nav>
+  `;
+}
+
+function renderActiveCareFormTab(assessments) {
+  switch (state.activeCareFormTab) {
+    case "assessment":
+      return `${renderAssessmentPanel(assessments)}${renderFluidBalancePanel()}`;
+    case "diagnosis":
+      return renderDiagnosisPanelV2();
+    case "intervention":
+      return renderInterventionPanel();
+    case "education":
+      return `${renderHealthEducationPanel()}${renderHandoverPanel()}`;
+    case "handover":
+      return renderHandoverPanel();
+    case "patient":
+    default:
+      return renderPatientPanel();
+  }
+}
+
 function renderPatientPanel() {
   return `${renderCareHeaderPanel()}${renderCareLevelPanel()}`;
 }
 
 function renderCareHeaderPanel() {
   const selected = patients[state.selectedPatientIndex] || patients[0];
+  const info = currentCarePatientInfo();
   return `
     <section class="panel care-top-card">
       <div class="panel-header">
@@ -2027,6 +2118,17 @@ function renderCareHeaderPanel() {
         </div>
       </div>
       <div class="panel-body">
+        <div class="field-grid patient-form-grid">
+          ${field("name", "Họ tên NB", info.name)}
+          ${field("code", "Mã y tế", info.code)}
+          ${field("age", "Tuổi", info.age)}
+          ${field("sex", "Giới tính", info.sex)}
+          ${field("date", "Ngày", info.date, "date")}
+          ${field("room", "Phòng", info.room)}
+          ${field("bed", "Giường", info.bed)}
+          ${field("department", "Khoa", info.department)}
+          ${field("diagnosis", "Chẩn đoán y khoa", info.diagnosis)}
+        </div>
         <div class="care-info-grid care-header-grid">
           ${checkField("evalTime", "Thời gian đánh giá", state.assessmentChecklist.evalTime, "datetime-local")}
           ${checkField("evaluator", "Người đánh giá", state.assessmentChecklist.evaluator)}
@@ -3691,6 +3793,7 @@ function handoverPayload() {
 async function saveCareSheetToSupabase() {
   const client = getSupabaseClient();
   const selected = patients[state.selectedPatientIndex] || patients[0];
+  const patientInfo = currentCarePatientInfo();
   const condition = currentCondition();
   const department = currentDepartment();
   const category = currentCategory();
@@ -3704,20 +3807,20 @@ async function saveCareSheetToSupabase() {
   );
 
   const patientPayload = {
-    ma_benh_nhan: selected.code,
-    ho_ten: selected.name,
-    tuoi: selected.age,
-    gioi_tinh: selected.sex,
-    phong: selected.room,
-    giuong: selected.bed || null,
-    khoa: department.ten_khoa,
-    chan_doan_y_khoa: condition.ten_mat_benh,
+    ma_benh_nhan: patientInfo.code || selected.code,
+    ho_ten: patientInfo.name || selected.name,
+    tuoi: patientInfo.age || selected.age,
+    gioi_tinh: patientInfo.sex || selected.sex,
+    phong: patientInfo.room || selected.room,
+    giuong: patientInfo.bed || null,
+    khoa: patientInfo.department || department.ten_khoa,
+    chan_doan_y_khoa: patientInfo.diagnosis || condition.ten_mat_benh,
   };
 
   const { data: existingPatient, error: findPatientError } = await client
     .from("dsbn")
     .select("id")
-    .eq("ma_benh_nhan", selected.code)
+    .eq("ma_benh_nhan", patientPayload.ma_benh_nhan)
     .maybeSingle();
   if (findPatientError) throw findPatientError;
 
@@ -4429,6 +4532,7 @@ app.addEventListener("click", (event) => {
     state.departmentId = currentCategory().khoa[0].id;
     state.conditionId = currentDepartment().mat_benh[0].id;
     state.search = "";
+    state.patient = { ...state.patient, department: "", diagnosis: "" };
     resetForCondition();
     return;
   }
@@ -4437,6 +4541,7 @@ app.addEventListener("click", (event) => {
     state.departmentId = target.dataset.department;
     state.conditionId = currentDepartment().mat_benh[0].id;
     state.search = "";
+    state.patient = { ...state.patient, department: "", diagnosis: "" };
     resetForCondition();
     return;
   }
@@ -4445,12 +4550,19 @@ app.addEventListener("click", (event) => {
     if (target.dataset.categoryRef) state.categoryId = target.dataset.categoryRef;
     if (target.dataset.departmentRef) state.departmentId = target.dataset.departmentRef;
     state.conditionId = target.dataset.condition;
+    state.patient = { ...state.patient, department: "", diagnosis: "" };
     resetForCondition();
     return;
   }
 
   if (target.dataset.level) {
     state.careLevel = target.dataset.level;
+    render();
+    return;
+  }
+
+  if (target.dataset.careFormTab) {
+    state.activeCareFormTab = target.dataset.careFormTab;
     render();
     return;
   }
@@ -4994,6 +5106,7 @@ app.addEventListener("change", (event) => {
     state.departmentId = currentCategory().khoa[0].id;
     state.conditionId = currentDepartment().mat_benh[0].id;
     state.search = "";
+    state.patient = { ...state.patient, department: "", diagnosis: "" };
     resetForCondition();
     return;
   }
@@ -5002,6 +5115,7 @@ app.addEventListener("change", (event) => {
     state.departmentId = target.value;
     state.conditionId = currentDepartment().mat_benh[0].id;
     state.search = "";
+    state.patient = { ...state.patient, department: "", diagnosis: "" };
     resetForCondition();
     return;
   }
