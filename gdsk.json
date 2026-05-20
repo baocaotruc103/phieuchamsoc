@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Biểu mẫu Giáo Dục Sức Khỏe - GDSK-01 (Tích hợp)</title>
+    <!-- Vue 3 CDN -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        @media print {
+            body {
+                background: white;
+                color: black;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-area {
+                display: block !important;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+            }
+            .page-break {
+                page-break-before: always;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+    <div id="app" class="w-full flex flex-col min-h-screen" v-cloak>
+        
+        <!-- HEADER (no-print) -->
+        <header class="bg-white border-b border-slate-200 py-3 px-6 flex justify-between items-center no-print shadow-xs">
+            <div class="flex items-center gap-3">
+                <span class="bg-emerald-50 text-emerald-600 p-2 rounded-lg">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                </span>
+                <div>
+                    <h2 class="text-base font-bold text-slate-800">Phân hệ Tư vấn & Giáo dục sức khỏe (GDSK-01)</h2>
+                    <p class="text-xs text-slate-500">Mẫu tích hợp hệ thống - Nhập liệu nhanh & Xuất dữ liệu lưu trữ</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <!-- Nút ẩn hiện Developer Tools -->
+                <button @click="showDevConsole = !showDevConsole" :class="['px-3 py-1.5 text-xs font-semibold rounded border transition-all flex items-center gap-1', showDevConsole ? 'bg-amber-100 border-amber-300 text-amber-800' : 'bg-slate-100 border-slate-300 text-slate-700']">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                    {{ showDevConsole ? 'Ẩn Hộp Giả Lập' : 'Mở Hộp Giả Lập Tích Hợp' }}
+                </button>
+                <button @click="triggerPrint" class="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded shadow-xs hover:shadow transition-all flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                    In Phiếu (Gộp)
+                </button>
+            </div>
+        </header>
+
+        <!-- HỘP CÔNG CỤ GIẢ LẬP TÍCH HỢP (no-print) -->
+        <section v-if="showDevConsole" class="bg-amber-50 border-b border-amber-200 p-4 no-print">
+            <div class="max-w-6xl mx-auto">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-xs font-bold text-amber-900 uppercase tracking-wider flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Hộp Giả Lập Truyền Nhận Dữ Liệu từ App Tổng của bạn
+                    </h3>
+                    <span class="text-[10px] bg-amber-200 text-amber-800 px-2 py-0.5 rounded font-mono font-bold">API ACTIVE</span>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                    <!-- Bên trái: Điền thông tin nhanh để test -->
+                    <div class="bg-white p-3 rounded border border-amber-200 space-y-2">
+                        <p class="font-semibold text-amber-950 mb-1">1. Giả lập thay đổi thông tin hành chính từ App Tổng:</p>
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="text" v-model="currentPatient.facility" placeholder="Cơ sở y tế" class="border p-1 rounded col-span-2 bg-amber-50 font-medium">
+                            <input type="text" v-model="currentPatient.fullName" placeholder="Họ và tên người bệnh" class="border p-1 rounded w-full">
+                            <input type="text" v-model="currentPatient.patientCode" placeholder="Mã người bệnh" class="border p-1 rounded w-full">
+                            <input type="text" v-model="currentPatient.hospitalId" placeholder="Số vào viện" class="border p-1 rounded w-full">
+                            <input type="number" v-model="currentPatient.age" placeholder="Tuổi" class="border p-1 rounded w-full">
+                            <select v-model="currentPatient.gender" class="border p-1 rounded w-full">
+                                <option value="Nam">Giới tính: Nam</option>
+                                <option value="Nữ">Giới tính: Nữ</option>
+                            </select>
+                            <input type="text" v-model="currentPatient.department" placeholder="Khoa điều trị" class="border p-1 rounded w-full">
+                            <input type="text" v-model="currentPatient.room" placeholder="Phòng" class="border p-1 rounded w-full">
+                            <input type="text" v-model="currentPatient.bed" placeholder="Giường" class="border p-1 rounded w-full">
+                        </div>
+                        <p class="text-[10px] text-slate-500 italic mt-1">* Dữ liệu này sẽ tự động liên kết vào bản in A4 và luồng dữ liệu của hệ thống.</p>
+                    </div>
+
+                    <!-- Bên phải: Hướng dẫn kết nối JS API -->
+                    <div class="bg-slate-900 text-slate-200 p-3 rounded font-mono text-[11px] flex flex-col justify-between">
+                        <div>
+                            <p class="text-amber-400 font-bold mb-1">// API KẾT NỐI VỚI APP TỔNG CỦA BẠN:</p>
+                            <p class="text-slate-400 mb-2">Bạn có thể gọi trực tiếp các hàm này từ iframe hoặc console:</p>
+                            <div class="space-y-1">
+                                <p><span class="text-blue-400">window.GDSK_API.loadPatient</span>(dataObj);</p>
+                                <p><span class="text-blue-400">window.GDSK_API.exportData</span>(); <span class="text-emerald-400">// Lấy JSON đã chọn để lưu DB</span></p>
+                            </div>
+                        </div>
+                        <div class="mt-2 pt-2 border-t border-slate-800 flex justify-end gap-2">
+                            <button @click="testExport" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-3 py-1 rounded transition-colors text-[10px]">
+                                Test Export dữ liệu (Xem Console)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MAIN INTERFACE (no-print) -->
+        <main class="flex-1 p-6 max-w-6xl w-full mx-auto space-y-6 no-print">
+            
+            <!-- ĐANG CHỈNH SỬA CHO BỆNH NHÂN NÀO -->
+            <div class="bg-white border border-slate-200 rounded-lg p-3 px-4 flex justify-between items-center shadow-xs">
+                <div class="flex items-center gap-3 flex-wrap">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span class="text-xs text-slate-500">Bệnh viện: <strong class="text-slate-800">{{ currentPatient.facility }}</strong></span>
+                    <span class="text-slate-300">|</span>
+                    <span class="text-xs text-slate-500">Người bệnh:</span>
+                    <strong class="text-slate-800 text-sm">{{ currentPatient.fullName || '(Chưa nhập tên)' }}</strong>
+                    <span class="text-slate-300">|</span>
+                    <span class="text-xs text-slate-600">Mã BN: <strong class="text-slate-800">{{ currentPatient.patientCode || 'N/A' }}</strong></span>
+                    <span class="text-slate-300">|</span>
+                    <span class="text-xs text-slate-600">Khoa: <strong class="text-slate-800">{{ currentPatient.department || 'N/A' }}</strong></span>
+                </div>
+                <span class="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded">Mã biểu mẫu: GDSK-01</span>
+            </div>
+
+            <!-- NAVIGATION / FORM STAGE SELECTOR -->
+            <div class="flex flex-col sm:flex-row gap-2 border-b border-slate-200 pb-1">
+                <button @click="currentTab = 'phase1'"
+                    :class="['flex-1 py-3 px-4 rounded-t-lg font-semibold text-sm transition-all flex items-center justify-center gap-2 border-b-2',
+                             currentTab === 'phase1' ? 'bg-white text-emerald-600 border-emerald-500 shadow-xs' : 'text-slate-500 hover:text-slate-800 border-transparent hover:bg-slate-100']">
+                    <span class="w-5 h-5 rounded-full bg-emerald-50 flex items-center justify-center text-xs text-emerald-600 font-bold">I</span>
+                    Khi bắt đầu nhập viện
+                </button>
+                <button @click="currentTab = 'phase2'"
+                    :class="['flex-1 py-3 px-4 rounded-t-lg font-semibold text-sm transition-all flex items-center justify-center gap-2 border-b-2',
+                             currentTab === 'phase2' ? 'bg-white text-blue-600 border-blue-500 shadow-xs' : 'text-slate-500 hover:text-slate-800 border-transparent hover:bg-slate-100']">
+                    <span class="w-5 h-5 rounded-full bg-blue-50 flex items-center justify-center text-xs text-blue-600 font-bold">II</span>
+                    Trong khi điều trị
+                </button>
+                <button @click="currentTab = 'phase3'"
+                    :class="['flex-1 py-3 px-4 rounded-t-lg font-semibold text-sm transition-all flex items-center justify-center gap-2 border-b-2',
+                             currentTab === 'phase3' ? 'bg-white text-amber-600 border-amber-500 shadow-xs' : 'text-slate-500 hover:text-slate-800 border-transparent hover:bg-slate-100']">
+                    <span class="w-5 h-5 rounded-full bg-amber-50 flex items-center justify-center text-xs text-amber-600 font-bold">III</span>
+                    Trước khi ra viện
+                </button>
+                <button @click="currentTab = 'combined'"
+                    :class="['flex-1 py-3 px-4 rounded-t-lg font-semibold text-sm transition-all flex items-center justify-center gap-2 border-b-2',
+                             currentTab === 'combined' ? 'bg-white text-purple-600 border-purple-500 shadow-xs' : 'text-slate-500 hover:text-slate-800 border-transparent hover:bg-slate-100']">
+                    <span>
+                        <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 12v-6m-9-3H7a2 2 0 00-2 2v3h2v-3zm3-3h-2v3h2v-3zm3-3h-2v3h2v-3zM9 8h.01M9 12h.01M9 16h.01M13 16h.01M13 12h.01M13 8h.01M17 16h.01M17 12h.01M17 8h.01"></path></svg>
+                    </span>
+                    Bản Gộp In Ấn (Gồm cả 3 phần)
+                </button>
+            </div>
+
+            <!-- SUB-FORMS CONTAINER -->
+            <div class="bg-white rounded-xl shadow-xs border border-slate-200 p-6 min-h-[400px]">
+
+                <!-- PHÍM TẮT NHANH CHO CÁC BẢNG -->
+                <div v-if="currentTab !== 'combined'" class="mb-4 flex flex-wrap justify-between items-center gap-2 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                    <span class="text-xs font-semibold text-slate-500">Phím tắt nhanh:</span>
+                    <div class="flex gap-2">
+                        <button @click="quickAction('co')" class="px-2.5 py-1 bg-white hover:bg-emerald-50 text-emerald-700 text-xs font-medium rounded border border-emerald-200 transition-colors">
+                            ✓ Chọn tất cả "Có"
+                        </button>
+                        <button @click="quickAction('không')" class="px-2.5 py-1 bg-white hover:bg-red-50 text-red-700 text-xs font-medium rounded border border-red-200 transition-colors">
+                            ✗ Chọn tất cả "Không"
+                        </button>
+                        <button @click="quickAction('hthd')" class="px-2.5 py-1 bg-white hover:bg-blue-50 text-blue-700 text-xs font-medium rounded border border-blue-200 transition-colors">
+                            ★ Chọn tất cả "Hoàn thành (HTHD)"
+                        </button>
+                        <button @click="quickAction('reset')" class="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-600 text-xs font-medium rounded border border-slate-200 transition-colors">
+                            Xóa hết chọn
+                        </button>
+                    </div>
+                </div>
+
+                <!-- TAB I: KHI BẮT ĐẦU NHẬP VIỆN -->
+                <div v-if="currentTab === 'phase1'">
+                    <div class="mb-4">
+                        <h4 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                            <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-xs rounded-full">Phần I</span>
+                            Tư vấn, hướng dẫn khi bắt đầu nhập viện
+                        </h4>
+                    </div>
+
+                    <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                                    <th class="py-3 px-4 font-semibold w-12 text-center">TT</th>
+                                    <th class="py-3 px-4 font-semibold">Nội dung hướng dẫn</th>
+                                    <th class="py-3 px-4 font-semibold w-40 text-center border-l border-slate-200">Nhu cầu hướng dẫn</th>
+                                    <th class="py-3 px-4 font-semibold w-52 text-center border-l border-slate-200">Kết quả hướng dẫn</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <tr v-for="(item, idx) in currentPatient.phase1.items" :key="item.id" class="hover:bg-slate-50/50">
+                                    <td class="py-3 px-4 text-center font-medium text-slate-400">{{ idx + 1 }}</td>
+                                    <td class="py-3 px-4 font-medium text-slate-700">{{ item.content }}</td>
+                                    <td class="py-3 px-4 border-l border-slate-200">
+                                        <div class="flex justify-center gap-4">
+                                            <label class="inline-flex items-center cursor-pointer">
+                                                <input type="radio" :name="'p1-need-'+item.id" value="Có" v-model="item.need" class="text-emerald-600 focus:ring-emerald-500">
+                                                <span class="ml-1 text-xs">Có</span>
+                                            </label>
+                                            <label class="inline-flex items-center cursor-pointer">
+                                                <input type="radio" :name="'p1-need-'+item.id" value="Không" v-model="item.need" class="text-slate-600 focus:ring-slate-500">
+                                                <span class="ml-1 text-xs">Không</span>
+                                            </label>
+                                        </div>
+                                    </td>
+                                    <td class="py-3 px-4 border-l border-slate-200">
+                                        <div class="flex justify-center gap-3">
+                                            <label class="inline-flex items-center cursor-pointer" title="Đã được hướng dẫn nhưng cần hướng dẫn thêm">
+                                                <input type="radio" :name="'p1-res-'+item.id" value="HDTh" v-model="item.result" class="text-amber-500 focus:ring-amber-400">
+                                                <span class="ml-1 text-xs font-semibold text-amber-600">HDTh</span>
+                                            </label>
+                                            <label class="inline-flex items-center cursor-pointer" title="Hoàn thành hướng dẫn (Không cần hướng dẫn thêm)">
+                                                <input type="radio" :name="'p1-res-'+item.id" value="HTHD" v-model="item.result" class="text-emerald-600 focus:ring-emerald-500">
+                                                <span class="ml-1 text-xs font-semibold text-emerald-600">HTHD</span>
+                                            </label>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Chữ ký & thời điểm -->
+                    <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Thời điểm tư vấn</label>
+                            <input type="date" v-model="currentPatient.phase1.date" class="w-full border border-slate-300 rounded px-3 py-1.5 text-sm focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Người thực hiện tư vấn</label>
+                            <input type="text" v-model="currentPatient.phase1.staffName" placeholder="Tên điều dưỡng / bác sĩ" class="w-full border border-slate-300 rounded px-3 py-1.5 text-sm focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Người bệnh / Thân nhân ký</label>
+                            <input type="text" v-model="currentPatient.phase1.patientSign" placeholder="Tên người ký nhận" class="w-full border border-slate-300 rounded px-3 py-1.5 text-sm focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB II: TRONG KHI VÀO VIỆN / ĐIỀU TRỊ -->
+                <div v-if="currentTab === 'phase2'">
+                    <div class="mb-4">
+                        <h4 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                            <span class="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">Phần II</span>
+                            Tư vấn, hướng dẫn trong khi vào viện (Quá trình điều trị)
+                        </h4>
+                    </div>
+
+                    <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                                    <th class="py-3 px-4 font-semibold w-12 text-center">TT</th>
+                                    <th class="py-3 px-4 font-semibold">Nội dung hướng dẫn</th>
+                                    <th class="py-3 px-4 font-semibold w-40 text-center border-l border-slate-200">Nhu cầu hướng dẫn</th>
+                                    <th class="py-3 px-4 font-semibold w-52 text-center border-l border-slate-200">Kết quả hướng dẫn</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <tr v-for="(item, idx) in currentPatient.phase2.items" :key="item.id" class="hover:bg-slate-50/50">
+                                    <td class="py-3 px-4 text-center font-medium text-slate-400">{{ idx + 1 }}</td>
+                                    <td class="py-3 px-4 font-medium text-slate-700">{{ item.content }}</td>
+                                    <td class="py-3 px-4 border-l border-slate-200">
+                                        <div class="flex justify-center gap-4">
+                                            <label class="inline-flex items-center cursor-pointer">
+                                                <input type="radio" :name="'p2-need-'+item.id" value="Có" v-model="item.need" class="text-blue-600 focus:ring-blue-500">
+                                                <span class="ml-1 text-xs">Có</span>
+                                            </label>
+                                            <label class="inline-flex items-center cursor-pointer">
+                                                <input type="radio" :name="'p2-need-'+item.id" value="Không" v-model="item.need" class="text-slate-600 focus:ring-slate-500">
+                                                <span class="ml-1 text-xs">Không</span>
+                                            </label>
+                                        </div>
+                                    </td>
+                                    <td class="py-3 px-4 border-l border-slate-200">
+                                        <div class="flex justify-center gap-3">
+                                            <label class="inline-flex items-center cursor-pointer" title="Đã được hướng dẫn nhưng cần hướng dẫn thêm">
+                                                <input type="radio" :name="'p2-res-'+item.id" value="HDTh" v-model="item.result" class="text-amber-500 focus:ring-amber-400">
+                                                <span class="ml-1 text-xs font-semibold text-amber-600">HDTh</span>
+                                            </label>
+                                            <label class="inline-flex items-center cursor-pointer" title="Hoàn thành hướng dẫn (Không cần hướng dẫn thêm)">
+                                                <input type="radio" :name="'p2-res-'+item.id" value="HTHD" v-model="item.result" class="text-emerald-600 focus:ring-emerald-500">
+                                                <span class="ml-1 text-xs font-semibold text-emerald-600">HTHD</span>
+                                            </label>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Chữ ký & thời điểm -->
+                    <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Thời điểm tư vấn</label>
+                            <input type="date" v-model="currentPatient.phase2.date" class="w-full border border-slate-300 rounded px-3 py-1.5 text-sm focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Người thực hiện tư vấn</label>
+                            <input type="text" v-model="currentPatient.phase2.staffName" placeholder="Tên điều dưỡng / bác sĩ" class="w-full border border-slate-300 rounded px-3 py-1.5 text-sm focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Người bệnh / Thân nhân ký</label>
+                            <input type="text" v-model="currentPatient.phase2.patientSign" placeholder="Tên người ký nhận" class="w-full border border-slate-300 rounded px-3 py-1.5 text-sm focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB III: TRƯỚC KHI RA VIỆN -->
+                <div v-if="currentTab === 'phase3'">
+                    <div class="mb-4">
+                        <h4 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                            <span class="px-2 py-0.5 bg-amber-100 text-amber-800 text-xs rounded-full">Phần III</span>
+                            Tư vấn, hướng dẫn trước khi ra viện (Ngay trước khi xuất viện)
+                        </h4>
+                    </div>
+
+                    <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                                    <th class="py-3 px-4 font-semibold w-12 text-center">TT</th>
+                                    <th class="py-3 px-4 font-semibold">Nội dung hướng dẫn</th>
+                                    <th class="py-3 px-4 font-semibold w-40 text-center border-l border-slate-200">Nhu cầu hướng dẫn</th>
+                                    <th class="py-3 px-4 font-semibold w-52 text-center border-l border-slate-200">Kết quả hướng dẫn</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <tr v-for="(item, idx) in currentPatient.phase3.items" :key="item.id" class="hover:bg-slate-50/50">
+                                    <td class="py-3 px-4 text-center font-medium text-slate-400">{{ idx + 1 }}</td>
+                                    <td class="py-3 px-4 font-medium text-slate-700">{{ item.content }}</td>
+                                    <td class="py-3 px-4 border-l border-slate-200">
+                                        <div class="flex justify-center gap-4">
+                                            <label class="inline-flex items-center cursor-pointer">
+                                                <input type="radio" :name="'p3-need-'+item.id" value="Có" v-model="item.need" class="text-amber-600 focus:ring-amber-500">
+                                                <span class="ml-1 text-xs">Có</span>
+                                            </label>
+                                            <label class="inline-flex items-center cursor-pointer">
+                                                <input type="radio" :name="'p3-need-'+item.id" value="Không" v-model="item.need" class="text-slate-600 focus:ring-slate-500">
+                                                <span class="ml-1 text-xs">Không</span>
+                                            </label>
+                                        </div>
+                                    </td>
+                                    <td class="py-3 px-4 border-l border-slate-200">
+                                        <div class="flex justify-center gap-3">
+                                            <label class="inline-flex items-center cursor-pointer" title="Đã được hướng dẫn nhưng cần hướng dẫn thêm">
+                                                <input type="radio" :name="'p3-res-'+item.id" value="HDTh" v-model="item.result" class="text-amber-500 focus:ring-amber-400">
+                                                <span class="ml-1 text-xs font-semibold text-amber-600">HDTh</span>
+                                            </label>
+                                            <label class="inline-flex items-center cursor-pointer" title="Hoàn thành hướng dẫn (Không cần hướng dẫn thêm)">
+                                                <input type="radio" :name="'p3-res-'+item.id" value="HTHD" v-model="item.result" class="text-emerald-600 focus:ring-emerald-500">
+                                                <span class="ml-1 text-xs font-semibold text-emerald-600">HTHD</span>
+                                            </label>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Chữ ký & thời điểm -->
+                    <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Thời điểm tư vấn</label>
+                            <input type="date" v-model="currentPatient.phase3.date" class="w-full border border-slate-300 rounded px-3 py-1.5 text-sm focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Người thực hiện tư vấn</label>
+                            <input type="text" v-model="currentPatient.phase3.staffName" placeholder="Tên điều dưỡng / bác sĩ" class="w-full border border-slate-300 rounded px-3 py-1.5 text-sm focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Người bệnh / Thân nhân ký</label>
+                            <input type="text" v-model="currentPatient.phase3.patientSign" placeholder="Tên người ký nhận" class="w-full border border-slate-300 rounded px-3 py-1.5 text-sm focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB IV: BẢN GỘP TỔNG HỢP / PREVIEW TRƯỚC KHI IN -->
+                <div v-if="currentTab === 'combined'" class="space-y-4">
+                    <div class="flex justify-between items-center bg-purple-50 p-4 rounded-lg border border-purple-200">
+                        <div>
+                            <h4 class="font-bold text-purple-950">Xem trước bản gộp đầy đủ</h4>
+                            <p class="text-xs text-purple-700">Đây là định dạng hoàn chỉnh của phiếu GDSK-01 tổng hợp từ cả 3 giai đoạn. Để in ra giấy, hãy nhấn nút phía bên dưới hoặc nút "In phiếu" trên đầu trang.</p>
+                        </div>
+                        <button @click="triggerPrint" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs py-2 px-4 rounded shadow-sm transition-all flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                            Thực Hiện In / Lưu PDF
+                        </button>
+                    </div>
+                    
+                    <!-- Wrapper để xem trên màn hình (đẹp mắt) -->
+                    <div class="border border-slate-200 bg-slate-100 p-2 sm:p-6 rounded-lg overflow-x-auto shadow-inner">
+                        <div class="bg-white p-8 max-w-[800px] mx-auto shadow-md rounded border border-slate-300">
+                            <patient-gds-document :patient="currentPatient"></patient-gds-document>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- CHỮ KÝ GỘP DƯỚI BẢNG -->
+            <div class="flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200">
+                <div class="text-xs text-slate-500">
+                    * Nhấn "Xuất dữ liệu tích" hoặc bấm "In phiếu" để tạo báo cáo PDF hoàn chỉnh.
+                </div>
+                <div class="flex gap-2">
+                    <button @click="resetCurrentPatientForm" class="px-4 py-2 text-xs font-semibold text-red-600 border border-red-200 hover:bg-red-50 rounded transition-all">
+                        Reset bảng tích
+                    </button>
+                    <button @click="saveAndNotify" class="px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded shadow-xs hover:shadow transition-all">
+                        Lưu & Kết xuất dữ liệu tích
+                    </button>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- CHỈ HIỂN THỊ KHI IN (Dùng CSS print để kiểm soát) -->
+        <div class="hidden print-area w-full max-w-[210mm] mx-auto p-4 bg-white text-black text-sm">
+            <patient-gds-document :patient="currentPatient" :is-print="true"></patient-gds-document>
+        </div>
+
+    </div>
+
+    <!-- VUE COMPONENT: PATIENT GDS DOCUMENT (Tài liệu in ấn tiêu chuẩn) -->
+    <template id="patient-gds-document-template">
+        <div class="leading-relaxed text-black print-document" style="font-family: 'Times New Roman', Times, serif; font-size: 13.5px;">
+            
+            <!-- HÀNG TRÊN CÙNG: CƠ SỞ & MÃ SỐ -->
+            <div class="flex justify-between items-start mb-4">
+                <div class="w-1/2">
+                    <p class="font-normal">Cơ sở KB, CB: <span class="border-b border-dotted border-black px-2 inline-block min-w-[150px] font-bold">{{ patient.facility || '...............................' }}</span></p>
+                </div>
+                <div class="w-1/2 text-right">
+                    <p class="font-bold text-base">MS: GDSK-01</p>
+                    <p>Số vào viện: <span class="font-semibold">{{ patient.hospitalId || '....................' }}</span></p>
+                    <p>Mã người bệnh: <span class="font-semibold">{{ patient.patientCode || '....................' }}</span></p>
+                </div>
+            </div>
+
+            <!-- TIÊU ĐỀ PHIẾU -->
+            <div class="text-center my-4">
+                <h1 class="text-xl font-bold uppercase tracking-wide">Phiếu Tư Vấn - Hướng Dẫn – Giáo Dục Sức Khoẻ</h1>
+            </div>
+
+            <!-- THÔNG TIN HÀNH CHÍNH -->
+            <div class="space-y-2 mb-6">
+                <div class="flex flex-wrap">
+                    <div class="w-2/3 flex">
+                        <span class="whitespace-nowrap">Họ và tên người bệnh:</span>
+                        <span class="font-bold border-b border-dotted border-black px-2 flex-1">{{ patient.fullName || '..................................................................' }}</span>
+                    </div>
+                    <div class="w-1/3 flex pl-2">
+                        <span class="whitespace-nowrap">Tuổi:</span>
+                        <span class="border-b border-dotted border-black px-2 flex-1 text-center font-semibold">{{ patient.age || '........' }}</span>
+                        <div class="flex items-center gap-3 ml-2">
+                            <span class="flex items-center">
+                                <span class="inline-block w-3.5 h-3.5 border border-black mr-1 flex items-center justify-center font-bold text-xs">
+                                    {{ patient.gender === 'Nam' ? '✓' : '' }}
+                                </span> Nam
+                            </span>
+                            <span class="flex items-center">
+                                <span class="inline-block w-3.5 h-3.5 border border-black mr-1 flex items-center justify-center font-bold text-xs">
+                                    {{ patient.gender === 'Nữ' ? '✓' : '' }}
+                                </span> Nữ
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap">
+                    <div class="w-1/2 flex">
+                        <span class="whitespace-nowrap">Khoa:</span>
+                        <span class="border-b border-dotted border-black px-2 flex-1 font-semibold">{{ patient.department || '..................................................................' }}</span>
+                    </div>
+                    <div class="w-1/4 flex pl-2">
+                        <span class="whitespace-nowrap">Phòng:</span>
+                        <span class="border-b border-dotted border-black px-2 flex-1 text-center font-semibold">{{ patient.room || '..................' }}</span>
+                    </div>
+                    <div class="w-1/4 flex pl-2">
+                        <span class="whitespace-nowrap">Giường:</span>
+                        <span class="border-b border-dotted border-black px-2 flex-1 text-center font-semibold">{{ patient.bed || '..................' }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PHẦN I: KHI BẮT ĐẦU NHẬP VIỆN -->
+            <div class="mt-6">
+                <h3 class="font-bold text-[14px] mb-2">I. Tư vấn, hướng dẫn khi bắt đầu nhập viện</h3>
+                <table class="w-full border-collapse border border-black text-center text-xs">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="border border-black p-1.5 w-8 font-bold" rowspan="2">TT</th>
+                            <th class="border border-black p-1.5 font-bold text-left" rowspan="2">Nội dung</th>
+                            <th class="border border-black p-1.5 w-24 font-bold" colspan="2">Nhu cầu hướng dẫn</th>
+                            <th class="border border-black p-1.5 w-36 font-bold" colspan="3">Kết quả hướng dẫn</th>
+                        </tr>
+                        <tr class="bg-gray-100">
+                            <th class="border border-black p-1 text-[11px] font-bold w-12">Có</th>
+                            <th class="border border-black p-1 text-[11px] font-bold w-12">Không</th>
+                            <th class="border border-black p-1 text-[11px] font-bold w-12">HDTh</th>
+                            <th class="border border-black p-1 text-[11px] font-bold w-12">HDTh</th>
+                            <th class="border border-black p-1 text-[11px] font-bold w-12">HTHD</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(item, idx) in patient.phase1.items" :key="'print-p1-'+item.id">
+                            <td class="border border-black p-1.5">{{ idx + 1 }}</td>
+                            <td class="border border-black p-1.5 text-left font-medium">{{ item.content }}</td>
+                            <td class="border border-black p-1.5 font-bold text-[13px]">{{ item.need === 'Có' ? '✓' : '' }}</td>
+                            <td class="border border-black p-1.5 font-bold text-[13px]">{{ item.need === 'Không' ? '✓' : '' }}</td>
+                            <td class="border border-black p-1.5 font-bold text-[13px]">{{ item.result === 'HDTh' ? '✓' : '' }}</td>
+                            <td class="border border-black p-1.5"></td>
+                            <td class="border border-black p-1.5 font-bold text-[13px]">{{ item.result === 'HTHD' ? '✓' : '' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="mt-2 flex justify-between text-xs">
+                    <p class="italic">Thời điểm tư vấn: <span class="font-bold underline">{{ formatDate(patient.phase1.date) }}</span></p>
+                </div>
+
+                <div class="mt-3 grid grid-cols-2 text-center text-xs">
+                    <div>
+                        <p class="font-bold">Người thực hiện</p>
+                        <p class="italic">(Ký, ghi rõ họ tên)</p>
+                        <div class="h-12"></div>
+                        <p class="font-bold underline">{{ patient.phase1.staffName || '.....................................' }}</p>
+                    </div>
+                    <div>
+                        <p class="font-bold">Chữ ký người bệnh/thân nhân</p>
+                        <p class="italic">(Ký, ghi rõ họ tên)</p>
+                        <div class="h-12"></div>
+                        <p class="font-bold underline">{{ patient.phase1.patientSign || '.....................................' }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PHẦN II: TRONG KHI VÀO VIỆN -->
+            <div class="mt-8 page-break-maybe">
+                <h3 class="font-bold text-[14px] mb-2">II. Tư vấn, hướng dẫn trong khi vào viện</h3>
+                <table class="w-full border-collapse border border-black text-center text-xs">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="border border-black p-1.5 w-8 font-bold" rowspan="2">TT</th>
+                            <th class="border border-black p-1.5 font-bold text-left" rowspan="2">Nội dung</th>
+                            <th class="border border-black p-1.5 w-24 font-bold" colspan="2">Nhu cầu hướng dẫn</th>
+                            <th class="border border-black p-1.5 w-36 font-bold" colspan="3">Kết quả hướng dẫn</th>
+                        </tr>
+                        <tr class="bg-gray-100">
+                            <th class="border border-black p-1 text-[11px] font-bold w-12">Có</th>
+                            <th class="border border-black p-1 text-[11px] font-bold w-12">Không</th>
+                            <th class="border border-black p-1 text-[11px] font-bold w-12">HDTh</th>
+                            <th class="border border-black p-1 text-[11px] font-bold w-12">HDTh</th>
+                            <th class="border border-black p-1 text-[11px] font-bold w-12">HTHD</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(item, idx) in patient.phase2.items" :key="'print-p2-'+item.id">
+                            <td class="border border-black p-1.5">{{ idx + 1 }}</td>
+                            <td class="border border-black p-1.5 text-left font-medium">{{ item.content }}</td>
+                            <td class="border border-black p-1.5 font-bold text-[13px]">{{ item.need === 'Có' ? '✓' : '' }}</td>
+                            <td class="border border-black p-1.5 font-bold text-[13px]">{{ item.need === 'Không' ? '✓' : '' }}</td>
+                            <td class="border border-black p-1.5 font-bold text-[13px]">{{ item.result === 'HDTh' ? '✓' : '' }}</td>
+                            <td class="border border-black p-1.5"></td>
+                            <td class="border border-black p-1.5 font-bold text-[13px]">{{ item.result === 'HTHD' ? '✓' : '' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="mt-2 flex justify-between text-xs">
+                    <p class="italic">Thời điểm tư vấn: <span class="font-bold underline">{{ formatDate(patient.phase2.date) }}</span></p>
+                </div>
+
+                <div class="mt-3 grid grid-cols-2 text-center text-xs">
+                    <div>
+                        <p class="font-bold">Người thực hiện</p>
+                        <p class="italic">(Ký, ghi rõ họ tên)</p>
+                        <div class="h-12"></div>
+                        <p class="font-bold underline">{{ patient.phase2.staffName || '.....................................' }}</p>
+                    </div>
+                    <div>
+                        <p class="font-bold">Chữ ký người bệnh/thân nhân</p>
+                        <p class="italic">(Ký, ghi rõ họ tên)</p>
+                        <div class="h-12"></div>
+                        <p class="font-bold underline">{{ patient.phase2.patientSign || '.....................................' }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PHẦN III: TRƯỚC KHI RA VIỆN -->
+            <div class="mt-8 page-break-maybe">
+                <h3 class="font-bold text-[14px] mb-2">III. Tư vấn, hướng dẫn trước khi ra viện</h3>
+                <table class="w-full border-collapse border border-black text-center text-xs">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="border border-black p-1.5 w-8 font-bold" rowspan="2">TT</th>
+                            <th class="border border-black p-1.5 font-bold text-left" rowspan="2">Nội dung (C. Ngay trước khi xuất viện)</th>
+                            <th class="border border-black p-1.5 w-24 font-bold" colspan="2">Nhu cầu hướng dẫn</th>
+                            <th class="border border-black p-1.5 w-36 font-bold" colspan="3">Kết quả hướng dẫn</th>
+                        </tr>
+                        <tr class="bg-gray-100">
+                            <th class="border border-black p-1 text-[11px] font-bold w-12">Có</th>
+                            <th class="border border-black p-1 text-[11px] font-bold w-12">Không</th>
+                            <th class="border border-black p-1 text-[11px] font-bold w-12">HDTh</th>
+                            <th class="border border-black p-1 text-[11px] font-bold w-12">HDTh</th>
+                            <th class="border border-black p-1 text-[11px] font-bold w-12">HTHD</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(item, idx) in patient.phase3.items" :key="'print-p3-'+item.id">
+                            <td class="border border-black p-1.5">{{ idx + 1 }}</td>
+                            <td class="border border-black p-1.5 text-left font-medium">{{ item.content }}</td>
+                            <td class="border border-black p-1.5 font-bold text-[13px]">{{ item.need === 'Có' ? '✓' : '' }}</td>
+                            <td class="border border-black p-1.5 font-bold text-[13px]">{{ item.need === 'Không' ? '✓' : '' }}</td>
+                            <td class="border border-black p-1.5 font-bold text-[13px]">{{ item.result === 'HDTh' ? '✓' : '' }}</td>
+                            <td class="border border-black p-1.5"></td>
+                            <td class="border border-black p-1.5 font-bold text-[13px]">{{ item.result === 'HTHD' ? '✓' : '' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="mt-2 flex justify-between text-xs">
+                    <p class="italic">Thời điểm tư vấn: <span class="font-bold underline">{{ formatDate(patient.phase3.date) }}</span></p>
+                </div>
+
+                <div class="mt-2 text-[11px] text-gray-700 leading-tight">
+                    <span class="font-bold">Chú thích:</span><br>
+                    HDTh: Đã được hướng dẫn nhưng cần hướng dẫn thêm. <br>
+                    HTHD: Hoàn thành hướng dẫn (Không cần hướng dẫn thêm).
+                </div>
+
+                <div class="mt-4 grid grid-cols-2 text-center text-xs">
+                    <div>
+                        <p class="font-bold">Người thực hiện</p>
+                        <p class="italic">(Ký, ghi rõ họ tên)</p>
+                        <div class="h-12"></div>
+                        <p class="font-bold underline">{{ patient.phase3.staffName || '.....................................' }}</p>
+                    </div>
+                    <div>
+                        <p class="font-bold">Chữ ký người bệnh/thân nhân</p>
+                        <p class="italic">(Ký, ghi rõ họ tên)</p>
+                        <div class="h-12"></div>
+                        <p class="font-bold underline">{{ patient.phase3.patientSign || '.....................................' }}</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </template>
+
+    <script>
+        const { createApp, ref, computed, onMounted } = Vue;
+
+        // Nội dung tích chọn chuẩn
+        const defaultPhase1Items = () => [
+            { id: '1_1', content: "Hướng dẫn chế độ BHYT", need: null, result: null },
+            { id: '1_2', content: "Phổ biến nội quy, quy định của cơ sở khám bệnh, chữa bệnh Hướng dẫn công tác kiểm soát nhiễm khuẩn: vệ sinh tay, phân loại rác thải đúng quy định.", need: null, result: null },
+            { id: '1_3', content: "Hướng dẫn sử dụng các trang thiết bị trong phòng bệnh: Giường, gọi nhân viên y tế, sử dụng nhà vệ sinh…", need: null, result: null },
+            { id: '1_4', content: "Phổ biến các dịch vụ hiện có tại khoa: giường bệnh dịch vụ, các kỹ thuật mới trong công tác điều trị và chăm sóc...", need: null, result: null },
+            { id: '1_5', content: "Hướng dẫn chế độ ăn phù hợp với tình trạng bệnh và trước phẫu thuật", need: null, result: null }
+        ];
+
+        const defaultPhase2Items = () => [
+            { id: '2_1', content: "Giải thích các kỹ thuật, thủ thuật trước, trong và sau khi thực hiện trên người bệnh liên quan đến công tác chăm sóc.", need: null, result: null },
+            { id: '2_2', content: "Hướng dẫn sử dụng thuốc an toàn và hiệu quả.", need: null, result: null },
+            { id: '2_3', content: "Hướng dẫn tự phát hiện và theo dõi các triệu chứng khác thường", need: null, result: null },
+            { id: '2_4', content: "Hướng dẫn chế độ dinh dưỡng theo bệnh lý, tương tác giữa thực phẩm và thuốc (nếu có).", need: null, result: null },
+            { id: '2_5', content: "Hướng dẫn các vấn đề an toàn người bệnh: Đề phòng té ngã, loét do tì đè.", need: null, result: null },
+            { id: '2_6', content: "Hướng dẫn chế độ vận động theo bệnh lý, nghỉ ngơi hợp lý.", need: null, result: null },
+            { id: '2_7', content: "Hướng dẫn chăm sóc vệ sinh cá nhân.", need: null, result: null },
+            { id: '2_8', content: "Tìm hiểu nhu cầu và hỗ trợ người bệnh “Giai đoạn cuối” về thể chất - tinh thần.", need: null, result: null }
+        ];
+
+        const defaultPhase3Items = () => [
+            { id: '3_1', content: "Chăm sóc tại nhà sau khi xuất viện", need: null, result: null },
+            { id: '3_2', content: "Điều trị và dùng thuốc", need: null, result: null },
+            { id: '3_3', content: "Thời gian và nơi thực hiện việc theo dõi chăm sóc", need: null, result: null },
+            { id: '3_4', content: "Khi nào phải liên hệ với bác sỹ", need: null, result: null },
+            { id: '3_5', content: "Khi nào cần phải đi khám, chăm sóc khẩn cấp", need: null, result: null }
+        ];
+
+        const createEmptyPatient = () => ({
+            facility: 'Bệnh viện Quân y 103',
+            hospitalId: '',
+            patientCode: '',
+            fullName: '',
+            age: '',
+            gender: 'Nam',
+            department: '',
+            room: '',
+            bed: '',
+            phase1: {
+                date: new Date().toISOString().substring(0, 10),
+                staffName: '',
+                patientSign: '',
+                items: defaultPhase1Items()
+            },
+            phase2: {
+                date: new Date().toISOString().substring(0, 10),
+                staffName: '',
+                patientSign: '',
+                items: defaultPhase2Items()
+            },
+            phase3: {
+                date: new Date().toISOString().substring(0, 10),
+                staffName: '',
+                patientSign: '',
+                items: defaultPhase3Items()
+            }
+        });
+
+        // Component Tài liệu GDSK
+        const PatientGdsDocument = {
+            name: 'PatientGdsDocument',
+            template: '#patient-gds-document-template',
+            props: {
+                patient: {
+                    type: Object,
+                    required: true
+                },
+                isPrint: {
+                    type: Boolean,
+                    default: false
+                }
+            },
+            methods: {
+                formatDate(val) {
+                    if (!val) return '........./........./20.........';
+                    try {
+                        const parts = val.split('-');
+                        if(parts.length === 3) {
+                            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                        }
+                    } catch(e) {}
+                    return val;
+                }
+            }
+        };
+
+        const app = createApp({
+            components: {
+                PatientGdsDocument
+            },
+            setup() {
+                const currentPatient = ref(createEmptyPatient());
+                const currentTab = ref('phase1');
+                const showDevConsole = ref(true); // Hiển thị sẵn công cụ giả lập tích hợp
+
+                // Khởi tạo bệnh nhân giả lập lúc đầu
+                onMounted(() => {
+                    // Dữ liệu mẫu demo
+                    const demoData = {
+                        fullName: 'Trần Quốc Bảo',
+                        patientCode: 'BN-88902',
+                        hospitalId: 'VV-3342',
+                        age: 38,
+                        gender: 'Nam',
+                        facility: 'Bệnh viện Quân y 103',
+                        department: 'Tim Mạch Can Thiệp',
+                        room: 'P.402',
+                        bed: '09',
+                        phase1: {
+                            date: '2026-05-20',
+                            staffName: 'ĐD. Nguyễn Hoàng Yến',
+                            patientSign: 'Trần Quốc Bảo',
+                            items: defaultPhase1Items()
+                        },
+                        phase2: {
+                            date: '2026-05-20',
+                            staffName: 'ĐD. Nguyễn Hoàng Yến',
+                            patientSign: 'Trần Quốc Bảo',
+                            items: defaultPhase2Items()
+                        },
+                        phase3: {
+                            date: '2026-05-20',
+                            staffName: 'ĐD. Nguyễn Hoàng Yến',
+                            patientSign: 'Trần Quốc Bảo',
+                            items: defaultPhase3Items()
+                        }
+                    };
+                    currentPatient.value = demoData;
+
+                    // Đăng ký API toàn cục trên window để App tổng gọi
+                    window.GDSK_API = {
+                        // 1. Hàm nạp dữ liệu từ App Tổng
+                        loadPatient: (patientData) => {
+                            if (!patientData) return;
+                            
+                            // Đảm bảo dữ liệu các phần có cấu trúc mảng chuẩn
+                            const p1Items = patientData.phase1?.items || defaultPhase1Items();
+                            const p2Items = patientData.phase2?.items || defaultPhase2Items();
+                            const p3Items = patientData.phase3?.items || defaultPhase3Items();
+
+                            currentPatient.value = {
+                                facility: patientData.facility || 'Bệnh viện Quân y 103',
+                                hospitalId: patientData.hospitalId || '',
+                                patientCode: patientData.patientCode || '',
+                                fullName: patientData.fullName || '',
+                                age: patientData.age || '',
+                                gender: patientData.gender || 'Nam',
+                                department: patientData.department || '',
+                                room: patientData.room || '',
+                                bed: patientData.bed || '',
+                                phase1: {
+                                    date: patientData.phase1?.date || new Date().toISOString().substring(0, 10),
+                                    staffName: patientData.phase1?.staffName || '',
+                                    patientSign: patientData.phase1?.patientSign || '',
+                                    items: p1Items
+                                },
+                                phase2: {
+                                    date: patientData.phase2?.date || new Date().toISOString().substring(0, 10),
+                                    staffName: patientData.phase2?.staffName || '',
+                                    patientSign: patientData.phase2?.patientSign || '',
+                                    items: p2Items
+                                },
+                                phase3: {
+                                    date: patientData.phase3?.date || new Date().toISOString().substring(0, 10),
+                                    staffName: patientData.phase3?.staffName || '',
+                                    patientSign: patientData.phase3?.patientSign || '',
+                                    items: p3Items
+                                }
+                            };
+                            console.log("GDSK-01: Đã nhận dữ liệu người bệnh từ App Tổng!");
+                        },
+
+                        // 2. Hàm xuất dữ liệu tích chọn ngược lại cho App Tổng
+                        exportData: () => {
+                            return JSON.parse(JSON.stringify(currentPatient.value));
+                        }
+                    };
+                });
+
+                const resetCurrentPatientForm = () => {
+                    if (confirm("Reset lại toàn bộ dữ liệu lựa chọn trên bảng tích?")) {
+                        currentPatient.value.phase1.items = defaultPhase1Items();
+                        currentPatient.value.phase2.items = defaultPhase2Items();
+                        currentPatient.value.phase3.items = defaultPhase3Items();
+                    }
+                };
+
+                const quickAction = (actionType) => {
+                    const currentPhase = currentTab.value;
+                    if (!currentPatient.value[currentPhase]) return;
+
+                    const items = currentPatient.value[currentPhase].items;
+                    items.forEach(item => {
+                        if (actionType === 'co') {
+                            item.need = 'Có';
+                        } else if (actionType === 'không') {
+                            item.need = 'Không';
+                            item.result = null;
+                        } else if (actionType === 'hthd') {
+                            item.need = 'Có';
+                            item.result = 'HTHD';
+                        } else if (actionType === 'reset') {
+                            item.need = null;
+                            item.result = null;
+                        }
+                    });
+                };
+
+                const triggerPrint = () => {
+                    window.print();
+                };
+
+                const saveAndNotify = () => {
+                    const result = window.GDSK_API.exportData();
+                    console.log("Kết quả Export cho App Tổng:", result);
+                    
+                    // Gửi Event ra ngoài cho App Tổng bắt (Nếu tích hợp trong iframe / micro-frontend)
+                    const event = new CustomEvent('gdskSave', { detail: result });
+                    window.dispatchEvent(event);
+                    if (window.parent) {
+                        window.parent.postMessage({ type: 'GDSK_SAVE', data: result }, '*');
+                    }
+
+                    alert("Đã kết xuất dữ liệu thành công! Hãy kiểm tra tab Console để xem cấu trúc JSON lưu trữ.");
+                };
+
+                const testExport = () => {
+                    const data = window.GDSK_API.exportData();
+                    console.log("👉 Dữ liệu hiện tại của biểu mẫu:", data);
+                    alert("Đã ghi nhận dữ liệu tại Developer Console. Ấn F12 để kiểm tra!");
+                };
+
+                return {
+                    currentTab,
+                    currentPatient,
+                    showDevConsole,
+                    resetCurrentPatientForm,
+                    quickAction,
+                    triggerPrint,
+                    saveAndNotify,
+                    testExport
+                };
+            }
+        });
+
+        app.mount('#app');
+    </script>
+</body>
+</html>

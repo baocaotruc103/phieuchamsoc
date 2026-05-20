@@ -112,33 +112,66 @@
             { "min": 5, "max": 5, "risk": "Viêm TM nặng/huyết khối - Xử trí cấp cứu" }
         ]
     },
-    {
-        "id": "flacc_pain_scale",
-        "name": "Thang điểm đau FLACC",
-        "totalScoreRule": "Cộng 5 mục",
-        "riskInterpretation": [
-            { "min": 0, "max": 3, "risk": "Đau nhẹ" },
-            { "min": 4, "max": 6, "risk": "Đau vừa" },
-            { "min": 7, "max": 10, "risk": "Đau nặng" }
-        ],
-        "items": [
-            { "key": "face", "label": "Khuôn mặt", "options": [
-                { "label": "Bình thường", "score": 0 }, { "label": "Nhăn mặt nhẹ", "score": 1 }, { "label": "Nhăn nhó liên tục", "score": 2 }
-            ]},
-            { "key": "legs", "label": "Chân", "options": [
-                { "label": "Bình thường", "score": 0 }, { "label": "Khó chịu", "score": 1 }, { "label": "Co kéo", "score": 2 }
-            ]},
-            { "key": "activity", "label": "Hoạt động", "options": [
-                { "label": "Bình thường", "score": 0 }, { "label": "Khó chịu", "score": 1 }, { "label": "Cong cứng", "score": 2 }
-            ]},
-            { "key": "cry", "label": "Khóc", "options": [
-                { "label": "Không", "score": 0 }, { "label": "Rên", "score": 1 }, { "label": "Khóc liên tục", "score": 2 }
-            ]},
-            { "key": "consolability", "label": "Dỗ dành", "options": [
-                { "label": "Bình thường", "score": 0 }, { "label": "Dỗ được", "score": 1 }, { "label": "Không dỗ được", "score": 2 }
-            ]}
-        ]
+   {
+    "id": "vas_pain_score",
+    "name": "Đánh giá đau VAS",
+    "type": "assessment",
+    "scale": {
+      "min": 0,
+      "max": 10,
+      "step": 1,
+      "unit": "điểm"
     },
+    "input": {
+      "type": "slider",
+      "allowManualInput": true
+    },
+    "levels": [
+      {
+        "min": 0,
+        "max": 0,
+        "label": "Không đau",
+        "color": "green",
+        "recommendation": "Tiếp tục theo dõi tình trạng người bệnh."
+      },
+      {
+        "min": 1,
+        "max": 3,
+        "label": "Đau nhẹ",
+        "color": "lime",
+        "recommendation": "Theo dõi mức độ đau, hướng dẫn thư giãn, thay đổi tư thế nếu phù hợp."
+      },
+      {
+        "min": 4,
+        "max": 6,
+        "label": "Đau vừa",
+        "color": "orange",
+        "recommendation": "Đánh giá lại nguyên nhân đau, thực hiện giảm đau theo y lệnh, báo bác sĩ nếu cần."
+      },
+      {
+        "min": 7,
+        "max": 10,
+        "label": "Đau nặng",
+        "color": "red",
+        "recommendation": "Ưu tiên đánh giá nguyên nhân, báo bác sĩ ngay, thực hiện can thiệp giảm đau khẩn."
+      }
+    ],
+    "calculationLogic": {
+      "functionName": "calculatePainVAS",
+      "javascript": "function calculatePainVAS(score){const vas=Number(score);if(isNaN(vas)||vas<0||vas>10){return{valid:false,score:null,label:'',color:'gray',recommendation:'Điểm đau không hợp lệ (0-10)'}};if(vas===0){return{valid:true,score:vas,label:'Không đau',color:'green',recommendation:'Tiếp tục theo dõi tình trạng người bệnh.'}};if(vas<=3){return{valid:true,score:vas,label:'Đau nhẹ',color:'lime',recommendation:'Theo dõi mức độ đau, hướng dẫn thư giãn, thay đổi tư thế nếu phù hợp.'}};if(vas<=6){return{valid:true,score:vas,label:'Đau vừa',color:'orange',recommendation:'Đánh giá lại nguyên nhân đau, thực hiện giảm đau theo y lệnh, báo bác sĩ nếu cần.'}};return{valid:true,score:vas,label:'Đau nặng',color:'red',recommendation:'Ưu tiên đánh giá nguyên nhân, báo bác sĩ ngay, thực hiện can thiệp giảm đau khẩn.'}}"
+    },
+    "display": {
+      "showScore": true,
+      "showLevel": true,
+      "showRecommendation": true,
+      "showColorIndicator": true
+    },
+    "validation": {
+      "required": false,
+      "minValue": 0,
+      "maxValue": 10
+    }
+  },
     {
         "id": "glasgow_coma_scale",
         "name": "Thang điểm Glasgow",

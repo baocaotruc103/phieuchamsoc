@@ -1,137 +1,2454 @@
 [
   {
-    "group": "Theo dõi - đánh giá",
-    "interventions": [
-      {"code": "TD001", "name": "Theo dõi dấu hiệu sinh tồn"},
-      {"code": "TD002", "name": "Theo dõi tri giác/GCS"},
-      {"code": "TD003", "name": "Theo dõi SpO2"},
-      {"code": "TD004", "name": "Theo dõi nhịp thở"},
-      {"code": "TD005", "name": "Theo dõi huyết áp động mạch"},
-      {"code": "TD006", "name": "Theo dõi mạch"},
-      {"code": "TD007", "name": "Theo dõi nhiệt độ"},
-      {"code": "TD008", "name": "Theo dõi lượng nước vào/ra"},
-      {"code": "TD009", "name": "Theo dõi lượng nước tiểu"},
-      {"code": "TD010", "name": "Theo dõi dẫn lưu"},
-      {"code": "TD011", "name": "Theo dõi đau (VAS/BPS/CPOT)"},
-      {"code": "TD012", "name": "Theo dõi đường huyết mao mạch"},
-      {"code": "TD013", "name": "Theo dõi dấu hiệu chảy máu"},
-      {"code": "TD014", "name": "Theo dõi phù"},
-      {"code": "TD015", "name": "Theo dõi tình trạng da"},
-      {"code": "TD016", "name": "Theo dõi dấu hiệu nhiễm trùng"}
-    ]
+    "ma_hoa": "C1",
+    "danh_muc_huong_dan_cham_soc": "Đón tiếp, xếp giường"
   },
   {
-    "group": "Hô hấp",
-    "interventions": [
-      {"code": "HH001", "name": "Cho người bệnh thở oxy"},
-      {"code": "HH002", "name": "Theo dõi thở oxy"},
-      {"code": "HH003", "name": "Hút đờm dãi"},
-      {"code": "HH004", "name": "Vỗ rung long đờm"},
-      {"code": "HH005", "name": "Tập thở"},
-      {"code": "HH006", "name": "Chăm sóc mở khí quản"},
-      {"code": "HH007", "name": "Theo dõi máy thở"},
-      {"code": "HH008", "name": "Hỗ trợ cai máy thở"},
-      {"code": "HH009", "name": "Lấy khí máu động mạch"},
-      {"code": "HH010", "name": "Đảm bảo thông thoáng đường thở"}
-    ]
+    "ma_hoa": "C2",
+    "danh_muc_huong_dan_cham_soc": "Đo dấu hiệu sinh tồn"
   },
   {
-    "group": "Tuần hoàn",
-    "interventions": [
-      {"code": "TH001", "name": "Thiết lập đường truyền tĩnh mạch"},
-      {"code": "TH002", "name": "Theo dõi truyền dịch"},
-      {"code": "TH003", "name": "Theo dõi thuốc vận mạch"},
-      {"code": "TH004", "name": "Ép cầm máu"},
-      {"code": "TH005", "name": "Nâng cao chi phù"},
-      {"code": "TH006", "name": "Theo dõi tưới máu ngoại vi"}
-    ]
+    "ma_hoa": "C3",
+    "danh_muc_huong_dan_cham_soc": "Khai thác tiền sử dị ứng"
   },
   {
-    "group": "Thuốc - điều trị",
-    "interventions": [
-      {"code": "DT001", "name": "Thực hiện y lệnh thuốc uống"},
-      {"code": "DT002", "name": "Thực hiện y lệnh thuốc tiêm"},
-      {"code": "DT003", "name": "Truyền dịch"},
-      {"code": "DT004", "name": "Truyền máu/chế phẩm máu"},
-      {"code": "DT005", "name": "Khí dung"},
-      {"code": "DT006", "name": "Tiêm insulin"},
-      {"code": "DT007", "name": "Dùng thuốc giảm đau"},
-      {"code": "DT008", "name": "Dùng thuốc hạ sốt"},
-      {"code": "DT009", "name": "Dùng thuốc kháng sinh"}
-    ]
+    "ma_hoa": "C4",
+    "danh_muc_huong_dan_cham_soc": "Báo bác sĩ khám, cấp cứu"
   },
   {
-    "group": "Dinh dưỡng",
-    "interventions": [
-      {"code": "DD001", "name": "Cho ăn đường miệng"},
-      {"code": "DD002", "name": "Nuôi ăn qua sonde dạ dày"},
-      {"code": "DD003", "name": "Theo dõi dung nạp dinh dưỡng"},
-      {"code": "DD004", "name": "Chăm sóc sonde dạ dày"},
-      {"code": "DD005", "name": "Hướng dẫn chế độ ăn"}
-    ]
+    "ma_hoa": "C5",
+    "danh_muc_huong_dan_cham_soc": "Duy trì luyện tập hàng ngày"
   },
   {
-    "group": "Bài tiết",
-    "interventions": [
-      {"code": "BT001", "name": "Theo dõi bài tiết nước tiểu"},
-      {"code": "BT002", "name": "Đặt sonde tiểu"},
-      {"code": "BT003", "name": "Chăm sóc sonde tiểu"},
-      {"code": "BT004", "name": "Theo dõi đại tiện"},
-      {"code": "BT005", "name": "Thụt tháo"}
-    ]
+    "ma_hoa": "C6",
+    "danh_muc_huong_dan_cham_soc": "Thay ga trải giường"
   },
   {
-    "group": "Chăm sóc cơ bản",
-    "interventions": [
-      {"code": "CS001", "name": "Vệ sinh cá nhân"},
-      {"code": "CS002", "name": "Thay ga giường"},
-      {"code": "CS003", "name": "Chăm sóc răng miệng"},
-      {"code": "CS004", "name": "Chăm sóc mắt"},
-      {"code": "CS005", "name": "Chăm sóc da"},
-      {"code": "CS006", "name": "Thay đổi tư thế"},
-      {"code": "CS007", "name": "Phòng loét tỳ đè"},
-      {"code": "CS008", "name": "Giữ ấm người bệnh"}
-    ]
+    "ma_hoa": "C7",
+    "danh_muc_huong_dan_cham_soc": "Bàn giao người bệnh chuyển khoa"
   },
   {
-    "group": "Vết thương - dẫn lưu",
-    "interventions": [
-      {"code": "VT001", "name": "Thay băng vết thương"},
-      {"code": "VT002", "name": "Chăm sóc vết mổ"},
-      {"code": "VT003", "name": "Theo dõi dẫn lưu"},
-      {"code": "VT004", "name": "Chăm sóc dẫn lưu"},
-      {"code": "VT005", "name": "Theo dõi chảy máu vết mổ"}
-    ]
+    "ma_hoa": "C8",
+    "danh_muc_huong_dan_cham_soc": "Bàn giao người bệnh chuyển viện"
   },
   {
-    "group": "Vận động - phục hồi chức năng",
-    "interventions": [
-      {"code": "PH001", "name": "Tập vận động thụ động"},
-      {"code": "PH002", "name": "Tập vận động chủ động"},
-      {"code": "PH003", "name": "Tập ngồi dậy"},
-      {"code": "PH004", "name": "Tập đứng"},
-      {"code": "PH005", "name": "Tập đi lại"},
-      {"code": "PH006", "name": "Hỗ trợ dụng cụ vận động"}
-    ]
+    "ma_hoa": "C9",
+    "danh_muc_huong_dan_cham_soc": "Mời hội chẩn"
   },
   {
-    "group": "An toàn người bệnh",
-    "interventions": [
-      {"code": "AT001", "name": "Phòng ngừa té ngã"},
-      {"code": "AT002", "name": "Phòng ngừa hít sặc"},
-      {"code": "AT003", "name": "Phòng ngừa loét tỳ đè"},
-      {"code": "AT004", "name": "Đảm bảo an toàn truyền dịch"},
-      {"code": "AT005", "name": "Kiểm tra nhận diện người bệnh"}
-    ]
+    "ma_hoa": "C10",
+    "danh_muc_huong_dan_cham_soc": "Cắt móng tay/chân"
   },
   {
-    "group": "Giáo dục sức khỏe",
-    "interventions": [
-      {"code": "GDSK001", "name": "Giáo dục sức khỏe cho người bệnh"},
-      {"code": "GDSK002", "name": "Hướng dẫn dùng thuốc"},
-      {"code": "GDSK003", "name": "Hướng dẫn chăm sóc tại nhà"},
-      {"code": "GDSK004", "name": "Hướng dẫn tái khám"},
-      {"code": "GDSK005", "name": "Tư vấn dinh dưỡng"}
-    ]
+    "ma_hoa": "C11",
+    "danh_muc_huong_dan_cham_soc": "Cắt/cạo tóc"
+  },
+  {
+    "ma_hoa": "C12",
+    "danh_muc_huong_dan_cham_soc": "Cạo râu"
+  },
+  {
+    "ma_hoa": "C13",
+    "danh_muc_huong_dan_cham_soc": "Tắm/gội cho người bệnh"
+  },
+  {
+    "ma_hoa": "C14",
+    "danh_muc_huong_dan_cham_soc": "Vệ sinh răng miệng"
+  },
+  {
+    "ma_hoa": "C15",
+    "danh_muc_huong_dan_cham_soc": "Thay đổi tư thế người bệnh"
+  },
+  {
+    "ma_hoa": "C16",
+    "danh_muc_huong_dan_cham_soc": "Duy trì an thần"
+  },
+  {
+    "ma_hoa": "C17",
+    "danh_muc_huong_dan_cham_soc": "Duy trì giảm đau"
+  },
+  {
+    "ma_hoa": "C18",
+    "danh_muc_huong_dan_cham_soc": "Thay băng vết mổ"
+  },
+  {
+    "ma_hoa": "C19",
+    "danh_muc_huong_dan_cham_soc": "Cắt chỉ"
+  },
+  {
+    "ma_hoa": "C20",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc catheter"
+  },
+  {
+    "ma_hoa": "C21",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc dẫn lưu"
+  },
+  {
+    "ma_hoa": "C22",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc hậu môn nhân tạo"
+  },
+  {
+    "ma_hoa": "C23",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc ống NKQ/MKQ"
+  },
+  {
+    "ma_hoa": "C24",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc ống thông tiểu"
+  },
+  {
+    "ma_hoa": "C25",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc vết loét"
+  },
+  {
+    "ma_hoa": "C26",
+    "danh_muc_huong_dan_cham_soc": "Sưởi ấm cơ thể bằng nhiệt"
+  },
+  {
+    "ma_hoa": "C27",
+    "danh_muc_huong_dan_cham_soc": "Cho người bệnh ăn qua sonde"
+  },
+  {
+    "ma_hoa": "C28",
+    "danh_muc_huong_dan_cham_soc": "Cho người bệnh ăn qua đường miệng"
+  },
+  {
+    "ma_hoa": "C29",
+    "danh_muc_huong_dan_cham_soc": "Cho người bệnh nằm đầu cao"
+  },
+  {
+    "ma_hoa": "C30",
+    "danh_muc_huong_dan_cham_soc": "Cho người bệnh thở HFNC"
+  },
+  {
+    "ma_hoa": "C31",
+    "danh_muc_huong_dan_cham_soc": "Hướng dẫn người bệnh tập thở cơ hoành"
+  },
+  {
+    "ma_hoa": "C32",
+    "danh_muc_huong_dan_cham_soc": "Hướng dẫn người bệnh tập thở với dụng cụ"
+  },
+  {
+    "ma_hoa": "C33",
+    "danh_muc_huong_dan_cham_soc": "Vỗ rung dẫn lưu tư thế"
+  },
+  {
+    "ma_hoa": "C34",
+    "danh_muc_huong_dan_cham_soc": "Vỗ rung lồng ngực"
+  },
+  {
+    "ma_hoa": "C35",
+    "danh_muc_huong_dan_cham_soc": "Hút đờm"
+  },
+  {
+    "ma_hoa": "C36",
+    "danh_muc_huong_dan_cham_soc": "Hút dịch dạ dày"
+  },
+  {
+    "ma_hoa": "C37",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi Bilance"
+  },
+  {
+    "ma_hoa": "C38",
+    "danh_muc_huong_dan_cham_soc": "Đo lượng nước tiểu 24 giờ"
+  },
+  {
+    "ma_hoa": "C39",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi dẫn lưu"
+  },
+  {
+    "ma_hoa": "C40",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi áp lực tĩnh mạch trung tâm"
+  },
+  {
+    "ma_hoa": "C41",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi đường máu mao mạch"
+  },
+  {
+    "ma_hoa": "C42",
+    "danh_muc_huong_dan_cham_soc": "Thay túi hậu môn nhân tạo"
+  },
+  {
+    "ma_hoa": "C43",
+    "danh_muc_huong_dan_cham_soc": "Thay túi/bình dẫn lưu"
+  },
+  {
+    "ma_hoa": "C44",
+    "danh_muc_huong_dan_cham_soc": "Bơm, kiểm tra áp lực bóng chèn NKQ/MKQ"
+  },
+  {
+    "ma_hoa": "C45",
+    "danh_muc_huong_dan_cham_soc": "Đưa người bệnh đi làm xét nghiệm"
+  },
+  {
+    "ma_hoa": "C46",
+    "danh_muc_huong_dan_cham_soc": "Cho người bệnh thở máy"
+  },
+  {
+    "ma_hoa": "C47",
+    "danh_muc_huong_dan_cham_soc": "Cho người bệnh thở oxy"
+  },
+  {
+    "ma_hoa": "C48",
+    "danh_muc_huong_dan_cham_soc": "Đo SpO2 tại giường"
+  },
+  {
+    "ma_hoa": "C49",
+    "danh_muc_huong_dan_cham_soc": "Đánh giá số lượng, tính chất, màu sắc dịch dẫn lưu"
+  },
+  {
+    "ma_hoa": "C50",
+    "danh_muc_huong_dan_cham_soc": "Đánh giá số lượng, tính chất, màu sắc dịch tiết"
+  },
+  {
+    "ma_hoa": "C51",
+    "danh_muc_huong_dan_cham_soc": "Đánh giá số lượng, tính chất, màu sắc nước tiểu"
+  },
+  {
+    "ma_hoa": "C52",
+    "danh_muc_huong_dan_cham_soc": "Đánh giá đau cho người bệnh"
+  },
+  {
+    "ma_hoa": "C53",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi tri giác"
+  },
+  {
+    "ma_hoa": "C54",
+    "danh_muc_huong_dan_cham_soc": "Đánh giá mức độ phù"
+  },
+  {
+    "ma_hoa": "C55",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc người bệnh mới rút ống NKQ"
+  },
+  {
+    "ma_hoa": "C56",
+    "danh_muc_huong_dan_cham_soc": "Thay ống mở khí quản"
+  },
+  {
+    "ma_hoa": "C57",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc ống thông tiểu lưu"
+  },
+  {
+    "ma_hoa": "C58",
+    "danh_muc_huong_dan_cham_soc": "Khí dung"
+  },
+  {
+    "ma_hoa": "C59",
+    "danh_muc_huong_dan_cham_soc": "Dừng thở oxy"
+  },
+  {
+    "ma_hoa": "C60",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi SpO2"
+  },
+  {
+    "ma_hoa": "C61",
+    "danh_muc_huong_dan_cham_soc": "Ngừng thở máy"
+  },
+  {
+    "ma_hoa": "C62",
+    "danh_muc_huong_dan_cham_soc": "Ngừng thở HFNC"
+  },
+  {
+    "ma_hoa": "C63",
+    "danh_muc_huong_dan_cham_soc": "Lắp máy monitor"
+  },
+  {
+    "ma_hoa": "C64",
+    "danh_muc_huong_dan_cham_soc": "Cấp cứu ngừng tuần hoàn, hô hấp"
+  },
+  {
+    "ma_hoa": "C65",
+    "danh_muc_huong_dan_cham_soc": "Cho người bệnh nằm tư thế Fowler"
+  },
+  {
+    "ma_hoa": "C66",
+    "danh_muc_huong_dan_cham_soc": "Cho người bệnh nằm tư thế thích hợp"
+  },
+  {
+    "ma_hoa": "C67",
+    "danh_muc_huong_dan_cham_soc": "Hút đờm qua ống nội khí quản/canuyn mở khí quản"
+  },
+  {
+    "ma_hoa": "C68",
+    "danh_muc_huong_dan_cham_soc": "Xử trí theo phác đồ phản vệ"
+  },
+  {
+    "ma_hoa": "C69",
+    "danh_muc_huong_dan_cham_soc": "Đưa người bệnh đi điều trị kết hợp phục hồi chức năng"
+  },
+  {
+    "ma_hoa": "C70",
+    "danh_muc_huong_dan_cham_soc": "Xoa bóp vùng tỳ đè, co duỗi chi"
+  },
+  {
+    "ma_hoa": "C71",
+    "danh_muc_huong_dan_cham_soc": "Tập ho hữu hiệu"
+  },
+  {
+    "ma_hoa": "C72",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi cơn ho"
+  },
+  {
+    "ma_hoa": "C73",
+    "danh_muc_huong_dan_cham_soc": "Chườm ấm"
+  },
+  {
+    "ma_hoa": "C74",
+    "danh_muc_huong_dan_cham_soc": "Rút truyền"
+  },
+  {
+    "ma_hoa": "C75",
+    "danh_muc_huong_dan_cham_soc": "Truyền dịch tĩnh mạch"
+  },
+  {
+    "ma_hoa": "C76",
+    "danh_muc_huong_dan_cham_soc": "Phản ứng chéo tại giường"
+  },
+  {
+    "ma_hoa": "C77",
+    "danh_muc_huong_dan_cham_soc": "Định nhóm máu tại giường"
+  },
+  {
+    "ma_hoa": "C78",
+    "danh_muc_huong_dan_cham_soc": "Truyền máu/chế phẩm máu"
+  },
+  {
+    "ma_hoa": "C79",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi truyền máu và chế phẩm từ máu"
+  },
+  {
+    "ma_hoa": "C80",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi sau truyền máu"
+  },
+  {
+    "ma_hoa": "C81",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi tình trạng xuất huyết"
+  },
+  {
+    "ma_hoa": "C82",
+    "danh_muc_huong_dan_cham_soc": "Phụ bác sĩ làm thủ thuật"
+  },
+  {
+    "ma_hoa": "C83",
+    "danh_muc_huong_dan_cham_soc": "Đặt ống thông dẫn lưu bàng quang"
+  },
+  {
+    "ma_hoa": "C84",
+    "danh_muc_huong_dan_cham_soc": "Rửa bàng quang"
+  },
+  {
+    "ma_hoa": "C85",
+    "danh_muc_huong_dan_cham_soc": "Đặt ống thông dạ dày"
+  },
+  {
+    "ma_hoa": "C86",
+    "danh_muc_huong_dan_cham_soc": "Truyền nhỏ giọt dạ dày"
+  },
+  {
+    "ma_hoa": "C87",
+    "danh_muc_huong_dan_cham_soc": "Rửa dạ dày"
+  },
+  {
+    "ma_hoa": "C88",
+    "danh_muc_huong_dan_cham_soc": "Thụt tháo"
+  },
+  {
+    "ma_hoa": "C89",
+    "danh_muc_huong_dan_cham_soc": "Rút sonde dạ dày"
+  },
+  {
+    "ma_hoa": "C90",
+    "danh_muc_huong_dan_cham_soc": "Rút ống dẫn lưu"
+  },
+  {
+    "ma_hoa": "C91",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi mức độ vàng da"
+  },
+  {
+    "ma_hoa": "C92",
+    "danh_muc_huong_dan_cham_soc": "Lắp máy lọc máu"
+  },
+  {
+    "ma_hoa": "C93",
+    "danh_muc_huong_dan_cham_soc": "Kết nối máy lọc máu với người bệnh"
+  },
+  {
+    "ma_hoa": "C94",
+    "danh_muc_huong_dan_cham_soc": "Thay băng điểm loét"
+  },
+  {
+    "ma_hoa": "C95",
+    "danh_muc_huong_dan_cham_soc": "Nuôi dưỡng bằng đường tĩnh mạch"
+  },
+  {
+    "ma_hoa": "C96",
+    "danh_muc_huong_dan_cham_soc": "Phụ bác sĩ đặt catheter tĩnh mạch trung tâm"
+  },
+  {
+    "ma_hoa": "C97",
+    "danh_muc_huong_dan_cham_soc": "Rút catheter tĩnh mạch trung tâm"
+  },
+  {
+    "ma_hoa": "C98",
+    "danh_muc_huong_dan_cham_soc": "Phụ bác sĩ đặt ống nội khí quản"
+  },
+  {
+    "ma_hoa": "C99",
+    "danh_muc_huong_dan_cham_soc": "Phụ bác sĩ chọc ống sống thắt lưng"
+  },
+  {
+    "ma_hoa": "C100",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc vệ sinh răng miệng trên người bệnh hôn mê"
+  },
+  {
+    "ma_hoa": "C101",
+    "danh_muc_huong_dan_cham_soc": "Tháo máy monitor"
+  },
+  {
+    "ma_hoa": "C102",
+    "danh_muc_huong_dan_cham_soc": "Đặt ống thông hậu môn"
+  },
+  {
+    "ma_hoa": "C103",
+    "danh_muc_huong_dan_cham_soc": "Phòng chống loét cho người bệnh"
+  },
+  {
+    "ma_hoa": "C104",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi, đánh giá màu sắc phân"
+  },
+  {
+    "ma_hoa": "C105",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi cơn giật"
+  },
+  {
+    "ma_hoa": "C106",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi người bệnh lọc máu"
+  },
+  {
+    "ma_hoa": "C107",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi người bệnh thở HFNC"
+  },
+  {
+    "ma_hoa": "C108",
+    "danh_muc_huong_dan_cham_soc": "Lấy bệnh phẩm làm xét nghiệm"
+  },
+  {
+    "ma_hoa": "C109",
+    "danh_muc_huong_dan_cham_soc": "Tư vấn giáo dục sức khỏe"
+  },
+  {
+    "ma_hoa": "C110",
+    "danh_muc_huong_dan_cham_soc": "Động viên tinh thần người bệnh"
+  },
+  {
+    "ma_hoa": "C111",
+    "danh_muc_huong_dan_cham_soc": "Sàng lọc nguy cơ dinh dưỡng"
+  },
+  {
+    "ma_hoa": "C112",
+    "danh_muc_huong_dan_cham_soc": "Đặt nẹp cố định"
+  },
+  {
+    "ma_hoa": "C113",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi người bệnh thận nhân tạo cấp cứu"
+  },
+  {
+    "ma_hoa": "C114",
+    "danh_muc_huong_dan_cham_soc": "Thay băng cầu AVF"
+  },
+  {
+    "ma_hoa": "C115",
+    "danh_muc_huong_dan_cham_soc": "Dừng đo SpO2"
+  },
+  {
+    "ma_hoa": "C116",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi truyền dịch tĩnh mạch"
+  },
+  {
+    "ma_hoa": "C117",
+    "danh_muc_huong_dan_cham_soc": "Tiêm tĩnh mạch"
+  },
+  {
+    "ma_hoa": "C118",
+    "danh_muc_huong_dan_cham_soc": "Tiêm tĩnh mạch bằng bơm tiêm máy"
+  },
+  {
+    "ma_hoa": "C119",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi tiêm máy"
+  },
+  {
+    "ma_hoa": "C120",
+    "danh_muc_huong_dan_cham_soc": "Dừng tiêm máy, lưu kim"
+  },
+  {
+    "ma_hoa": "C121",
+    "danh_muc_huong_dan_cham_soc": "Tiêm bắp thịt"
+  },
+  {
+    "ma_hoa": "C122",
+    "danh_muc_huong_dan_cham_soc": "Cho người bệnh chiếu đèn"
+  },
+  {
+    "ma_hoa": "C123",
+    "danh_muc_huong_dan_cham_soc": "Cho trẻ nằm lồng ấp"
+  },
+  {
+    "ma_hoa": "C124",
+    "danh_muc_huong_dan_cham_soc": "Ngừng chiếu đèn"
+  },
+  {
+    "ma_hoa": "C125",
+    "danh_muc_huong_dan_cham_soc": "Lấy máu tĩnh mạch làm xét nghiệm thường quy"
+  },
+  {
+    "ma_hoa": "C126",
+    "danh_muc_huong_dan_cham_soc": "Lấy máu làm xét nghiệm cấy máu"
+  },
+  {
+    "ma_hoa": "C127",
+    "danh_muc_huong_dan_cham_soc": "Tắm bé, chăm sóc rốn"
+  },
+  {
+    "ma_hoa": "C128",
+    "danh_muc_huong_dan_cham_soc": "Truyền dịch bằng máy"
+  },
+  {
+    "ma_hoa": "C129",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi truyền dịch bằng máy"
+  },
+  {
+    "ma_hoa": "C130",
+    "danh_muc_huong_dan_cham_soc": "Đưa, bàn giao người bệnh phẫu thuật"
+  },
+  {
+    "ma_hoa": "C131",
+    "danh_muc_huong_dan_cham_soc": "Nhận bàn giao người bệnh sau phẫu thuật"
+  },
+  {
+    "ma_hoa": "C132",
+    "danh_muc_huong_dan_cham_soc": "Bóp bóng Ambu qua mặt nạ"
+  },
+  {
+    "ma_hoa": "C133",
+    "danh_muc_huong_dan_cham_soc": "Cân người bệnh nặng tại giường"
+  },
+  {
+    "ma_hoa": "C134",
+    "danh_muc_huong_dan_cham_soc": "Cố định người bệnh"
+  },
+  {
+    "ma_hoa": "C135",
+    "danh_muc_huong_dan_cham_soc": "Đặt canuyn miệng hầu"
+  },
+  {
+    "ma_hoa": "C136",
+    "danh_muc_huong_dan_cham_soc": "Đặt catheter tĩnh mạch ngoại biên"
+  },
+  {
+    "ma_hoa": "C137",
+    "danh_muc_huong_dan_cham_soc": "Ghi điện tim tại giường"
+  },
+  {
+    "ma_hoa": "C138",
+    "danh_muc_huong_dan_cham_soc": "Lắp máy hút áp lực âm"
+  },
+  {
+    "ma_hoa": "C139",
+    "danh_muc_huong_dan_cham_soc": "Lấy nước tiểu xét nghiệm"
+  },
+  {
+    "ma_hoa": "C140",
+    "danh_muc_huong_dan_cham_soc": "Lấy phân xét nghiệm"
+  },
+  {
+    "ma_hoa": "C141",
+    "danh_muc_huong_dan_cham_soc": "Rút ống thông tiểu lưu"
+  },
+  {
+    "ma_hoa": "C142",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi người bệnh thận nhân tạo chu kỳ"
+  },
+  {
+    "ma_hoa": "C143",
+    "danh_muc_huong_dan_cham_soc": "Đưa người bệnh chạy thận (lọc máu kết hợp)"
+  },
+  {
+    "ma_hoa": "C144",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi người bệnh"
+  },
+  {
+    "ma_hoa": "C145",
+    "danh_muc_huong_dan_cham_soc": "Truyền hóa chất đường tĩnh mạch"
+  },
+  {
+    "ma_hoa": "C146",
+    "danh_muc_huong_dan_cham_soc": "Cho người bệnh thở máy CPAP"
+  },
+  {
+    "ma_hoa": "C147",
+    "danh_muc_huong_dan_cham_soc": "Cho người bệnh ngừng thở CPAP"
+  },
+  {
+    "ma_hoa": "C148",
+    "danh_muc_huong_dan_cham_soc": "Làm thủ tục chuyển nhà đại thể"
+  },
+  {
+    "ma_hoa": "C149",
+    "danh_muc_huong_dan_cham_soc": "Lắp máy hút áp lực âm liên tục"
+  },
+  {
+    "ma_hoa": "C150",
+    "danh_muc_huong_dan_cham_soc": "Thay áp lực dẫn lưu vết mổ"
+  },
+  {
+    "ma_hoa": "C151",
+    "danh_muc_huong_dan_cham_soc": "Kê cao chân"
+  },
+  {
+    "ma_hoa": "C152",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc bàn chân người bệnh tiểu đường"
+  },
+  {
+    "ma_hoa": "C153",
+    "danh_muc_huong_dan_cham_soc": "Cắt móng quặp"
+  },
+  {
+    "ma_hoa": "C154",
+    "danh_muc_huong_dan_cham_soc": "Gọt chai chân"
+  },
+  {
+    "ma_hoa": "C155",
+    "danh_muc_huong_dan_cham_soc": "Chuẩn bị người bệnh trước phẫu thuật/thủ thuật"
+  },
+  {
+    "ma_hoa": "C156",
+    "danh_muc_huong_dan_cham_soc": "Chuyển người bệnh ra hồi tỉnh"
+  },
+  {
+    "ma_hoa": "C157",
+    "danh_muc_huong_dan_cham_soc": "Đánh giá vết mổ"
+  },
+  {
+    "ma_hoa": "C158",
+    "danh_muc_huong_dan_cham_soc": "Bơm rửa vết mổ"
+  },
+  {
+    "ma_hoa": "C159",
+    "danh_muc_huong_dan_cham_soc": "Rửa Kerh"
+  },
+  {
+    "ma_hoa": "C160",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi hệ thống VAC"
+  },
+  {
+    "ma_hoa": "C161",
+    "danh_muc_huong_dan_cham_soc": "Treo, kê tay cho người bệnh"
+  },
+  {
+    "ma_hoa": "C162",
+    "danh_muc_huong_dan_cham_soc": "Chiếu tia PLASSMA"
+  },
+  {
+    "ma_hoa": "C163",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi sau rút truyền"
+  },
+  {
+    "ma_hoa": "C164",
+    "danh_muc_huong_dan_cham_soc": "Tư vấn giáo dục chăm sóc sức khỏe cho người bệnh tâm thần"
+  },
+  {
+    "ma_hoa": "C165",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc theo dõi người bệnh chọc tháo dịch ổ bụng"
+  },
+  {
+    "ma_hoa": "C166",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc theo dõi người bệnh chọc hút dịch ổ bụng"
+  },
+  {
+    "ma_hoa": "C167",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc và theo dõi người bệnh sau lấy sỏi mật tuy ngược dòng qua nội soi"
+  },
+  {
+    "ma_hoa": "C168",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc và theo dõi người bệnh sau làm tắc mạch điều trị u gan"
+  },
+  {
+    "ma_hoa": "C169",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc và theo dõi người bệnh sau làm sinh thiết gan"
+  },
+  {
+    "ma_hoa": "C170",
+    "danh_muc_huong_dan_cham_soc": "Phụ giúp bác sĩ tiêm hoặc kẹp clip cầm máu tiêu hoá qua nội soi"
+  },
+  {
+    "ma_hoa": "C171",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc và theo dõi người bệnh sau tiêm hoặc kẹp clip cầm máu tiêu hoá qua nội soi"
+  },
+  {
+    "ma_hoa": "C172",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc và theo dõi người bệnh sau cắt polype đường tiêu hoá"
+  },
+  {
+    "ma_hoa": "C173",
+    "danh_muc_huong_dan_cham_soc": "Phụ giúp bác sĩ thắt tĩnh mạch thực quản"
+  },
+  {
+    "ma_hoa": "C174",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc theo dõi người bệnh sau thắt tĩnh mạch thực quản"
+  },
+  {
+    "ma_hoa": "C175",
+    "danh_muc_huong_dan_cham_soc": "Phụ giúp bác sĩ đặt máy tạo nhịp"
+  },
+  {
+    "ma_hoa": "C176",
+    "danh_muc_huong_dan_cham_soc": "Phụ giúp bác sĩ điều trị rối loạn nhịp tim bằng sóng cao tần"
+  },
+  {
+    "ma_hoa": "C177",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc người bệnh sau triệt đốt rối loạn nhịp tim bằng RF có hệ thống dẫn truyền điện học 3D"
+  },
+  {
+    "ma_hoa": "C178",
+    "danh_muc_huong_dan_cham_soc": "Phụ giúp thăm dò điện sinh lý"
+  },
+  {
+    "ma_hoa": "C179",
+    "danh_muc_huong_dan_cham_soc": "Phụ giúp chọc dịch màng ngoài tim"
+  },
+  {
+    "ma_hoa": "C180",
+    "danh_muc_huong_dan_cham_soc": "Phụ giúp đặt tĩnh mạch cảnh trong"
+  },
+  {
+    "ma_hoa": "C181",
+    "danh_muc_huong_dan_cham_soc": "Nghiệm pháp Atropin"
+  },
+  {
+    "ma_hoa": "C182",
+    "danh_muc_huong_dan_cham_soc": "Đặt Holter nhịp 24h"
+  },
+  {
+    "ma_hoa": "C183",
+    "danh_muc_huong_dan_cham_soc": "Đặt Holter HA 24h"
+  },
+  {
+    "ma_hoa": "C184",
+    "danh_muc_huong_dan_cham_soc": "Nghiệm pháp gắng sức điện tâm đồ"
+  },
+  {
+    "ma_hoa": "C185",
+    "danh_muc_huong_dan_cham_soc": "Phụ giúp bác sĩ thực hiện siêu âm qua thực quản"
+  },
+  {
+    "ma_hoa": "C186",
+    "danh_muc_huong_dan_cham_soc": "Tiêm trong da"
+  },
+  {
+    "ma_hoa": "C187",
+    "danh_muc_huong_dan_cham_soc": "Tiêm dưới da"
+  },
+  {
+    "ma_hoa": "C188",
+    "danh_muc_huong_dan_cham_soc": "Test lẩy da"
+  },
+  {
+    "ma_hoa": "C189",
+    "danh_muc_huong_dan_cham_soc": "Test nội bì"
+  },
+  {
+    "ma_hoa": "C190",
+    "danh_muc_huong_dan_cham_soc": "Hướng dẫn kiến thức chăm sóc người bệnh Ung thư phế quản"
+  },
+  {
+    "ma_hoa": "C191",
+    "danh_muc_huong_dan_cham_soc": "Hướng dẫn kiến thức chăm sóc người bệnh viêm phổi"
+  },
+  {
+    "ma_hoa": "C192",
+    "danh_muc_huong_dan_cham_soc": "Thực hiện can thiệp phòng ngừa ngã cho người bệnh"
+  },
+  {
+    "ma_hoa": "C193",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc lỗ mở khí quản"
+  },
+  {
+    "ma_hoa": "C194",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi  hút liên tục khí, dịch dẫn lưu màng phổi"
+  },
+  {
+    "ma_hoa": "C195",
+    "danh_muc_huong_dan_cham_soc": "Hướng dẫn kiến thức chăm sóc người bệnh tràn dịch màng phổi"
+  },
+  {
+    "ma_hoa": "C196",
+    "danh_muc_huong_dan_cham_soc": "Đo tốc độ dẫn truyền thần kinh vận động"
+  },
+  {
+    "ma_hoa": "C197",
+    "danh_muc_huong_dan_cham_soc": "Đo tốc độ dẫn truyền vận động của dây thần kinh VII ngoại biên"
+  },
+  {
+    "ma_hoa": "C198",
+    "danh_muc_huong_dan_cham_soc": "Đo tốc độ dẫn truyền thần kinh cảm giác"
+  },
+  {
+    "ma_hoa": "C199",
+    "danh_muc_huong_dan_cham_soc": "Đo phản xạ H và sóng F của thần kinh ngoại vi bằng điện cơ."
+  },
+  {
+    "ma_hoa": "C200",
+    "danh_muc_huong_dan_cham_soc": "Đo phản xạ nhắm mắt"
+  },
+  {
+    "ma_hoa": "C201",
+    "danh_muc_huong_dan_cham_soc": "Đo điện thế gợi kích thích thị giác"
+  },
+  {
+    "ma_hoa": "C202",
+    "danh_muc_huong_dan_cham_soc": "Đo điện thế gợi kích thích thính giác"
+  },
+  {
+    "ma_hoa": "C203",
+    "danh_muc_huong_dan_cham_soc": "Đo điện thế gợi kích thích cảm giác chi dưới"
+  },
+  {
+    "ma_hoa": "C204",
+    "danh_muc_huong_dan_cham_soc": "Đo điện thế gợi kích thích cảm giác chi trên"
+  },
+  {
+    "ma_hoa": "C205",
+    "danh_muc_huong_dan_cham_soc": "Test nhược cơ bằng máy"
+  },
+  {
+    "ma_hoa": "C206",
+    "danh_muc_huong_dan_cham_soc": "Test nhược cơ bằng thuốc"
+  },
+  {
+    "ma_hoa": "C207",
+    "danh_muc_huong_dan_cham_soc": "Ghi điện não đồ thông thường"
+  },
+  {
+    "ma_hoa": "C208",
+    "danh_muc_huong_dan_cham_soc": "Ghi điện não đồ video"
+  },
+  {
+    "ma_hoa": "C209",
+    "danh_muc_huong_dan_cham_soc": "Chuẩn bị dụng cụ làm điện cơ kim"
+  },
+  {
+    "ma_hoa": "C210",
+    "danh_muc_huong_dan_cham_soc": "Chuẩn bị dụng cụ làm điện sợi cơ đơn"
+  },
+  {
+    "ma_hoa": "C211",
+    "danh_muc_huong_dan_cham_soc": "Chuẩn bị dụng cụ tiêm votoxin"
+  },
+  {
+    "ma_hoa": "C212",
+    "danh_muc_huong_dan_cham_soc": "Chuẩn bị người bệnh làm điện cơ kim"
+  },
+  {
+    "ma_hoa": "C213",
+    "danh_muc_huong_dan_cham_soc": "Chuẩn bị người bệnh làm làm điện sợi cơ đơn"
+  },
+  {
+    "ma_hoa": "C214",
+    "danh_muc_huong_dan_cham_soc": "Đưa/đón người bệnh làm kỹ thuật"
+  },
+  {
+    "ma_hoa": "C215",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi người bệnh trạng thái động kinh"
+  },
+  {
+    "ma_hoa": "C216",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc người bệnh trạng thái động kinh"
+  },
+  {
+    "ma_hoa": "C217",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc người bệnh trong cơn nhược cơ"
+  },
+  {
+    "ma_hoa": "C218",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc người bệnh viêm đa rễ dây thần kinh"
+  },
+  {
+    "ma_hoa": "C219",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc người bệnh viêm tủy"
+  },
+  {
+    "ma_hoa": "C220",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc người bệnh parkinson"
+  },
+  {
+    "ma_hoa": "C221",
+    "danh_muc_huong_dan_cham_soc": "Tiếp nhận người bệnh tâm thần"
+  },
+  {
+    "ma_hoa": "C222",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc người bệnh sảng rượu"
+  },
+  {
+    "ma_hoa": "C223",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc người bệnh từ chối ăn"
+  },
+  {
+    "ma_hoa": "C224",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc người bệnh có hành vi tự sát"
+  },
+  {
+    "ma_hoa": "C225",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc người bệnh sốc điện"
+  },
+  {
+    "ma_hoa": "C226",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc người bệnh kích động"
+  },
+  {
+    "ma_hoa": "C227",
+    "danh_muc_huong_dan_cham_soc": "Đo điện não vi tính"
+  },
+  {
+    "ma_hoa": "C228",
+    "danh_muc_huong_dan_cham_soc": "Phụ bác sĩ bơm khí não"
+  },
+  {
+    "ma_hoa": "C229",
+    "danh_muc_huong_dan_cham_soc": "Phụ bác sĩ làm sốc điện cổ điển"
+  },
+  {
+    "ma_hoa": "C230",
+    "danh_muc_huong_dan_cham_soc": "Phụ bác sĩ làm sốc điện gây mê"
+  },
+  {
+    "ma_hoa": "C231",
+    "danh_muc_huong_dan_cham_soc": "Phụ bác sĩ làm sốc điện tiền mê"
+  },
+  {
+    "ma_hoa": "C232",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi và chăm sóc người bệnh sốc phản vệ 72 giờ đầu"
+  },
+  {
+    "ma_hoa": "C233",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc da cho người bệnh dị ứng thuốc nặng"
+  },
+  {
+    "ma_hoa": "C234",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc răng miệng cho người bệnh Lyell"
+  },
+  {
+    "ma_hoa": "C235",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc răng miệng cho người bệnh Stevens -Johnson"
+  },
+  {
+    "ma_hoa": "C236",
+    "danh_muc_huong_dan_cham_soc": "Chiếu đèn LED điều trị bệnh da"
+  },
+  {
+    "ma_hoa": "C237",
+    "danh_muc_huong_dan_cham_soc": "Nuôi dưỡng người bệnh Lyell qua tĩnh mạch"
+  },
+  {
+    "ma_hoa": "C238",
+    "danh_muc_huong_dan_cham_soc": "Nuôi dưỡng người bệnh Lyell qua miệng"
+  },
+  {
+    "ma_hoa": "C239",
+    "danh_muc_huong_dan_cham_soc": "Nuôi dưỡng người bệnh Stevens - Johnson qua đường miệng"
+  },
+  {
+    "ma_hoa": "C240",
+    "danh_muc_huong_dan_cham_soc": "Nuôi dưỡng người bệnh Stevens - Johnson qua đường tĩnh mạch"
+  },
+  {
+    "ma_hoa": "C241",
+    "danh_muc_huong_dan_cham_soc": "Vệ sinh vùng hậu môn sinh dục cho người bệnh Stevens -Johnson"
+  },
+  {
+    "ma_hoa": "C242",
+    "danh_muc_huong_dan_cham_soc": "Vệ sinh vùng hậu môn sinh dục cho người bệnh Lyell"
+  },
+  {
+    "ma_hoa": "C243",
+    "danh_muc_huong_dan_cham_soc": "Vỗ rung cho người bệnh Xơ cứng bì"
+  },
+  {
+    "ma_hoa": "C244",
+    "danh_muc_huong_dan_cham_soc": "Vỗ rung cho người bệnh Lupus ban đỏ hệ thống"
+  },
+  {
+    "ma_hoa": "C245",
+    "danh_muc_huong_dan_cham_soc": "Hào châm"
+  },
+  {
+    "ma_hoa": "C246",
+    "danh_muc_huong_dan_cham_soc": "Điện châm"
+  },
+  {
+    "ma_hoa": "C247",
+    "danh_muc_huong_dan_cham_soc": "Xoa bóp bấm huyệt"
+  },
+  {
+    "ma_hoa": "C248",
+    "danh_muc_huong_dan_cham_soc": "Cấy chỉ"
+  },
+  {
+    "ma_hoa": "C249",
+    "danh_muc_huong_dan_cham_soc": "Thuỷ châm"
+  },
+  {
+    "ma_hoa": "C250",
+    "danh_muc_huong_dan_cham_soc": "Laser châm"
+  },
+  {
+    "ma_hoa": "C251",
+    "danh_muc_huong_dan_cham_soc": "Xông thuốc"
+  },
+  {
+    "ma_hoa": "C252",
+    "danh_muc_huong_dan_cham_soc": "Kéo dãn"
+  },
+  {
+    "ma_hoa": "C253",
+    "danh_muc_huong_dan_cham_soc": "Cứu"
+  },
+  {
+    "ma_hoa": "C254",
+    "danh_muc_huong_dan_cham_soc": "Chiếu đèn tần phổ - hồng ngoại"
+  },
+  {
+    "ma_hoa": "C255",
+    "danh_muc_huong_dan_cham_soc": "Khí công dưỡng sinh"
+  },
+  {
+    "ma_hoa": "C256",
+    "danh_muc_huong_dan_cham_soc": "Giác hơi"
+  },
+  {
+    "ma_hoa": "C257",
+    "danh_muc_huong_dan_cham_soc": "Sắc thuốc thang"
+  },
+  {
+    "ma_hoa": "C258",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi người bệnh sử dụng lồng ấp"
+  },
+  {
+    "ma_hoa": "C259",
+    "danh_muc_huong_dan_cham_soc": "Đưa người bệnh đi khám chuyên khoa"
+  },
+  {
+    "ma_hoa": "C260",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc giấc ngủ người bệnh"
+  },
+  {
+    "ma_hoa": "C261",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi người bệnh sau truyền loãng xương"
+  },
+  {
+    "ma_hoa": "C262",
+    "danh_muc_huong_dan_cham_soc": "Truyền Remcima"
+  },
+  {
+    "ma_hoa": "C263",
+    "danh_muc_huong_dan_cham_soc": "Truyền Remicade"
+  },
+  {
+    "ma_hoa": "C264",
+    "danh_muc_huong_dan_cham_soc": "Tiêm Simponi smartject"
+  },
+  {
+    "ma_hoa": "C265",
+    "danh_muc_huong_dan_cham_soc": "Truyền Acid zoledronic (Aclasta)"
+  },
+  {
+    "ma_hoa": "C266",
+    "danh_muc_huong_dan_cham_soc": "Đo mật độ xương"
+  },
+  {
+    "ma_hoa": "C267",
+    "danh_muc_huong_dan_cham_soc": "Duy trì vận mạch"
+  },
+  {
+    "ma_hoa": "C268",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc catheter tĩnh mạch trung tâm"
+  },
+  {
+    "ma_hoa": "C269",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc catheter đường hầm"
+  },
+  {
+    "ma_hoa": "C270",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc catheter lọc màng bụng"
+  },
+  {
+    "ma_hoa": "C271",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi người bệnh có AVF"
+  },
+  {
+    "ma_hoa": "C272",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi người bệnh có AVG"
+  },
+  {
+    "ma_hoa": "C273",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi người bệnh có catheter lọc màng bụng"
+  },
+  {
+    "ma_hoa": "C274",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi người bệnh trong lọc máu lần đầu"
+  },
+  {
+    "ma_hoa": "C275",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi người bệnh trong lọc máu cấp cứu"
+  },
+  {
+    "ma_hoa": "C276",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi người bệnh trong lọc máu chu kỳ"
+  },
+  {
+    "ma_hoa": "C277",
+    "danh_muc_huong_dan_cham_soc": "Cân người bệnh"
+  },
+  {
+    "ma_hoa": "C278",
+    "danh_muc_huong_dan_cham_soc": "Đo cân nặng người bệnh"
+  },
+  {
+    "ma_hoa": "C279",
+    "danh_muc_huong_dan_cham_soc": "Đo trọng lượng khô cho người bệnh"
+  },
+  {
+    "ma_hoa": "C280",
+    "danh_muc_huong_dan_cham_soc": "Kết nối máy thận nhân tạo với người bệnh"
+  },
+  {
+    "ma_hoa": "C281",
+    "danh_muc_huong_dan_cham_soc": "Kết thúc cuộc lọc máu cho người bệnh có AVF/AVG"
+  },
+  {
+    "ma_hoa": "C282",
+    "danh_muc_huong_dan_cham_soc": "Kết thúc cuộc lọc máu cho người bệnh có catheter TMTT/đường hầm"
+  },
+  {
+    "ma_hoa": "C283",
+    "danh_muc_huong_dan_cham_soc": "Phụ bác sĩ đặt catheter đường hầm"
+  },
+  {
+    "ma_hoa": "C284",
+    "danh_muc_huong_dan_cham_soc": "Thực hiện y lệnh xét nghiệm"
+  },
+  {
+    "ma_hoa": "C285",
+    "danh_muc_huong_dan_cham_soc": "Ép động mạch sau can thiệp"
+  },
+  {
+    "ma_hoa": "C286",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi vị trí chọc động mạch sau can thiệp"
+  },
+  {
+    "ma_hoa": "C287",
+    "danh_muc_huong_dan_cham_soc": "Nới ép động mạch theo quy trình"
+  },
+  {
+    "ma_hoa": "C288",
+    "danh_muc_huong_dan_cham_soc": "Tập phục hồi chức năng sớm sau đột quỵ"
+  },
+  {
+    "ma_hoa": "C289",
+    "danh_muc_huong_dan_cham_soc": "Tập nói cho người bệnh sớm sau đột quỵ"
+  },
+  {
+    "ma_hoa": "C290",
+    "danh_muc_huong_dan_cham_soc": "Thực hiện thủ thuật test nuốt"
+  },
+  {
+    "ma_hoa": "C291",
+    "danh_muc_huong_dan_cham_soc": "Thực hiện thủ thuật tiêu sợi huyết đường tĩnh mạch"
+  },
+  {
+    "ma_hoa": "C292",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi người bệnh sau tiêu sợi huyết đường tĩnh mạch"
+  },
+  {
+    "ma_hoa": "C293",
+    "danh_muc_huong_dan_cham_soc": "Chuẩn bị người bệnh trước chụp DSA và can thiệp mạch não"
+  },
+  {
+    "ma_hoa": "C294",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi người bệnh sau chụp DSA và can thiệp mạch não"
+  },
+  {
+    "ma_hoa": "C295",
+    "danh_muc_huong_dan_cham_soc": "Đưa người bệnh đi chụp DSA và can thiệp mạch não"
+  },
+  {
+    "ma_hoa": "C296",
+    "danh_muc_huong_dan_cham_soc": "Đón người bệnh chụp DSA và can thiệp mạch về khoa"
+  },
+  {
+    "ma_hoa": "C297",
+    "danh_muc_huong_dan_cham_soc": "Bó Parafin"
+  },
+  {
+    "ma_hoa": "C298",
+    "danh_muc_huong_dan_cham_soc": "Điện phân"
+  },
+  {
+    "ma_hoa": "C299",
+    "danh_muc_huong_dan_cham_soc": "Điện xung"
+  },
+  {
+    "ma_hoa": "C300",
+    "danh_muc_huong_dan_cham_soc": "Sóng ngắn"
+  },
+  {
+    "ma_hoa": "C301",
+    "danh_muc_huong_dan_cham_soc": "Kéo nắn, kéo dãn cột sống, các khớp"
+  },
+  {
+    "ma_hoa": "C302",
+    "danh_muc_huong_dan_cham_soc": "Hồng ngoại"
+  },
+  {
+    "ma_hoa": "C303",
+    "danh_muc_huong_dan_cham_soc": "Tử ngoại"
+  },
+  {
+    "ma_hoa": "C304",
+    "danh_muc_huong_dan_cham_soc": "Xoa bóp áp lực hơi"
+  },
+  {
+    "ma_hoa": "C305",
+    "danh_muc_huong_dan_cham_soc": "Laser chiếu ngoài"
+  },
+  {
+    "ma_hoa": "C306",
+    "danh_muc_huong_dan_cham_soc": "Điều trị bằng ôxy cao áp"
+  },
+  {
+    "ma_hoa": "C307",
+    "danh_muc_huong_dan_cham_soc": "Xoa bóp cục bộ bằng tay"
+  },
+  {
+    "ma_hoa": "C308",
+    "danh_muc_huong_dan_cham_soc": "Xoa bóp toàn thân"
+  },
+  {
+    "ma_hoa": "C309",
+    "danh_muc_huong_dan_cham_soc": "Tập vận động cho người bệnh liệt thần kinh trung ương"
+  },
+  {
+    "ma_hoa": "C310",
+    "danh_muc_huong_dan_cham_soc": "Tập vận động cho người bệnh cứng khớp"
+  },
+  {
+    "ma_hoa": "C311",
+    "danh_muc_huong_dan_cham_soc": "Tập vận động với các dụng cụ trợ giúp"
+  },
+  {
+    "ma_hoa": "C312",
+    "danh_muc_huong_dan_cham_soc": "Tập với xe đạp tập"
+  },
+  {
+    "ma_hoa": "C313",
+    "danh_muc_huong_dan_cham_soc": "Tập vận động toàn thân"
+  },
+  {
+    "ma_hoa": "C314",
+    "danh_muc_huong_dan_cham_soc": "Tập nuốt (không sử dụng máy)"
+  },
+  {
+    "ma_hoa": "C315",
+    "danh_muc_huong_dan_cham_soc": "Tập sửa lỗi phát âm"
+  },
+  {
+    "ma_hoa": "C316",
+    "danh_muc_huong_dan_cham_soc": "Tập giao tiếp (ngôn ngữ, ký hiệu, hình ảnh...)"
+  },
+  {
+    "ma_hoa": "C317",
+    "danh_muc_huong_dan_cham_soc": "Vật lý trị liệu hô hấp"
+  },
+  {
+    "ma_hoa": "C318",
+    "danh_muc_huong_dan_cham_soc": "Tập vận động đoạn chi"
+  },
+  {
+    "ma_hoa": "C319",
+    "danh_muc_huong_dan_cham_soc": "Sóng xung kích điều trị"
+  },
+  {
+    "ma_hoa": "C320",
+    "danh_muc_huong_dan_cham_soc": "Tập luyện với ghế tập cơ tứ đầu đùi"
+  },
+  {
+    "ma_hoa": "C321",
+    "danh_muc_huong_dan_cham_soc": "Tập vận động cho người bệnh do liệt ngoại biên"
+  },
+  {
+    "ma_hoa": "C322",
+    "danh_muc_huong_dan_cham_soc": "Phụ bác sĩ chụp và can thiệp động mạch vành"
+  },
+  {
+    "ma_hoa": "C323",
+    "danh_muc_huong_dan_cham_soc": "Phụ bác sĩ chụp và can thiệp động mạch chi"
+  },
+  {
+    "ma_hoa": "C324",
+    "danh_muc_huong_dan_cham_soc": "Phụ bác sĩ chụp và can thiệp động mạch chủ"
+  },
+  {
+    "ma_hoa": "C325",
+    "danh_muc_huong_dan_cham_soc": "Phụ bác sĩ chụp và can thiệp tĩnh mạch"
+  },
+  {
+    "ma_hoa": "C326",
+    "danh_muc_huong_dan_cham_soc": "Phụ bác sĩ điều trị suy tĩnh mạch bằng laser nội mạch"
+  },
+  {
+    "ma_hoa": "C327",
+    "danh_muc_huong_dan_cham_soc": "Phụ bác sĩ chụp và can thiệp động mạch thận"
+  },
+  {
+    "ma_hoa": "C328",
+    "danh_muc_huong_dan_cham_soc": "Phụ bác sĩ chụp và can thiệp động mạch thân tạng"
+  },
+  {
+    "ma_hoa": "C329",
+    "danh_muc_huong_dan_cham_soc": "Phụ bác sĩ chụp và can thiệp tĩnh mạch chủ"
+  },
+  {
+    "ma_hoa": "C330",
+    "danh_muc_huong_dan_cham_soc": "Phụ bác sĩ chọc dịch màng ngoài tim"
+  },
+  {
+    "ma_hoa": "C331",
+    "danh_muc_huong_dan_cham_soc": "Phụ bác sĩ đặt lưới lọc tĩnh mạch chủ dưới"
+  },
+  {
+    "ma_hoa": "C332",
+    "danh_muc_huong_dan_cham_soc": "Phụ bác sĩ lấy lưới lọc tĩnh mạch chủ dưới"
+  },
+  {
+    "ma_hoa": "C333",
+    "danh_muc_huong_dan_cham_soc": "Phụ bác sĩ thông tim và chụp buồng tim"
+  },
+  {
+    "ma_hoa": "C334",
+    "danh_muc_huong_dan_cham_soc": "Băng ép động mạch quay"
+  },
+  {
+    "ma_hoa": "C335",
+    "danh_muc_huong_dan_cham_soc": "Băng ép động mạch đùi"
+  },
+  {
+    "ma_hoa": "C336",
+    "danh_muc_huong_dan_cham_soc": "Băng ép tĩnh mạch"
+  },
+  {
+    "ma_hoa": "C337",
+    "danh_muc_huong_dan_cham_soc": "Phụ bác sĩ bít thông liên nhĩ"
+  },
+  {
+    "ma_hoa": "C338",
+    "danh_muc_huong_dan_cham_soc": "Phụ bác sĩ bít thông liên thất"
+  },
+  {
+    "ma_hoa": "C339",
+    "danh_muc_huong_dan_cham_soc": "Phụ bác sĩ nong van hai lá"
+  },
+  {
+    "ma_hoa": "C340",
+    "danh_muc_huong_dan_cham_soc": "Phụ bác sĩ nong van động mạch phổi"
+  },
+  {
+    "ma_hoa": "C341",
+    "danh_muc_huong_dan_cham_soc": "Phụ bác sĩ can thiệp động mạch phổi"
+  },
+  {
+    "ma_hoa": "C342",
+    "danh_muc_huong_dan_cham_soc": "Lấy đờm"
+  },
+  {
+    "ma_hoa": "C343",
+    "danh_muc_huong_dan_cham_soc": "Lấy dịch tỵ hầu"
+  },
+  {
+    "ma_hoa": "C344",
+    "danh_muc_huong_dan_cham_soc": "Thay băng vết thương, vết loét trên người bệnh đái tháo đường"
+  },
+  {
+    "ma_hoa": "C345",
+    "danh_muc_huong_dan_cham_soc": "Tháo móng quặp trên người bệnh đái tháo đường"
+  },
+  {
+    "ma_hoa": "C346",
+    "danh_muc_huong_dan_cham_soc": "Gọt chai chân (gọt nốt chai) trên người bệnh đái tháo đường"
+  },
+  {
+    "ma_hoa": "C347",
+    "danh_muc_huong_dan_cham_soc": "Tư vấn chế độ dinh dưỡng và tập luyện"
+  },
+  {
+    "ma_hoa": "C348",
+    "danh_muc_huong_dan_cham_soc": "Truyền insulin bằng bơm tiêm điện"
+  },
+  {
+    "ma_hoa": "C349",
+    "danh_muc_huong_dan_cham_soc": "Tiêm insulin dưới da"
+  },
+  {
+    "ma_hoa": "C350",
+    "danh_muc_huong_dan_cham_soc": "Thực hiện nghiệm pháp dung nạp glucose đường uống"
+  },
+  {
+    "ma_hoa": "C351",
+    "danh_muc_huong_dan_cham_soc": "Phụ bác sĩ chọc hút dịch điều trị nang giáp"
+  },
+  {
+    "ma_hoa": "C352",
+    "danh_muc_huong_dan_cham_soc": "Phụ bác sĩ chọc hút dịch điều trị u nang giáp có hướng dẫn của siêu âm."
+  },
+  {
+    "ma_hoa": "C353",
+    "danh_muc_huong_dan_cham_soc": "Truyền hóa chất tĩnh mạch"
+  },
+  {
+    "ma_hoa": "C354",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi sau truyền hóa chất tĩnh mạch"
+  },
+  {
+    "ma_hoa": "C355",
+    "danh_muc_huong_dan_cham_soc": "Xử trí thoát mạch trong điều trị hóa chất"
+  },
+  {
+    "ma_hoa": "C356",
+    "danh_muc_huong_dan_cham_soc": "Hóa trị liên tục (24-48 giờ) bằng máy"
+  },
+  {
+    "ma_hoa": "C357",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi sau hóa trị liên tục (24-48 giờ) bằng máy"
+  },
+  {
+    "ma_hoa": "C358",
+    "danh_muc_huong_dan_cham_soc": "Đưa người bệnh đi chụp CT mô phỏng"
+  },
+  {
+    "ma_hoa": "C359",
+    "danh_muc_huong_dan_cham_soc": "Đưa người bệnh đi xạ trị"
+  },
+  {
+    "ma_hoa": "C360",
+    "danh_muc_huong_dan_cham_soc": "Làm mặt nạ cố định đầu"
+  },
+  {
+    "ma_hoa": "C361",
+    "danh_muc_huong_dan_cham_soc": "Xoa bóp điều trị dự phòng loét (loét độ I)"
+  },
+  {
+    "ma_hoa": "C362",
+    "danh_muc_huong_dan_cham_soc": "Xoay chuyển người bệnh dự phòng loét tỳ đè"
+  },
+  {
+    "ma_hoa": "C363",
+    "danh_muc_huong_dan_cham_soc": "Tập thay đổi tư thế từ nằm sang ngồi"
+  },
+  {
+    "ma_hoa": "C364",
+    "danh_muc_huong_dan_cham_soc": "Tập thay đổi tư thế từ ngồi sang đứng"
+  },
+  {
+    "ma_hoa": "C365",
+    "danh_muc_huong_dan_cham_soc": "Tập vận động có trợ giúp"
+  },
+  {
+    "ma_hoa": "C366",
+    "danh_muc_huong_dan_cham_soc": "Tập vận động thụ động"
+  },
+  {
+    "ma_hoa": "C367",
+    "danh_muc_huong_dan_cham_soc": "Đưa người bệnh đi chuyển đổi huyết tương (PEX) kết hợp"
+  },
+  {
+    "ma_hoa": "C368",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi truyền Solumedrol liều cao (tĩnh mạch)"
+  },
+  {
+    "ma_hoa": "C369",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi truyền các thuốc kháng virus (tĩnh mạch)"
+  },
+  {
+    "ma_hoa": "C370",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi truyền IVIG và ATG (tĩnh mạch)"
+  },
+  {
+    "ma_hoa": "C371",
+    "danh_muc_huong_dan_cham_soc": "Đưa người bệnh đi chụp bàng quang có bơm thuốc cản quang"
+  },
+  {
+    "ma_hoa": "C372",
+    "danh_muc_huong_dan_cham_soc": "Thay băng cho các vết thương hoại tử rộng (một lần)"
+  },
+  {
+    "ma_hoa": "C373",
+    "danh_muc_huong_dan_cham_soc": "Thay băng điều trị vết thương mạn tính"
+  },
+  {
+    "ma_hoa": "C374",
+    "danh_muc_huong_dan_cham_soc": "Thay băng vết thương hoại tử mất da rộng"
+  },
+  {
+    "ma_hoa": "C375",
+    "danh_muc_huong_dan_cham_soc": "Thay băng vết thương mỏm cụt chi"
+  },
+  {
+    "ma_hoa": "C376",
+    "danh_muc_huong_dan_cham_soc": "Thay băng vết thương sau cắt lọc hoại tử dưới 10cm2"
+  },
+  {
+    "ma_hoa": "C377",
+    "danh_muc_huong_dan_cham_soc": "Thay băng vết thương sau cắt lọc hoại tử trên 10cm2"
+  },
+  {
+    "ma_hoa": "C378",
+    "danh_muc_huong_dan_cham_soc": "Thay băng vết thương, vết mổ chiều dài ≤ 15cm"
+  },
+  {
+    "ma_hoa": "C379",
+    "danh_muc_huong_dan_cham_soc": "Thay băng vết thương, vết mổ chiều dài từ trên 30cm đến 50cm (*)"
+  },
+  {
+    "ma_hoa": "C380",
+    "danh_muc_huong_dan_cham_soc": "Thay băng vết thương, vết mổ chiều dài từ trên 50cm (*)"
+  },
+  {
+    "ma_hoa": "C381",
+    "danh_muc_huong_dan_cham_soc": "Thay băng vết thương, vết mổ chiều dài trên 15cm đến 30cm (*)"
+  },
+  {
+    "ma_hoa": "C382",
+    "danh_muc_huong_dan_cham_soc": "Thay băng vết thương, vết mổ nhiễm trùng chiều dài > 50cm (*)"
+  },
+  {
+    "ma_hoa": "C383",
+    "danh_muc_huong_dan_cham_soc": "Thay băng vết thương, vết mổ nhiễm trùng chiều dài dưới 15cm"
+  },
+  {
+    "ma_hoa": "C384",
+    "danh_muc_huong_dan_cham_soc": "Thay băng vết thương, vết mổ nhiễm trùng chiều dài từ 30cm đến 50 cm (*)"
+  },
+  {
+    "ma_hoa": "C385",
+    "danh_muc_huong_dan_cham_soc": "Thay băng điều trị vết loét, hoại tử chi dưới diện tích < 50cm2 do đái tháo đường (*)"
+  },
+  {
+    "ma_hoa": "C386",
+    "danh_muc_huong_dan_cham_soc": "Thay băng điều trị vết loét, hoại tử chi dưới diện tích từ 50cm2 đến dưới 100cm2 do đái tháo đường (*)"
+  },
+  {
+    "ma_hoa": "C387",
+    "danh_muc_huong_dan_cham_soc": "Thay băng điều trị vết thương, vết loét mạn tính < 1% diện tích cơ thể (*)"
+  },
+  {
+    "ma_hoa": "C388",
+    "danh_muc_huong_dan_cham_soc": "Thay băng điều trị vết thương, vết loét mạn tính từ 1% đến dưới 3% diện tích cơ thể (*)"
+  },
+  {
+    "ma_hoa": "C389",
+    "danh_muc_huong_dan_cham_soc": "Thay băng điều trị vết thương, vết loét mạn tính trên 6% diện tích cơ thể (*)"
+  },
+  {
+    "ma_hoa": "C390",
+    "danh_muc_huong_dan_cham_soc": "Hút áp lực âm (V.A.C) liên tục trong 24h điều trị vết thương mạn tính (*)"
+  },
+  {
+    "ma_hoa": "C391",
+    "danh_muc_huong_dan_cham_soc": "Hút áp lực âm (V.A.C) trong 48h điều trị vết thương mạn tính (*)"
+  },
+  {
+    "ma_hoa": "C392",
+    "danh_muc_huong_dan_cham_soc": "Băng chỉnh hình số 8"
+  },
+  {
+    "ma_hoa": "C393",
+    "danh_muc_huong_dan_cham_soc": "Bó bột"
+  },
+  {
+    "ma_hoa": "C394",
+    "danh_muc_huong_dan_cham_soc": "Tháo bột các loại (*)"
+  },
+  {
+    "ma_hoa": "C395",
+    "danh_muc_huong_dan_cham_soc": "Thay băng chăm sóc vùng lấy da"
+  },
+  {
+    "ma_hoa": "C396",
+    "danh_muc_huong_dan_cham_soc": "Thay băng điều trị vết bỏng < 5% diện tích cơ thể ở người lớn (*)"
+  },
+  {
+    "ma_hoa": "C397",
+    "danh_muc_huong_dan_cham_soc": "Thay băng điều trị vết bỏng < 5% diện tích cơ thể ở trẻ em (*)"
+  },
+  {
+    "ma_hoa": "C398",
+    "danh_muc_huong_dan_cham_soc": "Thay băng điều trị vết bỏng dưới 10% diện tích cơ thể ở người lớn"
+  },
+  {
+    "ma_hoa": "C399",
+    "danh_muc_huong_dan_cham_soc": "Thay băng điều trị vết bỏng dưới 10% diện tích cơ thể ở trẻ em"
+  },
+  {
+    "ma_hoa": "C400",
+    "danh_muc_huong_dan_cham_soc": "Thay băng điều trị vết thương, vết loét mạn tính từ 3% đến 6% diện tích cơ thể (*)"
+  },
+  {
+    "ma_hoa": "C401",
+    "danh_muc_huong_dan_cham_soc": "Thay băng vết loét do vỡ hạt tophy"
+  },
+  {
+    "ma_hoa": "C402",
+    "danh_muc_huong_dan_cham_soc": "Thay băng vết thương sau phẫu thuật chuyển vạt, nối chi (*)"
+  },
+  {
+    "ma_hoa": "C403",
+    "danh_muc_huong_dan_cham_soc": "Thay băng vết thương sau vá (ghép) da dưới 5cm2 (*)"
+  },
+  {
+    "ma_hoa": "C404",
+    "danh_muc_huong_dan_cham_soc": "Thay băng vết thương sau vá (ghép) da từ 5 -10cm2 (*)"
+  },
+  {
+    "ma_hoa": "C405",
+    "danh_muc_huong_dan_cham_soc": "Thay băng vết thương sau vá (ghép) da trên 10cm2 (*)"
+  },
+  {
+    "ma_hoa": "C406",
+    "danh_muc_huong_dan_cham_soc": "Thay băng, làm sạch tổn thương da do dị ứng thuốc hoặc tổn thương da do bệnh bọng nước tự miễn ≥ 60% diện tích cơ thể ở người lớn (*)"
+  },
+  {
+    "ma_hoa": "C407",
+    "danh_muc_huong_dan_cham_soc": "Thay băng, làm sạch tổn thương da do dị ứng thuốc hoặc tổn thương da do bệnh bọng nước tự miễn ≥ 60% diện tích cơ thể ở trẻ em (*)"
+  },
+  {
+    "ma_hoa": "C408",
+    "danh_muc_huong_dan_cham_soc": "Thay băng, làm sạch tổn thương da do dị ứng thuốc hoặc tổn thương da do bệnh bọng nước tự miễn từ 10% - dưới 20% diện tích cơ thể ở người lớn (*)"
+  },
+  {
+    "ma_hoa": "C409",
+    "danh_muc_huong_dan_cham_soc": "Thay băng, làm sạch tổn thương da do dị ứng thuốc hoặc tổn thương da do bệnh bọng nước tự miễn từ 10% - dưới 20% diện tích cơ thể ở trẻ em (*)"
+  },
+  {
+    "ma_hoa": "C410",
+    "danh_muc_huong_dan_cham_soc": "Thay băng, làm sạch tổn thương da do dị ứng thuốc hoặc tổn thương da do bệnh bọng nước tự miễn từ 5% - dưới 10% diện tích cơ thể ở người lớn (*)"
+  },
+  {
+    "ma_hoa": "C411",
+    "danh_muc_huong_dan_cham_soc": "Thay băng, làm sạch tổn thương da do dị ứng thuốc hoặc tổn thương da do bệnh bọng nước tự miễn từ 5% - dưới 10% diện tích cơ thể ở trẻ em (*)"
+  },
+  {
+    "ma_hoa": "C412",
+    "danh_muc_huong_dan_cham_soc": "Thay băng vết thương, vết mổ nhiễm trùng chiều dài từ trên 15cm đến 30cm (*)"
+  },
+  {
+    "ma_hoa": "C413",
+    "danh_muc_huong_dan_cham_soc": "Thay băng, làm sạch tổn thương da do dị ứng thuốc hoặc tổn thương da do bệnh bọng nước tự miễn < 5% diện tích cơ thể ở người lớn (*)"
+  },
+  {
+    "ma_hoa": "C414",
+    "danh_muc_huong_dan_cham_soc": "Thay băng, làm sạch tổn thương da do dị ứng thuốc hoặc tổn thương da do bệnh bọng nước tự miễn < 5% diện tích cơ thể ở trẻ em (*)"
+  },
+  {
+    "ma_hoa": "C415",
+    "danh_muc_huong_dan_cham_soc": "Bơm rửa liên tục trong điều trị vết thương mạn tính phức tạp (*)"
+  },
+  {
+    "ma_hoa": "C416",
+    "danh_muc_huong_dan_cham_soc": "Thực hiện kỹ thuật/chăm sóc theo y lệnh"
+  },
+  {
+    "ma_hoa": "C417",
+    "danh_muc_huong_dan_cham_soc": "Cắt lọc hạt tô phi vỡ (*)"
+  },
+  {
+    "ma_hoa": "C418",
+    "danh_muc_huong_dan_cham_soc": "Cố định tạm thời"
+  },
+  {
+    "ma_hoa": "C419",
+    "danh_muc_huong_dan_cham_soc": "Chích rạch, dẫn lưu ổ áp xe"
+  },
+  {
+    "ma_hoa": "C420",
+    "danh_muc_huong_dan_cham_soc": "Đặt đai số 8 gãy xương đòn (*)"
+  },
+  {
+    "ma_hoa": "C421",
+    "danh_muc_huong_dan_cham_soc": "Đặt đai vải treo tay"
+  },
+  {
+    "ma_hoa": "C422",
+    "danh_muc_huong_dan_cham_soc": "Đặt lại khớp trật cũ khớp vai (*)"
+  },
+  {
+    "ma_hoa": "C423",
+    "danh_muc_huong_dan_cham_soc": "Đặt nẹp đùi cẳng bàn chân chống xoay trong gãy cổ xương đùi"
+  },
+  {
+    "ma_hoa": "C424",
+    "danh_muc_huong_dan_cham_soc": "Đặt nẹp gối (nẹp Zimmer) trong bong gân khớp gối*"
+  },
+  {
+    "ma_hoa": "C425",
+    "danh_muc_huong_dan_cham_soc": "Bơm rửa liên tục trong điều trị vết thương mạn tính phức tạp"
+  },
+  {
+    "ma_hoa": "C426",
+    "danh_muc_huong_dan_cham_soc": "Cố định cột sống cổ bằng nẹp cứng"
+  },
+  {
+    "ma_hoa": "C427",
+    "danh_muc_huong_dan_cham_soc": "Đặt dẫn lưu dự phòng nhiễm khuẩn tại chỗ vết thương mạn tính"
+  },
+  {
+    "ma_hoa": "C428",
+    "danh_muc_huong_dan_cham_soc": "Nắn chỉnh, bó bột"
+  },
+  {
+    "ma_hoa": "C429",
+    "danh_muc_huong_dan_cham_soc": "Đánh giá, nhận định người bệnh"
+  },
+  {
+    "ma_hoa": "C430",
+    "danh_muc_huong_dan_cham_soc": "Hướng dẫn người bệnh tư thế nằm sau phẫu thuật"
+  },
+  {
+    "ma_hoa": "C431",
+    "danh_muc_huong_dan_cham_soc": "Ủ ấm người bệnh"
+  },
+  {
+    "ma_hoa": "C432",
+    "danh_muc_huong_dan_cham_soc": "Cho ăn bằng máy bơm tự động sau phẫu thuật cắt thực quản"
+  },
+  {
+    "ma_hoa": "C433",
+    "danh_muc_huong_dan_cham_soc": "Cho ăn qua ống mở thông dạ dày hoặc hỗng tràng"
+  },
+  {
+    "ma_hoa": "C434",
+    "danh_muc_huong_dan_cham_soc": "Hướng dẫn cho ăn sau cắt toàn bộ dạ dày"
+  },
+  {
+    "ma_hoa": "C435",
+    "danh_muc_huong_dan_cham_soc": "Hướng dẫt thụt tháo lỗ hậu môn đường dưới"
+  },
+  {
+    "ma_hoa": "C436",
+    "danh_muc_huong_dan_cham_soc": "Hướng dẫt thụt tháo lỗ hậu môn nhân tạo"
+  },
+  {
+    "ma_hoa": "C437",
+    "danh_muc_huong_dan_cham_soc": "Thay băng vết mổ nội soi cắt thực quản"
+  },
+  {
+    "ma_hoa": "C438",
+    "danh_muc_huong_dan_cham_soc": "Thay băng vết mổ trĩ phương pháp Milligan Morgan"
+  },
+  {
+    "ma_hoa": "C439",
+    "danh_muc_huong_dan_cham_soc": "Thay băng vết mổ trĩ phương pháp Longo"
+  },
+  {
+    "ma_hoa": "C440",
+    "danh_muc_huong_dan_cham_soc": "Thay băng vết mổ trĩ phương pháp Whitehead"
+  },
+  {
+    "ma_hoa": "C441",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc vết mổ thoát vị bẹn có đặt lưới Prolen"
+  },
+  {
+    "ma_hoa": "C442",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc vết mổ thoát vị bẹn không đặt lưới"
+  },
+  {
+    "ma_hoa": "C443",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc vết mổ viêm phúc mạc"
+  },
+  {
+    "ma_hoa": "C444",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc lỗ hậu môn nhân tạo"
+  },
+  {
+    "ma_hoa": "C445",
+    "danh_muc_huong_dan_cham_soc": "Rút mech sau cắt trĩ"
+  },
+  {
+    "ma_hoa": "C446",
+    "danh_muc_huong_dan_cham_soc": "Bơm rửa dẫn lưu áp xe ruột thừa"
+  },
+  {
+    "ma_hoa": "C447",
+    "danh_muc_huong_dan_cham_soc": "Bơm dung dịch Xanhmethylen kiểm tra đường rò tiêu hóa"
+  },
+  {
+    "ma_hoa": "C448",
+    "danh_muc_huong_dan_cham_soc": "Lấy dị vật kết mạc"
+  },
+  {
+    "ma_hoa": "C449",
+    "danh_muc_huong_dan_cham_soc": "Bơm rửa lệ đạo"
+  },
+  {
+    "ma_hoa": "C450",
+    "danh_muc_huong_dan_cham_soc": "Tiêm dưới kết mạc"
+  },
+  {
+    "ma_hoa": "C451",
+    "danh_muc_huong_dan_cham_soc": "Rửa cùng đồ"
+  },
+  {
+    "ma_hoa": "C452",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc mi"
+  },
+  {
+    "ma_hoa": "C453",
+    "danh_muc_huong_dan_cham_soc": "Nặn tuyến bờ mi, đánh bờ mi"
+  },
+  {
+    "ma_hoa": "C454",
+    "danh_muc_huong_dan_cham_soc": "Đo thị lực khách quan"
+  },
+  {
+    "ma_hoa": "C455",
+    "danh_muc_huong_dan_cham_soc": "Đo nhãn áp"
+  },
+  {
+    "ma_hoa": "C456",
+    "danh_muc_huong_dan_cham_soc": "Cắt chỉ khâu kết mạc"
+  },
+  {
+    "ma_hoa": "C457",
+    "danh_muc_huong_dan_cham_soc": "Cắt chỉ khâu da mi"
+  },
+  {
+    "ma_hoa": "C458",
+    "danh_muc_huong_dan_cham_soc": "Gạc sợi giác mạc"
+  },
+  {
+    "ma_hoa": "C459",
+    "danh_muc_huong_dan_cham_soc": "Bóc giả mạc"
+  },
+  {
+    "ma_hoa": "C460",
+    "danh_muc_huong_dan_cham_soc": "Chích chắp, lẹo"
+  },
+  {
+    "ma_hoa": "C461",
+    "danh_muc_huong_dan_cham_soc": "Lấy calxi kết mạc"
+  },
+  {
+    "ma_hoa": "C462",
+    "danh_muc_huong_dan_cham_soc": "Băng mắt"
+  },
+  {
+    "ma_hoa": "C463",
+    "danh_muc_huong_dan_cham_soc": "Soi bóng đồng tử"
+  },
+  {
+    "ma_hoa": "C464",
+    "danh_muc_huong_dan_cham_soc": "Đốt lông siêu, nhổ lông siêu"
+  },
+  {
+    "ma_hoa": "C465",
+    "danh_muc_huong_dan_cham_soc": "Lấy dị vật giác mạc nông theo y lệnh"
+  },
+  {
+    "ma_hoa": "C466",
+    "danh_muc_huong_dan_cham_soc": "Đo nhãn áp máy (tay)"
+  },
+  {
+    "ma_hoa": "C467",
+    "danh_muc_huong_dan_cham_soc": "Đo khúc xạ javal, khúc xạ máy"
+  },
+  {
+    "ma_hoa": "C468",
+    "danh_muc_huong_dan_cham_soc": "Đo sắc giác"
+  },
+  {
+    "ma_hoa": "C469",
+    "danh_muc_huong_dan_cham_soc": "Đo thị trường trung tâm"
+  },
+  {
+    "ma_hoa": "C470",
+    "danh_muc_huong_dan_cham_soc": "Chỉnh kính trên người bệnh mắc tật khúc xạ"
+  },
+  {
+    "ma_hoa": "C471",
+    "danh_muc_huong_dan_cham_soc": "Chụp OCT bán phần trước nhãn cầu"
+  },
+  {
+    "ma_hoa": "C472",
+    "danh_muc_huong_dan_cham_soc": "Chụp OCT bán phần sau nhãn cầu"
+  },
+  {
+    "ma_hoa": "C473",
+    "danh_muc_huong_dan_cham_soc": "Chụp ảnh đáy mắt màu"
+  },
+  {
+    "ma_hoa": "C474",
+    "danh_muc_huong_dan_cham_soc": "Đo IOL master"
+  },
+  {
+    "ma_hoa": "C475",
+    "danh_muc_huong_dan_cham_soc": "Phụ cắt chỉ kết mạc, giác mạc"
+  },
+  {
+    "ma_hoa": "C476",
+    "danh_muc_huong_dan_cham_soc": "Phụ cắt chỉ da mi"
+  },
+  {
+    "ma_hoa": "C477",
+    "danh_muc_huong_dan_cham_soc": "Phụ lấy sợi giác mạc"
+  },
+  {
+    "ma_hoa": "C478",
+    "danh_muc_huong_dan_cham_soc": "Bơm rửa đường hô hấp trên"
+  },
+  {
+    "ma_hoa": "C479",
+    "danh_muc_huong_dan_cham_soc": "Hút rửa rửa mũi xoang theo phương pháp Proetz"
+  },
+  {
+    "ma_hoa": "C480",
+    "danh_muc_huong_dan_cham_soc": "Làm thuốc tai"
+  },
+  {
+    "ma_hoa": "C481",
+    "danh_muc_huong_dan_cham_soc": "Làm thuốc thanh quản"
+  },
+  {
+    "ma_hoa": "C482",
+    "danh_muc_huong_dan_cham_soc": "Nhét meche mũi"
+  },
+  {
+    "ma_hoa": "C483",
+    "danh_muc_huong_dan_cham_soc": "Chấm họng"
+  },
+  {
+    "ma_hoa": "C484",
+    "danh_muc_huong_dan_cham_soc": "Cắt chỉ sau phẫu thuật"
+  },
+  {
+    "ma_hoa": "C485",
+    "danh_muc_huong_dan_cham_soc": "Cầm chảy máu ở lỗ mũi sau bằng ống thông có bóng chèn"
+  },
+  {
+    "ma_hoa": "C486",
+    "danh_muc_huong_dan_cham_soc": "Cầm máu điểm mạch mũi bằng hóa chất (Bạc natri)"
+  },
+  {
+    "ma_hoa": "C487",
+    "danh_muc_huong_dan_cham_soc": "Cầm máu mũi bằng merocell"
+  },
+  {
+    "ma_hoa": "C488",
+    "danh_muc_huong_dan_cham_soc": "Chích nhọt ống tai ngoài"
+  },
+  {
+    "ma_hoa": "C489",
+    "danh_muc_huong_dan_cham_soc": "Chiếu laser công suất thấp điều trị viêm lợi"
+  },
+  {
+    "ma_hoa": "C490",
+    "danh_muc_huong_dan_cham_soc": "Đo âm ốc tại (OAE chẩn đoán)"
+  },
+  {
+    "ma_hoa": "C491",
+    "danh_muc_huong_dan_cham_soc": "Đo âm ốc tại (OAE) sàng lọc"
+  },
+  {
+    "ma_hoa": "C492",
+    "danh_muc_huong_dan_cham_soc": "Đo đáp ứng thính giác thân não từng tần số"
+  },
+  {
+    "ma_hoa": "C493",
+    "danh_muc_huong_dan_cham_soc": "Đo lưu lượng nước bọt có sử dụng liệu pháp kích thích"
+  },
+  {
+    "ma_hoa": "C494",
+    "danh_muc_huong_dan_cham_soc": "Đo lưu lượng nước bọt không sử dụng liệu pháp kích thích"
+  },
+  {
+    "ma_hoa": "C495",
+    "danh_muc_huong_dan_cham_soc": "Đo nhĩ lượng"
+  },
+  {
+    "ma_hoa": "C496",
+    "danh_muc_huong_dan_cham_soc": "Đo phản xạ cơ bàn đạp"
+  },
+  {
+    "ma_hoa": "C497",
+    "danh_muc_huong_dan_cham_soc": "Đo sức cản của mũi"
+  },
+  {
+    "ma_hoa": "C498",
+    "danh_muc_huong_dan_cham_soc": "Đo thính lực đơn âm"
+  },
+  {
+    "ma_hoa": "C499",
+    "danh_muc_huong_dan_cham_soc": "Đo thính lực lời"
+  },
+  {
+    "ma_hoa": "C500",
+    "danh_muc_huong_dan_cham_soc": "Đo thính lực ở trường tự do"
+  },
+  {
+    "ma_hoa": "C501",
+    "danh_muc_huong_dan_cham_soc": "Đo thính lực trên ngưỡng"
+  },
+  {
+    "ma_hoa": "C502",
+    "danh_muc_huong_dan_cham_soc": "Ghi đáp ứng thính giác thân não (ABR)"
+  },
+  {
+    "ma_hoa": "C503",
+    "danh_muc_huong_dan_cham_soc": "Ghi đáp ứng thính giác trạng thái ổn định (ASSR)"
+  },
+  {
+    "ma_hoa": "C504",
+    "danh_muc_huong_dan_cham_soc": "Rửa mũi ở trẻ em"
+  },
+  {
+    "ma_hoa": "C505",
+    "danh_muc_huong_dan_cham_soc": "Lấy dị vật hạ họng"
+  },
+  {
+    "ma_hoa": "C506",
+    "danh_muc_huong_dan_cham_soc": "Lấy dị vật họng miệng"
+  },
+  {
+    "ma_hoa": "C507",
+    "danh_muc_huong_dan_cham_soc": "Lấy dị vật mũi theo y lệnh"
+  },
+  {
+    "ma_hoa": "C508",
+    "danh_muc_huong_dan_cham_soc": "Lấy dị vật tai theo y lệnh"
+  },
+  {
+    "ma_hoa": "C509",
+    "danh_muc_huong_dan_cham_soc": "Lấy nút biểu bì ống tai ngoài"
+  },
+  {
+    "ma_hoa": "C510",
+    "danh_muc_huong_dan_cham_soc": "Nắn trật khớp thái dương hàm"
+  },
+  {
+    "ma_hoa": "C511",
+    "danh_muc_huong_dan_cham_soc": "Rút meche, rút merocel hốc mũi"
+  },
+  {
+    "ma_hoa": "C512",
+    "danh_muc_huong_dan_cham_soc": "Sơ cứu bỏng đường hô hấp"
+  },
+  {
+    "ma_hoa": "C513",
+    "danh_muc_huong_dan_cham_soc": "Súc rửa vòm họng trong xạ trị"
+  },
+  {
+    "ma_hoa": "C514",
+    "danh_muc_huong_dan_cham_soc": "Cắt chỉ thép"
+  },
+  {
+    "ma_hoa": "C515",
+    "danh_muc_huong_dan_cham_soc": "Vệ sinh răng miệng cho người bệnh có cố định hàm"
+  },
+  {
+    "ma_hoa": "C516",
+    "danh_muc_huong_dan_cham_soc": "Đánh giá tình trạng đau đầu"
+  },
+  {
+    "ma_hoa": "C517",
+    "danh_muc_huong_dan_cham_soc": "Đánh giá tình trạng đau bụng"
+  },
+  {
+    "ma_hoa": "C518",
+    "danh_muc_huong_dan_cham_soc": "Chuẩn bị người bệnh phẫu thuật cấp cứu"
+  },
+  {
+    "ma_hoa": "C519",
+    "danh_muc_huong_dan_cham_soc": "Mời khám kết hợp"
+  },
+  {
+    "ma_hoa": "C520",
+    "danh_muc_huong_dan_cham_soc": "Mời điều trị kết hợp"
+  },
+  {
+    "ma_hoa": "C521",
+    "danh_muc_huong_dan_cham_soc": "Thổi ngạt"
+  },
+  {
+    "ma_hoa": "C522",
+    "danh_muc_huong_dan_cham_soc": "Khí dung mũi họng"
+  },
+  {
+    "ma_hoa": "C523",
+    "danh_muc_huong_dan_cham_soc": "Cho người bệnh nằm đầu cao 30°"
+  },
+  {
+    "ma_hoa": "C524",
+    "danh_muc_huong_dan_cham_soc": "Cho người bệnh nằm đầu bằng"
+  },
+  {
+    "ma_hoa": "C525",
+    "danh_muc_huong_dan_cham_soc": "Băng ép cầm máu"
+  },
+  {
+    "ma_hoa": "C526",
+    "danh_muc_huong_dan_cham_soc": "Cấp cứu cao huyết áp"
+  },
+  {
+    "ma_hoa": "C527",
+    "danh_muc_huong_dan_cham_soc": "Thay băng lỗ mở khí quản"
+  },
+  {
+    "ma_hoa": "C528",
+    "danh_muc_huong_dan_cham_soc": "Vệ sinh răng miệng bệnh nhân thần kinh tại gường"
+  },
+  {
+    "ma_hoa": "C529",
+    "danh_muc_huong_dan_cham_soc": "Rửa âm hộ"
+  },
+  {
+    "ma_hoa": "C530",
+    "danh_muc_huong_dan_cham_soc": "Đo chiều cao tử cung, vòng bụng"
+  },
+  {
+    "ma_hoa": "C531",
+    "danh_muc_huong_dan_cham_soc": "Đo cơn co tử cung"
+  },
+  {
+    "ma_hoa": "C532",
+    "danh_muc_huong_dan_cham_soc": "Nghe tim thai"
+  },
+  {
+    "ma_hoa": "C533",
+    "danh_muc_huong_dan_cham_soc": "Lắp máy theo dõi monitor sản khoa"
+  },
+  {
+    "ma_hoa": "C534",
+    "danh_muc_huong_dan_cham_soc": "Đánh giá độ lọt của ngôi qua nắn ngoài"
+  },
+  {
+    "ma_hoa": "C535",
+    "danh_muc_huong_dan_cham_soc": "Khám độ xóa mở cổ tử cung, độ lọt của ngôi"
+  },
+  {
+    "ma_hoa": "C536",
+    "danh_muc_huong_dan_cham_soc": "Bấm ối"
+  },
+  {
+    "ma_hoa": "C537",
+    "danh_muc_huong_dan_cham_soc": "Chuẩn bị thuốc, dụng cụ đỡ đẻ"
+  },
+  {
+    "ma_hoa": "C538",
+    "danh_muc_huong_dan_cham_soc": "Đỡ đẻ thường"
+  },
+  {
+    "ma_hoa": "C539",
+    "danh_muc_huong_dan_cham_soc": "Thực hiện da kề da"
+  },
+  {
+    "ma_hoa": "C540",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc sơ sinh ngay sau đẻ (lau khô, hút nhớt, ủ ấm…)"
+  },
+  {
+    "ma_hoa": "C541",
+    "danh_muc_huong_dan_cham_soc": "Xử trí tích cực giai đoạn 3 của chuyển dạ"
+  },
+  {
+    "ma_hoa": "C542",
+    "danh_muc_huong_dan_cham_soc": "Cắt rốn"
+  },
+  {
+    "ma_hoa": "C543",
+    "danh_muc_huong_dan_cham_soc": "Khâu tầng sinh môn"
+  },
+  {
+    "ma_hoa": "C544",
+    "danh_muc_huong_dan_cham_soc": "Đo cao tử cung đánh giá mật độ tử cung"
+  },
+  {
+    "ma_hoa": "C545",
+    "danh_muc_huong_dan_cham_soc": "Đánh giá sản dịch: số lượng, màu sắc, mùi"
+  },
+  {
+    "ma_hoa": "C546",
+    "danh_muc_huong_dan_cham_soc": "Đánh giá tầng sinh môn"
+  },
+  {
+    "ma_hoa": "C547",
+    "danh_muc_huong_dan_cham_soc": "Đánh giá tình trạng trẻ sơ sinh: toàn trạng, bú mẹ, phân su, vàng da…."
+  },
+  {
+    "ma_hoa": "C548",
+    "danh_muc_huong_dan_cham_soc": "Làm thuốc âm hộ, âm đạo, tầng sinh môn"
+  },
+  {
+    "ma_hoa": "C549",
+    "danh_muc_huong_dan_cham_soc": "Đánh giá tình trạng ra máu âm đạo"
+  },
+  {
+    "ma_hoa": "C550",
+    "danh_muc_huong_dan_cham_soc": "Sàng lọc thính lực sơ sinh"
+  },
+  {
+    "ma_hoa": "C551",
+    "danh_muc_huong_dan_cham_soc": "Đỡ đẻ ngôi mông"
+  },
+  {
+    "ma_hoa": "C552",
+    "danh_muc_huong_dan_cham_soc": "Đỡ đẻ ngôi mặt"
+  },
+  {
+    "ma_hoa": "C553",
+    "danh_muc_huong_dan_cham_soc": "Kiểm soát tử cung"
+  },
+  {
+    "ma_hoa": "C554",
+    "danh_muc_huong_dan_cham_soc": "Khâu cổ tử cung"
+  },
+  {
+    "ma_hoa": "C555",
+    "danh_muc_huong_dan_cham_soc": "Ép tử cung bằng 2 tay để cầm máu sau sinh"
+  },
+  {
+    "ma_hoa": "C556",
+    "danh_muc_huong_dan_cham_soc": "Lấy dị vật âm đạo"
+  },
+  {
+    "ma_hoa": "C557",
+    "danh_muc_huong_dan_cham_soc": "Xử trí sa dây rau"
+  },
+  {
+    "ma_hoa": "C558",
+    "danh_muc_huong_dan_cham_soc": "Chèn gạc âm đạo cầm máu"
+  },
+  {
+    "ma_hoa": "C559",
+    "danh_muc_huong_dan_cham_soc": "Xoa đáy tử cung"
+  },
+  {
+    "ma_hoa": "C560",
+    "danh_muc_huong_dan_cham_soc": "Xoa bóp vú thông tuyến sữa sau sinh"
+  },
+  {
+    "ma_hoa": "C561",
+    "danh_muc_huong_dan_cham_soc": "Xoa bóp thư giãn cho trẻ sơ sinh"
+  },
+  {
+    "ma_hoa": "C562",
+    "danh_muc_huong_dan_cham_soc": "Xử trí chảy máu rốn"
+  },
+  {
+    "ma_hoa": "C563",
+    "danh_muc_huong_dan_cham_soc": "Khám phát hiện dị tật ngoài trẻ sơ sinh"
+  },
+  {
+    "ma_hoa": "C564",
+    "danh_muc_huong_dan_cham_soc": "Bàn giao trẻ sơ sinh"
+  },
+  {
+    "ma_hoa": "C565",
+    "danh_muc_huong_dan_cham_soc": "Chuẩn bị thuốc, dụng cụ cấp cứu sản giật"
+  },
+  {
+    "ma_hoa": "C566",
+    "danh_muc_huong_dan_cham_soc": "Cấp cứu sơ sinh sặc sữa"
+  },
+  {
+    "ma_hoa": "C567",
+    "danh_muc_huong_dan_cham_soc": "Nghe tim thai bằng ống nghe thường"
+  },
+  {
+    "ma_hoa": "C568",
+    "danh_muc_huong_dan_cham_soc": "Nghe tim thai bằng máy"
+  },
+  {
+    "ma_hoa": "C569",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi tim thai, cơn co tử cung bằng monitor trong sản khoa"
+  },
+  {
+    "ma_hoa": "C570",
+    "danh_muc_huong_dan_cham_soc": "Thực hiện kỹ thuật Non-Stresstest"
+  },
+  {
+    "ma_hoa": "C571",
+    "danh_muc_huong_dan_cham_soc": "Thực hiện kỹ thuật Stresstest"
+  },
+  {
+    "ma_hoa": "C572",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi sản phụ tiền sản giật, sản giật có sử dụng MgSO4"
+  },
+  {
+    "ma_hoa": "C573",
+    "danh_muc_huong_dan_cham_soc": "Nghiệm pháp lọt ngôi chỏm"
+  },
+  {
+    "ma_hoa": "C574",
+    "danh_muc_huong_dan_cham_soc": "Bóc rau nhân tạo"
+  },
+  {
+    "ma_hoa": "C575",
+    "danh_muc_huong_dan_cham_soc": "Kiểm tra rau"
+  },
+  {
+    "ma_hoa": "C576",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc rốn sơ sinh sau sinh"
+  },
+  {
+    "ma_hoa": "C577",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi chăm sóc bà mẹ, trẻ sơ sinh sau sinh thường và sinh mỗ"
+  },
+  {
+    "ma_hoa": "C578",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc, theo dõi người bệnh dọa sảy thai, dọa đẻ non"
+  },
+  {
+    "ma_hoa": "C579",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc người bệnh viêm phần phụ"
+  },
+  {
+    "ma_hoa": "C580",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc người bệnh điều trị nội khoa chửa ngoài tử cung bằng thuốc"
+  },
+  {
+    "ma_hoa": "C581",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc theo dõi sản phụ chỉ huy"
+  },
+  {
+    "ma_hoa": "C582",
+    "danh_muc_huong_dan_cham_soc": "Tư vấn giáo dục sức khỏe cho sản phụ trước sinh và sau sinh"
+  },
+  {
+    "ma_hoa": "C583",
+    "danh_muc_huong_dan_cham_soc": "Tư vấn giáo dục sức khỏe cho người bệnh phẫu thuật phụ khoa"
+  },
+  {
+    "ma_hoa": "C584",
+    "danh_muc_huong_dan_cham_soc": "Chuẩn bị người bệnh trước phẫu thuật phụ khoa"
+  },
+  {
+    "ma_hoa": "C585",
+    "danh_muc_huong_dan_cham_soc": "Cho người bệnh nằm đầu thấp"
+  },
+  {
+    "ma_hoa": "C586",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi độ co hồi tử cung sau sinh"
+  },
+  {
+    "ma_hoa": "C587",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi lượng máu ra âm đạo sau sinh"
+  },
+  {
+    "ma_hoa": "C588",
+    "danh_muc_huong_dan_cham_soc": "Chuẩn bị người bệnh phẫu thuật có sử dụng kháng sinh dự phòng"
+  },
+  {
+    "ma_hoa": "C589",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc, theo dõi người bệnh sau phẫu thuật cắt tử cung"
+  },
+  {
+    "ma_hoa": "C590",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc, theo dõi người bệnh sau phẫu thuật sa tạng chậu"
+  },
+  {
+    "ma_hoa": "C591",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi khí máu tại chỗ"
+  },
+  {
+    "ma_hoa": "C592",
+    "danh_muc_huong_dan_cham_soc": "Truyền thuốc qua máy bơm tiêm điện"
+  },
+  {
+    "ma_hoa": "C593",
+    "danh_muc_huong_dan_cham_soc": "Băng ép cầm máu vết thương vùng cổ, ngực"
+  },
+  {
+    "ma_hoa": "C594",
+    "danh_muc_huong_dan_cham_soc": "Băng ép cho người bệnh sau phẫu thuật vùng cổ, lồng ngực"
+  },
+  {
+    "ma_hoa": "C595",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi cơn nhược cơ của người bệnh"
+  },
+  {
+    "ma_hoa": "C596",
+    "danh_muc_huong_dan_cham_soc": "Đặt tưới rửa màng phổi liên tục"
+  },
+  {
+    "ma_hoa": "C597",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc người bệnh xuyên đinh kéo liên tục"
+  },
+  {
+    "ma_hoa": "C598",
+    "danh_muc_huong_dan_cham_soc": "Chuẩn bị người bệnh, dụng cụ xuyên đinh kéo liên tục"
+  },
+  {
+    "ma_hoa": "C599",
+    "danh_muc_huong_dan_cham_soc": "Chuẩn bị người bệnh, dụng cụ bó bột cố định gãy đầu trên xương đùi bằng nẹp"
+  },
+  {
+    "ma_hoa": "C600",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc bệnh nhân sau bó bột"
+  },
+  {
+    "ma_hoa": "C601",
+    "danh_muc_huong_dan_cham_soc": "Chuẩn bị người bệnh chọc hút dịch khớp gối"
+  },
+  {
+    "ma_hoa": "C602",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc người bệnh chọc hút dịch khớp gối"
+  },
+  {
+    "ma_hoa": "C603",
+    "danh_muc_huong_dan_cham_soc": "Cố định cột sống cổ bằng khung Gadner"
+  },
+  {
+    "ma_hoa": "C604",
+    "danh_muc_huong_dan_cham_soc": "Cố định cột sống ngực bằng áo cố định ngoài cột sống (+)"
+  },
+  {
+    "ma_hoa": "C605",
+    "danh_muc_huong_dan_cham_soc": "Cố định cột sống thắt lưng bằng áo cố định ngoài cột sống (+)"
+  },
+  {
+    "ma_hoa": "C606",
+    "danh_muc_huong_dan_cham_soc": "Chăm sóc chân đinh sau kéo dãn cột sống cổ bằng khung Gadner"
+  },
+  {
+    "ma_hoa": "C607",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi máy tạo nhịp tạm thời"
+  },
+  {
+    "ma_hoa": "C608",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi người bệnh sau rút chỉ điện cực tim"
+  },
+  {
+    "ma_hoa": "C609",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi huyết áp đường động mạch"
+  },
+  {
+    "ma_hoa": "C610",
+    "danh_muc_huong_dan_cham_soc": "Xét nghiệm ACT máu tại giường theo y lệnh"
+  },
+  {
+    "ma_hoa": "C611",
+    "danh_muc_huong_dan_cham_soc": "Theo dõi người bệnh dùng kháng đông Heparine"
+  },
+  {
+    "ma_hoa": "C612",
+    "danh_muc_huong_dan_cham_soc": "Đo áp lực tĩnh mạch trung tâm liên tục qua cổng đo áp lực trên máy"
+  },
+  {
+    "ma_hoa": "C613",
+    "danh_muc_huong_dan_cham_soc": "Khí dung qua máy thở"
   }
 ]

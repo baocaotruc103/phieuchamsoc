@@ -35,10 +35,81 @@ function currentVietnamDateTimeInput(includeSeconds = false) {
 function parseDateTimeForVietnam(value) {
   if (!value) return null;
   const text = String(value);
+  const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(text);
+  if (dateOnly) {
+    const date = new Date(`${text}T00:00:00+07:00`);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
   const hasTimeZone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(text);
   const normalized = hasTimeZone ? text : `${text.replace(" ", "T")}+07:00`;
   const date = new Date(normalized);
   return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatVietnamDate(value) {
+  const date = value instanceof Date ? value : parseDateTimeForVietnam(value);
+  if (!date) return value || "";
+  const parts = vietnamDateParts(date);
+  return `${parts.day}/${parts.month}/${parts.year}`;
+}
+
+function formatVietnamDateTime(value) {
+  const date = value instanceof Date ? value : parseDateTimeForVietnam(value);
+  if (!date) return value || "";
+  const parts = vietnamDateParts(date);
+  return `${parts.day}/${parts.month}/${parts.year} ${parts.hour}:${parts.minute}`;
+}
+
+function createDefaultHealthEducationForms() {
+  const today = currentVietnamDateInput();
+  return {
+    admission: {
+      date: today,
+      staffName: "",
+      patientSign: "",
+      note: "",
+      items: [
+        { id: "1_1", content: "Hướng dẫn chế độ BHYT", need: "", result: "" },
+        { id: "1_2", content: "Phổ biến nội quy, quy định của cơ sở khám bệnh, chữa bệnh. Hướng dẫn công tác kiểm soát nhiễm khuẩn: vệ sinh tay, phân loại rác thải đúng quy định.", need: "", result: "" },
+        { id: "1_3", content: "Hướng dẫn sử dụng các trang thiết bị trong phòng bệnh: giường, gọi nhân viên y tế, sử dụng nhà vệ sinh...", need: "", result: "" },
+        { id: "1_4", content: "Phổ biến các dịch vụ hiện có tại khoa: giường bệnh dịch vụ, các kỹ thuật mới trong công tác điều trị và chăm sóc...", need: "", result: "" },
+        { id: "1_5", content: "Hướng dẫn chế độ ăn phù hợp với tình trạng bệnh và trước phẫu thuật", need: "", result: "" },
+      ],
+    },
+    treatment: {
+      date: today,
+      staffName: "",
+      patientSign: "",
+      note: "",
+      items: [
+        { id: "2_1", content: "Giải thích các kỹ thuật, thủ thuật trước, trong và sau khi thực hiện trên người bệnh liên quan đến công tác chăm sóc.", need: "", result: "" },
+        { id: "2_2", content: "Hướng dẫn sử dụng thuốc an toàn và hiệu quả.", need: "", result: "" },
+        { id: "2_3", content: "Hướng dẫn tự phát hiện và theo dõi các triệu chứng khác thường", need: "", result: "" },
+        { id: "2_4", content: "Hướng dẫn chế độ dinh dưỡng theo bệnh lý, tương tác giữa thực phẩm và thuốc (nếu có).", need: "", result: "" },
+        { id: "2_5", content: "Hướng dẫn các vấn đề an toàn người bệnh: đề phòng té ngã, loét do tì đè.", need: "", result: "" },
+        { id: "2_6", content: "Hướng dẫn chế độ vận động theo bệnh lý, nghỉ ngơi hợp lý.", need: "", result: "" },
+        { id: "2_7", content: "Hướng dẫn chăm sóc vệ sinh cá nhân.", need: "", result: "" },
+        { id: "2_8", content: "Tìm hiểu nhu cầu và hỗ trợ người bệnh giai đoạn cuối về thể chất - tinh thần.", need: "", result: "" },
+      ],
+    },
+    discharge: {
+      date: today,
+      staffName: "",
+      patientSign: "",
+      note: "",
+      items: [
+        { id: "3_1", content: "Chăm sóc tại nhà sau khi xuất viện", need: "", result: "" },
+        { id: "3_2", content: "Điều trị và dùng thuốc", need: "", result: "" },
+        { id: "3_3", content: "Thời gian và nơi thực hiện việc theo dõi chăm sóc", need: "", result: "" },
+        { id: "3_4", content: "Khi nào phải liên hệ với bác sĩ", need: "", result: "" },
+        { id: "3_5", content: "Khi nào cần phải đi khám, chăm sóc khẩn cấp", need: "", result: "" },
+      ],
+    },
+    summary: {
+      note: "",
+      items: [],
+    },
+  };
 }
 
 const state = {
@@ -47,9 +118,11 @@ const state = {
   screen: "patients",
   hasCareSheet: false,
   careSheets: [],
+  careSheetsPatient: null,
   careSheetsLoadedFor: "",
   careSheetsLoading: false,
   careSheetsError: "",
+  careListTab: "care",
   selectedCareSheetId: null,
   editingCareSheetId: null,
   careGoalEvaluations: [],
@@ -86,6 +159,10 @@ const state = {
     bmi: "",
     allergy: "none",
     allergy_note: "",
+    allergyDrug: "",
+    allergyFood: "",
+    allergyOther: "",
+    allergySymptoms: "",
     fluidIn: "",
     fluidOut: "",
     fluidBalance: "",
@@ -102,6 +179,7 @@ const state = {
     peep: "",
     vt: "",
     respiratoryRate: "",
+    coughStatus: "",
     spo2: "",
     circulationStable: false,
     circulationFastPulse: false,
@@ -113,25 +191,46 @@ const state = {
     vasopressorDobutamine: false,
     vasopressorVasopressin: false,
     vasopressorOther: "",
+    circulationSymptoms: [],
+    peripheralPerfusion: "",
+    heartRhythm: "",
+    heartRateStatus: "",
+    heartSounds: "",
+    circulationOtherChecked: false,
+    circulationOther: "",
     abdomen: "",
     stool: "",
     urinary: [],
     urineAmount: "",
-    nutritionType: [],
-    menu: [],
-    neuroConsciousness: [],
-    neuroOrientation: [],
+    nutritionRoute: "",
+    nutritionRegimen: [],
+    nutritionRegimenOther: "",
+    pathologicalDiet: false,
+    pathologicalDietTypes: [],
+    pathologicalDietOther: "",
+    neuroConsciousness: "",
+    neuroConsciousnessOther: "",
+    neuroOrientation: "",
+    neuroOrientationOther: "",
+    neuroBehaviorStatus: "",
     neuroBehavior: [],
+    neuroBehaviorOther: "",
+    neuroFocalSignsStatus: "",
     neuroFocalSigns: [],
+    neuroFocalSignsOther: "",
     neuroSensory: "",
     mobilityAbility: [],
+    mobilityAbilityOther: "",
     muscleStrength: [],
+    muscleStrengthOther: "",
     movementStatus: [],
+    movementStatusOther: "",
     mobilityRehab: "",
     treatmentEducation: [],
     careEducation: [],
     preventionEducation: [],
     healthEducation: "",
+    healthEducationForms: createDefaultHealthEducationForms(),
     circulationNote: "",
     respiratoryNote: "",
     diseasedOrgan: "",
@@ -153,16 +252,26 @@ const state = {
     handoverOther: "",
   },
   diagnosisRows: [],
+  diagnosisSavedRows: [],
+  diagnosisCatalog: [],
+  diagnosisPicker: null,
+  diagnosisDetail: null,
   interventionRows: [],
+  interventionDraft: { codeQuery: "", contentQuery: "", selected: [] },
   assessmentTemplate: null,
   scaleData: [],
   scaleScores: {},
   scaleResults: {},
   activeScale: null,
   activeDiagnosisSuggest: null,
+  activeDiseasedOrganSuggest: false,
+  diseasedOrganQuery: "",
+  activeCauseSuggest: null,
   activeGoalSuggest: null,
   interventionCatalog: [],
   activeInterventionSuggest: null,
+  healthEducationStage: "admission",
+  activeHealthEducationStage: null,
 };
 
 const initialAssessmentChecklist = JSON.parse(JSON.stringify(state.assessmentChecklist));
@@ -174,11 +283,30 @@ function createDefaultAssessmentChecklist() {
   };
 }
 
+function allergyDetailsFromChecklist(check) {
+  const details = [
+    ["Thuốc", check.allergyDrug],
+    ["Thức ăn", check.allergyFood],
+    ["Khác", check.allergyOther],
+    ["Biểu hiện", check.allergySymptoms],
+  ].filter(([, value]) => cleanLine(value));
+  if (details.length) return details.map(([label, value]) => `${label}: ${value}`).join("; ");
+  return check.allergy_note || "";
+}
+
+function clearAllergyDetails() {
+  state.assessmentChecklist.allergy_note = "";
+  state.assessmentChecklist.allergyDrug = "";
+  state.assessmentChecklist.allergyFood = "";
+  state.assessmentChecklist.allergyOther = "";
+  state.assessmentChecklist.allergySymptoms = "";
+}
+
 const scaleMapping = {
   fallRiskAssessment: "morse_fall_scale",
   vteRiskAssessment: "vip_score",
-  painAssessment: "flacc_pain_scale",
-  current_pain: "flacc_pain_scale",
+  painAssessment: "vas_pain_score",
+  current_pain: "vas_pain_score",
   glasgow_score: "glasgow_coma_scale",
   fall_risk_score: "morse_fall_scale",
   vip_score_point: "vip_score",
@@ -456,9 +584,34 @@ function createDiagnosisRow() {
     selected: true,
     diagnosis: "",
     diagnosisQuery: "",
+    causeQuery: "",
     goalQuery: "",
     goals: [],
+    diagnosisIds: [],
+    causes: [],
   };
+}
+
+function normalizeDiagnosisRowForSave(row) {
+  return {
+    id: row.id || `dx-saved-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    selected: true,
+    diagnosis: cleanLine(row.diagnosis),
+    diagnosisQuery: cleanLine(row.diagnosis),
+    causeQuery: "",
+    goalQuery: "",
+    goals: (Array.isArray(row.goals) ? row.goals : row.goal ? [row.goal] : [])
+      .map(cleanLine)
+      .filter(Boolean)
+      .filter((value, index, values) => values.indexOf(value) === index),
+    diagnosisIds: Array.isArray(row.diagnosisIds) ? row.diagnosisIds.map(String) : [],
+    causes: (Array.isArray(row.causes) ? row.causes : []).map(cleanLine).filter(Boolean),
+  };
+}
+
+function hasCompleteDiagnosisDraft(row) {
+  const saved = normalizeDiagnosisRowForSave(row || {});
+  return Boolean(saved.diagnosis && saved.causes.length && saved.goals.length);
 }
 
 function diagnosisSuggestionsForSearch(condition) {
@@ -537,14 +690,192 @@ function filteredGoalOptions(row, goalValue = "") {
     .slice(0, 6);
 }
 
-function interventionCatalogItems() {
-  return (state.interventionCatalog || []).flatMap((group) =>
-    (group.interventions || []).map((item) => ({
-      code: cleanLine(item.code),
-      name: cleanLine(item.name),
-      group: cleanLine(group.group),
-    })),
+function diagnosisCatalogRows() {
+  return Array.isArray(state.diagnosisCatalog) ? state.diagnosisCatalog : [];
+}
+
+function nandaCatalogOptions(query = "") {
+  const key = searchKey(query);
+  const grouped = new Map();
+  for (const item of diagnosisCatalogRows()) {
+    const nanda = cleanLine(item.nanda);
+    if (!nanda) continue;
+    if (key && !searchKey(`${nanda} ${item.id}`).includes(key)) continue;
+    if (!grouped.has(nanda)) grouped.set(nanda, { nanda, ids: [], rows: [] });
+    grouped.get(nanda).ids.push(item.id);
+    grouped.get(nanda).rows.push(item);
+  }
+  return [...grouped.values()].slice(0, 80);
+}
+
+function diseasedOrganSelectedItems() {
+  return String(state.assessmentChecklist.diseasedOrgan || "")
+    .split(";")
+    .map(cleanLine)
+    .filter(Boolean);
+}
+
+function setDiseasedOrganSelectedItems(items) {
+  state.assessmentChecklist.diseasedOrgan = [...new Set(items.map(cleanLine).filter(Boolean))].join("; ");
+}
+
+function diseasedOrganOptions(query = "") {
+  const key = searchKey(query);
+  const grouped = new Map();
+  for (const item of diagnosisCatalogRows()) {
+    const cause = cleanLine(item.cause);
+    const nanda = cleanLine(item.nanda);
+    if (!nanda) continue;
+    if (key && !searchKey(cause).includes(key)) continue;
+    if (!grouped.has(nanda)) grouped.set(nanda, { nanda, causes: [] });
+    if (cause && !grouped.get(nanda).causes.includes(cause)) grouped.get(nanda).causes.push(cause);
+  }
+  return [...grouped.values()].slice(0, 12);
+}
+
+function nandaCatalogOptionByName(nanda) {
+  const name = cleanLine(nanda);
+  if (!name) return null;
+  const rows = diagnosisCatalogRows().filter((item) => cleanLine(item.nanda) === name);
+  if (!rows.length) return null;
+  return {
+    nanda: name,
+    ids: rows.map((item) => item.id),
+    rows,
+  };
+}
+
+function applyNandaCatalogSelection(row, nanda) {
+  if (!row) return;
+  const option = nandaCatalogOptionByName(nanda);
+  row.diagnosis = cleanLine(nanda);
+  row.diagnosisQuery = row.diagnosis;
+  row.diagnosisIds = option ? option.ids.map(String) : [];
+  row.causes = (row.causes || []).filter((cause) =>
+    causeOptionsForDiagnosis(row).some((item) => item.cause === cause),
   );
+  row.goals = (row.goals || []).filter((goal) =>
+    goalOptionsForDiagnosisRow(row).includes(goal),
+  );
+}
+
+function selectedNandasForRow(row) {
+  const selected = new Set((row?.diagnosisIds || []).map(String));
+  return [...new Set(
+    diagnosisCatalogRows()
+      .filter((item) => selected.has(String(item.id)))
+      .map((item) => cleanLine(item.nanda))
+      .filter(Boolean),
+  )];
+}
+
+function syncDiagnosisFromSelectedIds(row) {
+  if (!row) return;
+  row.diagnosis = selectedNandasForRow(row).join("; ");
+  row.causes = (row.causes || []).filter((cause) =>
+    causeOptionsForDiagnosis(row).some((item) => item.cause === cause),
+  );
+  row.goals = (row.goals || []).filter((goal) =>
+    goalOptionsForDiagnosisRow(row).includes(goal),
+  );
+}
+
+function toggleNandaCatalogSelection(row, nanda, checked) {
+  if (!row) return;
+  const option = nandaCatalogOptionByName(nanda);
+  if (!option) return;
+  row.diagnosisIds = checked ? option.ids.map(String) : [];
+  row.diagnosis = checked ? option.nanda : "";
+  row.diagnosisQuery = row.diagnosis;
+  row.causes = [];
+  row.goals = [];
+  row.causeQuery = "";
+  row.goalQuery = "";
+}
+
+function diagnosisRowsForSelectedNanda(row) {
+  const selected = new Set(row.diagnosisIds || []);
+  const selectedNandas = new Set(
+    diagnosisCatalogRows()
+      .filter((item) => selected.has(String(item.id)) || selected.has(item.id))
+      .map((item) => cleanLine(item.nanda)),
+  );
+  if (!selectedNandas.size && row.diagnosis) selectedNandas.add(row.diagnosis);
+  return diagnosisCatalogRows().filter((item) => selectedNandas.has(cleanLine(item.nanda)));
+}
+
+function causeOptionsForDiagnosis(row) {
+  const grouped = new Map();
+  for (const item of diagnosisRowsForSelectedNanda(row)) {
+    const cause = cleanLine(item.cause);
+    if (!cause) continue;
+    if (!grouped.has(cause)) grouped.set(cause, { cause, ids: [] });
+    grouped.get(cause).ids.push(item.id);
+  }
+  return [...grouped.values()];
+}
+
+function selectedDiagnosisRecords(row) {
+  const selectedCauses = new Set(row.causes || []);
+  const candidates = diagnosisRowsForSelectedNanda(row);
+  return candidates.filter((item) => !selectedCauses.size || selectedCauses.has(cleanLine(item.cause)));
+}
+
+function goalOptionsForDiagnosisRow(row) {
+  return [...new Set(
+    selectedDiagnosisRecords(row)
+      .flatMap((item) => String(item.noc || "").split(";"))
+      .map(cleanLine)
+      .filter(Boolean),
+  )];
+}
+
+function filteredCauseOptionsForDiagnosis(row) {
+  const key = searchKey(row.causeQuery);
+  return causeOptionsForDiagnosis(row).filter((item) => !key || searchKey(item.cause).includes(key));
+}
+
+function filteredGoalOptionsForDiagnosis(row) {
+  const key = searchKey(row.goalQuery);
+  return goalOptionsForDiagnosisRow(row).filter((goal) => !key || searchKey(goal).includes(key));
+}
+
+function diagnosisCodeSummary(row) {
+  return selectedDiagnosisRecords(row)
+    .map((item) => item.id)
+    .filter((value, index, values) => values.indexOf(value) === index)
+    .slice(0, 12)
+    .join(", ");
+}
+
+function diagnosisDetailText(row) {
+  return selectedDiagnosisRecords(row)
+    .slice(0, 10)
+    .map((item) => [
+      `Mã: ${item.id}`,
+      `Chẩn đoán: ${cleanLine(item.nanda)}`,
+      `Nguyên nhân: ${cleanLine(item.cause) || "-"}`,
+      `Mục tiêu/NOC: ${cleanLine(item.noc) || "-"}`,
+      `Can thiệp/NIC: ${cleanLine(item.nic) || "-"}`,
+    ].join("\n"))
+    .join("\n\n");
+}
+
+function interventionCatalogItems() {
+  return (state.interventionCatalog || []).flatMap((group) => {
+    if (Array.isArray(group.interventions)) {
+      return group.interventions.map((item) => ({
+        code: cleanLine(item.code),
+        name: cleanLine(item.name),
+        group: cleanLine(group.group),
+      }));
+    }
+    return [{
+      code: cleanLine(group.ma_hoa || group.code),
+      name: cleanLine(group.danh_muc_huong_dan_cham_soc || group.name),
+      group: cleanLine(group.group),
+    }];
+  }).filter((item) => item.code || item.name);
 }
 
 function findInterventionByCode(code) {
@@ -566,6 +897,97 @@ function filteredInterventionOptions(value, mode) {
       return searchKey(target).includes(query);
     })
     .slice(0, 8);
+}
+
+function createInterventionDraft() {
+  return { codeQuery: "", contentQuery: "", selected: [] };
+}
+
+function interventionOptionKey(item) {
+  return `${cleanLine(item.code)}|${cleanLine(item.name || item.content)}`;
+}
+
+function keywordTokens(text) {
+  const stopWords = new Set([
+    "va", "voi", "cho", "theo", "khi", "neu", "cac", "cua", "nguoi", "benh", "dieu", "duong",
+    "cham", "soc", "can", "thiep", "huong", "dan", "the", "tinh", "trang", "lien", "quan",
+  ]);
+  return [...new Set(
+    searchKey(text)
+      .replace(/[^a-z0-9\s]/g, " ")
+      .split(/\s+/)
+      .map((token) => token.trim())
+      .filter((token) => token.length >= 3 && !stopWords.has(token)),
+  )];
+}
+
+function interventionMatchScore(catalogItem, sourceText) {
+  const catalog = searchKey(`${catalogItem.code} ${catalogItem.name}`);
+  const source = searchKey(sourceText);
+  if (!catalog || !source) return 0;
+  if (source.includes(searchKey(catalogItem.name)) || catalog.includes(source)) return 100;
+  const sourceTokens = keywordTokens(source);
+  if (!sourceTokens.length) return 0;
+  return sourceTokens.reduce((score, token) => score + (catalog.includes(token) ? 1 : 0), 0);
+}
+
+function savedDiagnosisInterventionSourceTexts() {
+  const rows = state.diagnosisSavedRows || [];
+  return rows.flatMap((row) =>
+    selectedDiagnosisRecords(row).flatMap((record) => {
+      const context = [row.diagnosis, ...(row.causes || []), ...(row.goals || [])].join(" ");
+      return String(record.nic || "")
+        .split(";")
+        .map(cleanLine)
+        .filter(Boolean)
+        .map((nic) => `${nic} ${context}`);
+    }),
+  );
+}
+
+function diagnosisBasedInterventionOptions() {
+  const grouped = new Map();
+  const catalog = interventionCatalogItems();
+  for (const sourceText of savedDiagnosisInterventionSourceTexts()) {
+    catalog
+      .map((item) => ({ item, score: interventionMatchScore(item, sourceText) }))
+      .filter((entry) => entry.score > 0)
+      .sort((a, b) => b.score - a.score || a.item.code.localeCompare(b.item.code))
+      .slice(0, 6)
+      .forEach(({ item }) => grouped.set(interventionOptionKey(item), {
+        ...item,
+        group: "Gợi ý theo chẩn đoán",
+      }));
+  }
+  return [...grouped.values()];
+}
+
+function interventionDropdownOptions(value, mode) {
+  const query = searchKey(value);
+  const diagnosisOptions = diagnosisBasedInterventionOptions();
+  const source = query ? [...diagnosisOptions, ...interventionCatalogItems()] : (diagnosisOptions.length ? diagnosisOptions : interventionCatalogItems());
+  const grouped = new Map();
+  for (const item of source) {
+    const target = mode === "code" ? item.code : item.name;
+    if (query && !searchKey(target).includes(query)) continue;
+    if (!grouped.has(interventionOptionKey(item))) grouped.set(interventionOptionKey(item), item);
+    if (grouped.size >= 40) break;
+  }
+  return [...grouped.values()].slice(0, 12);
+}
+
+function isInterventionDraftSelected(item) {
+  return (state.interventionDraft.selected || []).some((selected) => interventionOptionKey(selected) === interventionOptionKey(item));
+}
+
+function toggleInterventionDraftSelection(item, checked) {
+  const draft = state.interventionDraft || createInterventionDraft();
+  const selected = Array.isArray(draft.selected) ? [...draft.selected] : [];
+  const key = interventionOptionKey(item);
+  const index = selected.findIndex((entry) => interventionOptionKey(entry) === key);
+  if (checked && index < 0) selected.push({ code: cleanLine(item.code), content: cleanLine(item.name || item.content) });
+  if (!checked && index >= 0) selected.splice(index, 1);
+  state.interventionDraft = { ...draft, selected };
 }
 
 function applyInterventionOption(row, item) {
@@ -615,8 +1037,11 @@ function resetCareFormState({ resetChecklist = false } = {}) {
   state.selectedAssessments = new Set();
   state.assessmentEdits = {};
   state.diagnosisRows = [createDiagnosisRow()];
+  state.diagnosisSavedRows = [];
   state.interventionRows = [];
+  state.interventionDraft = createInterventionDraft();
   state.activeDiagnosisSuggest = null;
+  state.activeCauseSuggest = null;
   state.activeGoalSuggest = null;
   state.activeInterventionSuggest = null;
 }
@@ -651,9 +1076,10 @@ function hydrateCareFormFromSheet(sheet) {
   state.selectedAssessments = new Set();
   state.assessmentEdits = {};
   state.activeDiagnosisSuggest = null;
+  state.activeCauseSuggest = null;
   state.activeGoalSuggest = null;
   state.activeInterventionSuggest = null;
-  state.diagnosisRows = diagnoses.length
+  state.diagnosisSavedRows = diagnoses.length
     ? diagnoses.map((item, index) => {
         const goals = Array.isArray(item.goals)
           ? item.goals
@@ -666,17 +1092,25 @@ function hydrateCareFormFromSheet(sheet) {
           selected: true,
           diagnosis: item.diagnosis || "",
           diagnosisQuery: item.diagnosis || "",
+          causeQuery: "",
           goalQuery: "",
           goals,
+          diagnosisIds: String(item.code || "")
+            .split(",")
+            .map((value) => cleanLine(value))
+            .filter(Boolean),
+          causes: Array.isArray(item.causes) ? item.causes : [],
         };
       })
-    : [createDiagnosisRow()];
+    : [];
+  state.diagnosisRows = [createDiagnosisRow()];
   state.interventionRows = interventions.map((item, index) => ({
     id: `iv-edit-${sheet.id}-${index}`,
     selected: true,
     code: item.code || "",
     content: item.content || "",
   }));
+  state.interventionDraft = createInterventionDraft();
   state.screen = "careForm";
   render();
 }
@@ -894,7 +1328,11 @@ function renderCareSheetListScreen() {
             <button class="btn primary" data-action="create-care">Thêm phiếu chăm sóc</button>
             <button class="btn" data-action="evaluate-results">Đánh giá kết quả</button>
           </div>
-          ${renderCareSheetListBody()}
+          <div class="care-list-tabs">
+            <button type="button" class="btn ${state.careListTab === "care" ? "primary" : ""}" data-care-list-tab="care">Phiếu chăm sóc</button>
+            <button type="button" class="btn ${state.careListTab === "education" ? "primary" : ""}" data-care-list-tab="education">Tư vấn, Hướng dẫn, GDSK</button>
+          </div>
+          ${state.careListTab === "education" ? renderHealthEducationDetailListBodyV2() : renderCareSheetListBody()}
         </div>
       </section>
     </div>
@@ -941,6 +1379,206 @@ function renderCareSheetListBody() {
       `).join("")}
     </div>
   `;
+}
+
+function healthEducationEntriesFromSheets() {
+  const labels = {
+    admission: "Bắt đầu nhập viện",
+    treatment: "Trong khi điều trị",
+    discharge: "Trước khi ra viện",
+    summary: "Tổng hợp",
+  };
+  return state.careSheets.flatMap((sheet) => {
+    const checklist = sheet.nhan_dinh_json?.checklist || {};
+    const forms = checklist.healthEducationForms || {};
+    return Object.entries(forms).flatMap(([stageKey, form]) => {
+      const items = Array.isArray(form?.items) ? form.items : [];
+      const rows = items
+        .filter((item) => cleanLine(item.content) || cleanLine(item.need) || cleanLine(item.result))
+        .map((item) => ({
+          date: form.date || sheet.thoi_gian_danh_gia || sheet.created_at,
+          sheetCode: sheet.ma_phieu || `Phiếu #${sheet.id}`,
+          stage: labels[stageKey] || stageKey,
+          content: item.content || "",
+          need: item.need || "",
+          result: item.result || "",
+          note: "",
+          staffName: form.staffName || "",
+          patientSign: form.patientSign || "",
+        }));
+      if (cleanLine(form?.note)) {
+        rows.push({
+          date: form.date || sheet.thoi_gian_danh_gia || sheet.created_at,
+          sheetCode: sheet.ma_phieu || `Phiếu #${sheet.id}`,
+          stage: labels[stageKey] || stageKey,
+          content: "Ghi chú",
+          need: "",
+          result: "",
+          note: form.note,
+          staffName: form.staffName || "",
+          patientSign: form.patientSign || "",
+        });
+      }
+      return rows;
+    });
+  });
+}
+
+function renderHealthEducationListBody() {
+  if (state.careSheetsLoading) {
+    return `<div class="empty care-list-empty">Đang tải danh sách tư vấn, giáo dục sức khỏe...</div>`;
+  }
+  if (state.careSheetsError) {
+    return `<div class="empty care-list-empty">${h(state.careSheetsError)}</div>`;
+  }
+  const entries = healthEducationEntriesFromSheets();
+  if (!entries.length) {
+    return `<div class="empty care-list-empty">Chưa có nội dung tư vấn, hướng dẫn, giáo dục sức khỏe.</div>`;
+  }
+  const groups = entries.reduce((acc, entry) => {
+    const key = formatDateTime(entry.date).split(" ")[0] || "Không rõ ngày";
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(entry);
+    return acc;
+  }, {});
+  return `
+    <div class="gdsk-list">
+      ${Object.entries(groups).map(([date, rows]) => `
+        <section class="gdsk-list-day">
+          <h3>${h(date)}</h3>
+          <div class="gdsk-table gdsk-summary-table">
+            <div class="gdsk-row gdsk-head">
+              <span>Phiếu/Giai đoạn</span>
+              <span>Nội dung</span>
+              <span>Nhu cầu</span>
+              <span>Kết quả/Ghi chú</span>
+            </div>
+            ${rows.map((row) => `
+              <div class="gdsk-row">
+                <span>${h(row.sheetCode)}<br><small>${h(row.stage)}</small></span>
+                <span>${h(row.content || "-")}</span>
+                <span>${h(row.need || "-")}</span>
+                <span>${h(row.note || row.result || "-")}</span>
+              </div>
+            `).join("")}
+          </div>
+        </section>
+      `).join("")}
+    </div>
+  `;
+}
+
+function renderHealthEducationDetailListBody() {
+  if (state.careSheetsLoading) {
+    return `<div class="empty care-list-empty">Äang táº£i danh sÃ¡ch tÆ° váº¥n, giÃ¡o dá»¥c sá»©c khá»e...</div>`;
+  }
+  if (state.careSheetsError) {
+    return `<div class="empty care-list-empty">${h(state.careSheetsError)}</div>`;
+  }
+  const latestSheetsByDate = latestHealthEducationSheetsByDate();
+  if (!latestSheetsByDate.length) {
+    return `<div class="empty care-list-empty">ChÆ°a cÃ³ ná»™i dung tÆ° váº¥n, hÆ°á»›ng dáº«n, giÃ¡o dá»¥c sá»©c khá»e.</div>`;
+  }
+  const selected = gdskPatientContext(patients[state.selectedPatientIndex] || patients[0] || {});
+  return `
+    <div class="gdsk-list gdsk-detail-list">
+      ${latestSheetsByDate.map(({ date, sheet }) => `
+        <section class="gdsk-list-day gdsk-detail-list-day">
+          <div class="gdsk-list-day-header">
+            <h3>${h(date)}</h3>
+            <span>${h(sheet.ma_phieu || `Phiáº¿u #${sheet.id}`)} - phiáº¿u má»›i nháº¥t trong ngÃ y</span>
+          </div>
+          ${renderGdskDetailDocument(healthEducationFormsFromChecklist(sheet.nhan_dinh_json?.checklist || {}, sheet), {
+            patient: selected,
+            sheet,
+          })}
+        </section>
+      `).join("")}
+    </div>
+  `;
+}
+
+function renderHealthEducationDetailListBodyV2() {
+  if (state.careSheetsLoading) {
+    return `<div class="empty care-list-empty">Đang tải danh sách tư vấn, giáo dục sức khỏe...</div>`;
+  }
+  if (state.careSheetsError) {
+    return `<div class="empty care-list-empty">${h(state.careSheetsError)}</div>`;
+  }
+  const latestSheetsByDate = latestHealthEducationSheetsByDate();
+  if (!latestSheetsByDate.length) {
+    return `<div class="empty care-list-empty">Chưa có nội dung tư vấn, hướng dẫn, giáo dục sức khỏe.</div>`;
+  }
+  const selected = gdskPatientContext(patients[state.selectedPatientIndex] || patients[0] || {});
+  return `
+    <div class="gdsk-list gdsk-detail-list">
+      ${latestSheetsByDate.map(({ date, sheet }) => `
+        <section class="gdsk-list-day gdsk-detail-list-day">
+          <div class="gdsk-list-day-header">
+            <h3>${h(date)}</h3>
+            <span>${h(sheet.ma_phieu || `Phiếu #${sheet.id}`)} - phiếu mới nhất trong ngày</span>
+          </div>
+          ${renderGdskDetailDocument(healthEducationFormsFromChecklist(sheet.nhan_dinh_json?.checklist || {}, sheet), {
+            patient: selected,
+            sheet,
+          })}
+        </section>
+      `).join("")}
+    </div>
+  `;
+}
+
+function gdskPatientContext(selected = {}) {
+  const dbPatient = state.careSheetsPatient || {};
+  return {
+    name: dbPatient.ho_ten || selected.name || state.patient.name || "",
+    code: dbPatient.ma_benh_nhan || selected.code || state.patient.code || "",
+    age: dbPatient.tuoi || selected.age || state.patient.age || "",
+    sex: dbPatient.gioi_tinh || selected.sex || state.patient.sex || "",
+    room: dbPatient.phong || selected.room || state.patient.room || "",
+    bed: dbPatient.giuong || selected.bed || state.patient.bed || "",
+    department: dbPatient.khoa || selected.department || state.patient.department || "",
+  };
+}
+
+function latestHealthEducationSheetsByDate() {
+  const groups = state.careSheets.reduce((acc, sheet) => {
+    const key = careSheetDateKey(sheet);
+    if (!acc[key] || careSheetTimeValue(sheet) > careSheetTimeValue(acc[key])) acc[key] = sheet;
+    return acc;
+  }, {});
+  return Object.entries(groups)
+    .sort((a, b) => careSheetTimeValue(b[1]) - careSheetTimeValue(a[1]))
+    .map(([date, sheet]) => ({ date, sheet }));
+}
+
+function careSheetDateKey(sheet) {
+  const date = parseDateTimeForVietnam(sheet.thoi_gian_danh_gia || sheet.created_at);
+  if (!date) return "Không rõ ngày";
+  return formatVietnamDate(date);
+}
+
+function careSheetTimeValue(sheet) {
+  const date = parseDateTimeForVietnam(sheet.thoi_gian_danh_gia || sheet.created_at);
+  return date ? date.getTime() : 0;
+}
+
+function healthEducationFormsFromChecklist(checklist = {}, sheet = null) {
+  const defaults = createDefaultHealthEducationForms();
+  const forms = checklist.healthEducationForms && typeof checklist.healthEducationForms === "object"
+    ? checklist.healthEducationForms
+    : {};
+  const fallbackDate = sheet?.thoi_gian_danh_gia || sheet?.created_at || currentVietnamDateInput();
+  const result = {
+    admission: normalizeHealthEducationStage(defaults.admission, forms.admission),
+    treatment: normalizeHealthEducationStage(defaults.treatment, forms.treatment),
+    discharge: normalizeHealthEducationStage(defaults.discharge, forms.discharge),
+    summary: { ...defaults.summary, ...(forms.summary || {}) },
+  };
+  ["admission", "treatment", "discharge"].forEach((stage) => {
+    if (!forms[stage]?.date) result[stage].date = fallbackDate;
+  });
+  return result;
 }
 
 function renderCareGoalEvaluationScreen() {
@@ -1010,9 +1648,7 @@ function renderCareGoalEvaluationBody() {
 
 function formatDateTime(value) {
   if (!value) return "-";
-  const date = parseDateTimeForVietnam(value);
-  if (!date) return value;
-  return date.toLocaleString("vi-VN", { timeZone: VIETNAM_TIME_ZONE });
+  return formatVietnamDateTime(value);
 }
 
 function currentCareSheetDetail() {
@@ -1028,9 +1664,9 @@ function detailField(label, value = "") {
   `;
 }
 
-function detailSection(title, content) {
+function detailSection(title, content, className = "") {
   return `
-    <section class="report-section">
+    <section class="report-section ${h(className)}">
       <h2>${h(title)}</h2>
       ${content}
     </section>
@@ -1080,6 +1716,9 @@ function detailDiagnosisGoalsInterventions(diagnoses = [], interventions = []) {
       return {
         label: `Chẩn đoán ĐD ${index + 1}`,
         diagnosis: cleanLine(item.diagnosis),
+        causes: (Array.isArray(item.causes) ? item.causes : [])
+          .map(cleanLine)
+          .filter(Boolean),
         goals,
       };
     })
@@ -1100,6 +1739,7 @@ function detailDiagnosisGoalsInterventions(diagnoses = [], interventions = []) {
           <strong>${h(row.label)}</strong>
           <span>
             ${row.diagnosis ? `<em class="care-plan-diagnosis">${h(row.diagnosis)}</em>` : ""}
+            ${row.causes.length ? `<em class="care-plan-cause">Liên quan tới: ${h(row.causes.join("; "))}</em>` : ""}
             ${row.goals.map((goal, index) => `
               <em class="care-plan-goal">Mục tiêu ${index + 1}: ${h(goal)}</em>
             `).join("")}
@@ -1250,39 +1890,39 @@ function renderCareSheetDetailScreen() {
         </section>
 
         ${detailSection("I. Thông tin hành chính", `
-          <div class="report-grid cols-3">
+          <div class="report-grid cols-3 report-admin-grid">
             ${detailField("Thời gian đánh giá", formatDateTime(sheet.thoi_gian_danh_gia))}
             ${detailField("Người đánh giá", sheet.nguoi_danh_gia)}
             ${detailField("Phân cấp chăm sóc", `CS cấp ${sheet.cap_cham_soc || "-"}`)}
             ${detailField("Chiều cao (cm)", check.height)}
             ${detailField("Cân nặng (kg)", check.weight)}
             ${detailField("BMI", check.bmi)}
-            ${detailField("Dị ứng", check.allergy === "yes" ? `Có: ${check.allergy_note || ""}` : "Không")}
+            ${detailField("Dị ứng", check.allergy === "yes" ? `Có${allergyDetailsFromChecklist(check) ? `: ${allergyDetailsFromChecklist(check)}` : ""}` : "Không")}
           </div>
-        `)}
+        `, "report-admin-section")}
 
         ${detailSection("II. Dấu hiệu sinh tồn", `
-          <div class="report-grid cols-4">
+          <div class="report-grid cols-4 report-vitals-grid">
             ${detailField("Mạch", check.pulse)}
             ${detailField("Nhiệt độ", check.temperature)}
             ${detailField("Huyết áp", check.bloodPressure)}
             ${detailField("SpO2", check.spo2)}
           </div>
-        `)}
+        `, "report-vitals-section")}
 
         ${detailSection("III. Nhận định điều dưỡng", detailValueList(assessmentItems))}
 
         ${detailSection("VIII. Thang điểm đánh giá", scaleRows.length ? detailTable(scaleRows) : `<div class="empty">Chưa có thang điểm đánh giá.</div>`)}
 
         ${detailSection("IX. Theo dõi dịch", `
-          <div class="report-grid cols-3">
+          <div class="report-grid cols-3 report-fluid-grid">
             ${detailField("Dịch vào", check.fluidIn)}
             ${detailField("Dịch ra", check.fluidOut)}
             ${detailField("Bilance", fluidBalanceFromChecklist(check))}
           </div>
-        `)}
+        `, "report-fluid-section")}
 
-        ${detailSection("X. Chẩn đoán điều dưỡng - mục tiêu - can thiệp", detailDiagnosisGoalsInterventions(diagnoses, interventions))}
+        ${detailSection("X. Chẩn đoán điều dưỡng - mục tiêu - can thiệp", detailDiagnosisGoalsInterventions(diagnoses, interventions), "report-care-plan-section")}
 
         ${detailSection("XI. Bàn giao", handoverItems.length ? detailCheckGroup("Việc cần tiếp tục theo dõi/thực hiện", handoverItems) : `<div class="empty">Chưa có nội dung bàn giao.</div>`)}
 
@@ -1350,13 +1990,15 @@ function render(focusSelector = "") {
         <section class="workspace">
           ${renderAssessmentPanel(assessments)}
           ${renderFluidBalancePanel()}
-          ${renderDiagnosisPanel()}
+          ${renderDiagnosisPanelV2()}
           ${renderInterventionPanel()}
+          ${renderHealthEducationPanel()}
           ${renderHandoverPanel()}
         </section>
       </main>
     </div>
     ${state.activeScale ? renderScaleModal() : ""}
+    ${state.activeHealthEducationStage ? renderHealthEducationModal() : ""}
   `;
 
   if (focusSelector) {
@@ -1398,7 +2040,14 @@ function renderCareHeaderPanel() {
             { label: "Không", value: "none" },
             { label: "Có", value: "yes" },
           ])}
-          ${state.assessmentChecklist.allergy === "yes" ? checkField("allergy_note", "Thông tin dị ứng", state.assessmentChecklist.allergy_note) : ""}
+          ${state.assessmentChecklist.allergy === "yes" ? `
+            <div class="allergy-detail-grid">
+              ${checkField("allergyDrug", "Thuốc", state.assessmentChecklist.allergyDrug)}
+              ${checkField("allergyFood", "Thức ăn", state.assessmentChecklist.allergyFood)}
+              ${checkField("allergyOther", "Khác", state.assessmentChecklist.allergyOther)}
+              ${checkField("allergySymptoms", "Biểu hiện", state.assessmentChecklist.allergySymptoms)}
+            </div>
+          ` : ""}
         </div>
       </div>
     </section>
@@ -1526,31 +2175,36 @@ function renderAssessmentPanel(assessments) {
           <div class="assessment-form compact-form respiratory-form">
             ${radioGroup("breathingMode", "Tình trạng thở", ["Tự thở", "Thở oxy", "HFNC", "NIV", "Thở máy"], check.breathingMode)}
             ${checkField("respiratoryRate", "Nhịp thở (lần/phút)", check.respiratoryRate, "text", "respiratory-rate-field")}
-            ${checkArea("respiratoryNote", "Ghi chú hô hấp", check.respiratoryNote, "respiratory-note-field")}
+            ${checkArea("respiratoryNote", "Khác", check.respiratoryNote, "respiratory-note-field")}
             ${renderRespiratoryDetails(check)}
+            ${radioGroup("coughStatus", "Ho", ["Không ho", "Ho khan", "Ho có đờm", "Ho yếu / không hiệu quả", "Không đánh giá được"], check.coughStatus)}
           </div>
         </div>
 
         <div class="assessment-section-card">
           <h3>Tuần hoàn</h3>
-          <div class="handover-grid">
-            ${checkBool("circulationStable", "Ổn định", check.circulationStable)}
-            ${checkBool("circulationFastPulse", "Mạch nhanh", check.circulationFastPulse)}
-            ${checkBool("circulationHypotension", "Hạ huyết áp", check.circulationHypotension)}
-            ${checkBool("circulationShock", "Sốc", check.circulationShock)}
-            ${checkBool("circulationVasopressor", "Có thuốc vận mạch", check.circulationVasopressor)}
+          <div class="assessment-form compact-form circulation-form">
+            ${multiCheckGroup("circulationSymptoms", "Triệu chứng cơ năng", ["Không triệu chứng", "Hồi hộp/đánh trống ngực", "Đau ngực", "Chóng mặt", "Ngất", "Không đánh giá được"], check.circulationSymptoms)}
+            ${radioGroup("peripheralPerfusion", "Tưới máu ngoại vi", ["Bình thường", "Giảm tưới máu ngoại vi"], check.peripheralPerfusion)}
+            ${radioGroup("heartRhythm", "Nhịp tim", ["Đều", "Không đều"], check.heartRhythm)}
+            ${radioGroup("heartRateStatus", "Mạch", ["Bình thường", "Nhanh", "Chậm"], check.heartRateStatus)}
+            ${radioGroup("heartSounds", "Tiếng tim", ["Nghe rõ", "Mờ", "Không đánh giá được"], check.heartSounds)}
+            ${checkBool("circulationOtherChecked", "Khác", check.circulationOtherChecked)}
+            ${check.circulationOtherChecked ? checkField("circulationOther", "Khác", check.circulationOther, "text", "circulation-other-field") : ""}
           </div>
-          ${renderVasopressorDetails(check)}
-          ${checkArea("circulationNote", "Ghi chú tuần hoàn", check.circulationNote)}
         </div>
 
         <div class="assessment-section-card">
           <h3>Thần kinh cảm giác</h3>
           <div class="assessment-form compact-form">
-            ${multiCheckGroup("neuroConsciousness", "Ý thức", ["Tỉnh táo, tiếp xúc tốt", "Lơ mơ", "Kích thích", "Ngủ gà", "Hôn mê"], check.neuroConsciousness)}
-            ${multiCheckGroup("neuroOrientation", "Định hướng", ["Định hướng tốt thời gian, không gian, bản thân", "Rối loạn định hướng thời gian", "Rối loạn định hướng không gian", "Rối loạn định hướng bản thân"], check.neuroOrientation)}
-            ${multiCheckGroup("neuroBehavior", "Tri giác - hành vi", ["Kích thích", "Vật vã", "Lo âu", "Không hợp tác", "Rối loạn hành vi", "Ảo giác", "Lú lẫn"], check.neuroBehavior)}
-            ${multiCheckGroup("neuroFocalSigns", "Dấu hiệu thần kinh khu trú", ["Méo miệng", "Nói khó", "Nuốt khó", "Liệt dây thần kinh sọ", "Giảm phản xạ", "Tăng phản xạ gân xương"], check.neuroFocalSigns)}
+            ${radioGroup("neuroConsciousness", "Ý thức", ["Bình thường", "Lơ mơ", "Ngủ gà", "Kích thích", "Hôn mê", "Khác"], check.neuroConsciousness)}
+            ${check.neuroConsciousness === "Khác" ? checkField("neuroConsciousnessOther", "Ý thức khác", check.neuroConsciousnessOther) : ""}
+            ${radioGroup("neuroOrientation", "Định hướng", ["Bình thường", "Rối loạn định hướng thời gian", "Rối loạn định hướng không gian", "Rối loạn định hướng bản thân", "Khác"], check.neuroOrientation)}
+            ${check.neuroOrientation === "Khác" ? checkField("neuroOrientationOther", "Định hướng khác", check.neuroOrientationOther) : ""}
+            ${normalOrMultiCheckGroup("neuroBehaviorStatus", "neuroBehavior", "Tri giác - hành vi", ["Kích thích", "Vật vã", "Lo âu", "Không hợp tác", "Rối loạn hành vi", "Ảo giác", "Lú lẫn", "Khác"], check.neuroBehaviorStatus, check.neuroBehavior)}
+            ${Array.isArray(check.neuroBehavior) && check.neuroBehavior.includes("Khác") ? checkField("neuroBehaviorOther", "Tri giác - hành vi khác", check.neuroBehaviorOther) : ""}
+            ${normalOrMultiCheckGroup("neuroFocalSignsStatus", "neuroFocalSigns", "Dấu hiệu thần kinh khu trú", ["Méo miệng", "Nói khó", "Nuốt khó", "Liệt dây thần kinh sọ", "Giảm phản xạ", "Tăng phản xạ gân xương", "Co giật", "Đồng tử bất thường", "Khác"], check.neuroFocalSignsStatus, check.neuroFocalSigns)}
+            ${Array.isArray(check.neuroFocalSigns) && check.neuroFocalSigns.includes("Khác") ? checkField("neuroFocalSignsOther", "Dấu hiệu thần kinh khu trú khác", check.neuroFocalSignsOther) : ""}
           </div>
         </div>
 
@@ -1573,32 +2227,30 @@ function renderAssessmentPanel(assessments) {
         <div class="assessment-section-card">
           <h3>Dinh dưỡng</h3>
           <div class="assessment-form compact-form">
-            ${multiCheckGroup("nutritionType", "Dinh dưỡng", ["Cơm", "Cháo", "Soup", "Sonde dạ dày", "Tĩnh mạch", "Nhịn ăn"], check.nutritionType)}
-            ${multiCheckGroup("menu", "Thực đơn", ["Cơm", "Cháo", "Soup", "Sữa", "Dịch nuôi ăn", "Khác"], check.menu)}
+            ${radioGroup("nutritionRoute", "Đường nuôi dưỡng", ["Đường miệng", "Sonde dạ dày", "Sonde hỗng tràng", "Tĩnh mạch", "Kết hợp", "Nhịn ăn"], check.nutritionRoute)}
+            ${multiCheckGroup("nutritionRegimen", "Chế độ dinh dưỡng", ["Cơm", "Cháo", "Soup", "Sữa", "Khác"], check.nutritionRegimen)}
+            ${Array.isArray(check.nutritionRegimen) && check.nutritionRegimen.includes("Khác") ? checkField("nutritionRegimenOther", "Chế độ dinh dưỡng khác", check.nutritionRegimenOther) : ""}
+            ${checkBool("pathologicalDiet", "Chế độ bệnh lý", check.pathologicalDiet)}
+            ${check.pathologicalDiet ? multiCheckGroup("pathologicalDietTypes", "Loại chế độ bệnh lý", ["Tim mạch", "Đái tháo đường (kiểm soát đường)", "Suy thận", "Gan mật", "Giảm mỡ / tim mạch", "Theo chỉ định riêng", "Khác"], check.pathologicalDietTypes) : ""}
+            ${check.pathologicalDiet && Array.isArray(check.pathologicalDietTypes) && check.pathologicalDietTypes.includes("Khác") ? checkField("pathologicalDietOther", "Chế độ bệnh lý khác", check.pathologicalDietOther) : ""}
           </div>
         </div>
 
         <div class="assessment-section-card">
           <h3>Vận động/Phục hồi chức năng</h3>
           <div class="assessment-form compact-form mobility-rehab-form">
-            ${multiCheckGroup("mobilityAbility", "Khả năng vận động", ["Tự đi lại bình thường", "Đi lại cần hỗ trợ", "Đi lại bằng dụng cụ hỗ trợ", "Không tự đi lại được", "Nằm bất động tại giường"], check.mobilityAbility)}
-            ${multiCheckGroup("muscleStrength", "Tình trạng cơ lực", ["Cơ lực bình thường", "Yếu nhẹ", "Yếu 1 chi", "Yếu 2 chi", "Liệt nửa người", "Liệt tứ chi"], check.muscleStrength)}
-            ${multiCheckGroup("movementStatus", "Tình trạng vận động", ["Hạn chế vận động", "Đau khi vận động", "Co cứng cơ", "Run tay chân", "Giảm thăng bằng"], check.movementStatus)}
-          </div>
-        </div>
-
-        <div class="assessment-section-card">
-          <h3>Giáo dục sức khỏe</h3>
-          <div class="assessment-form compact-form">
-            ${multiCheckGroup("treatmentEducation", "Hướng dẫn điều trị", ["Giải thích tình trạng bệnh", "Hướng dẫn dùng thuốc", "Hướng dẫn theo dõi dấu hiệu bất thường", "Hướng dẫn tái khám"], check.treatmentEducation)}
-            ${multiCheckGroup("careEducation", "Hướng dẫn chăm sóc", ["Chế độ dinh dưỡng", "Chế độ vận động", "Vệ sinh cá nhân", "Chăm sóc vết mổ/vết thương", "Phòng ngừa loét tỳ đè", "Phòng ngừa té ngã"], check.careEducation)}
-            ${multiCheckGroup("preventionEducation", "Giáo dục phòng bệnh", ["Không hút thuốc", "Hạn chế rượu bia", "Tuân thủ điều trị", "Kiểm soát đường huyết", "Kiểm soát huyết áp"], check.preventionEducation)}
+            ${multiCheckGroup("mobilityAbility", "Khả năng vận động", ["Tự đi lại bình thường", "Đi lại cần hỗ trợ", "Đi lại bằng dụng cụ hỗ trợ", "Không tự đi lại được", "Nằm bất động tại giường", "Khác"], check.mobilityAbility)}
+            ${Array.isArray(check.mobilityAbility) && check.mobilityAbility.includes("Khác") ? checkField("mobilityAbilityOther", "Khả năng vận động khác", check.mobilityAbilityOther) : ""}
+            ${multiCheckGroup("muscleStrength", "Tình trạng cơ lực", ["Cơ lực bình thường", "Yếu nhẹ", "Yếu 1 chi", "Yếu 2 chi", "Liệt nửa người", "Liệt tứ chi", "Khác"], check.muscleStrength)}
+            ${Array.isArray(check.muscleStrength) && check.muscleStrength.includes("Khác") ? checkField("muscleStrengthOther", "Tình trạng cơ lực khác", check.muscleStrengthOther) : ""}
+            ${multiCheckGroup("movementStatus", "Tình trạng vận động", ["Bình thường", "Hạn chế vận động", "Đau khi vận động", "Co cứng cơ", "Run tay chân", "Giảm thăng bằng", "Khác"], check.movementStatus)}
+            ${Array.isArray(check.movementStatus) && check.movementStatus.includes("Khác") ? checkField("movementStatusOther", "Tình trạng vận động khác", check.movementStatusOther) : ""}
           </div>
         </div>
 
         <div class="assessment-section-card">
           <h3>Cơ quan bị bệnh</h3>
-          ${checkArea("diseasedOrgan", "Nhập nhận định cơ quan tổn thương", check.diseasedOrgan)}
+          ${renderDiseasedOrganDropdown()}
         </div>
 
         <div class="assessment-section-card">
@@ -1606,7 +2258,7 @@ function renderAssessmentPanel(assessments) {
           <div class="assessment-form compact-form">
             ${renderScaleCheckItem("fallRiskAssessment", "Đánh giá nguy cơ té ngã (Morse)", check.fallRiskAssessment)}
             ${renderScaleCheckItem("vteRiskAssessment", "Đánh giá mức độ viêm tĩnh mạch (VIP)", check.vteRiskAssessment)}
-            ${renderScaleCheckItem("painAssessment", "Đánh giá đau (FLACC)", check.painAssessment)}
+            ${renderScaleCheckItem("painAssessment", "Đánh giá đau (VAS)", check.painAssessment)}
             ${renderScaleCheckItem("pressureUlcerRiskAssessment", "Đánh giá nguy cơ loét tỳ đè (Braden)", check.pressureUlcerRiskAssessment)}
             ${renderScaleCheckItem("glasgowAssessment", "Đánh giá Glasgow (GCS)", check.glasgowAssessment)}
           </div>
@@ -1640,6 +2292,46 @@ function renderAssessmentPanel(assessments) {
         </div>
       </div>
     </section>
+  `;
+}
+
+function renderDiseasedOrganDropdown() {
+  const selected = diseasedOrganSelectedItems();
+  const query = state.activeDiseasedOrganSuggest ? state.diseasedOrganQuery : (state.diseasedOrganQuery || selected.join("; "));
+  const options = state.activeDiseasedOrganSuggest ? diseasedOrganOptions(state.diseasedOrganQuery) : [];
+  const selectedSet = new Set(selected.map(searchKey));
+  const hasExactOption = options.some((item) => searchKey(item.nanda) === searchKey(state.diseasedOrganQuery));
+  const showAdd = state.activeDiseasedOrganSuggest && cleanLine(state.diseasedOrganQuery) && !hasExactOption;
+  return `
+    <div class="field diagnosis-search-field">
+      <label>Nhận định cơ quan bị bệnh</label>
+      <div class="diagnosis-combobox">
+        <input type="search" value="${h(query)}" placeholder="Nhập keyword nguyên nhân..." data-diseased-organ-query ${inputNextAttrs("search")} />
+        <button type="button" class="diagnosis-dropdown-toggle" data-action="toggle-diseased-organ-dropdown" aria-label="Hiển thị danh sách nhận định cơ quan bị bệnh">▼</button>
+      </div>
+      ${state.activeDiseasedOrganSuggest ? `
+        <div class="suggestion-list diagnosis-dropdown-list">
+          ${options.length ? options.map((item) => `
+            <label class="diagnosis-dropdown-option">
+              <input type="checkbox" ${selectedSet.has(searchKey(item.nanda)) ? "checked" : ""} data-diseased-organ-check data-value="${h(item.nanda)}" />
+              <span>
+                <strong>${h(item.nanda)}</strong>
+                <em>${h(item.causes.slice(0, 3).join("; "))}</em>
+              </span>
+            </label>
+          `).join("") : `<div class="diagnosis-dropdown-empty">Không có nhận định phù hợp.</div>`}
+          ${showAdd ? `
+            <label class="diagnosis-dropdown-option suggestion-add-new">
+              <input type="checkbox" data-diseased-organ-custom-check data-value="${h(state.diseasedOrganQuery)}" />
+              <span>
+                <strong>Thêm mới nhận định</strong>
+                <em>${h(state.diseasedOrganQuery)}</em>
+              </span>
+            </label>
+          ` : ""}
+        </div>
+      ` : ""}
+    </div>
   `;
 }
 
@@ -1979,6 +2671,29 @@ function multiCheckGroup(key, label, options, value = [], optionDefs = null) {
   `;
 }
 
+function normalOrMultiCheckGroup(statusKey, multiKey, label, options, statusValue, multiValue = []) {
+  const selected = Array.isArray(multiValue) ? multiValue : multiValue ? [multiValue] : [];
+  return `
+    <fieldset class="assessment-radio">
+      <legend>${h(label)}</legend>
+      <div>
+        <label>
+          <input type="radio" name="${h(statusKey)}" value="Bình thường" ${statusValue === "Bình thường" ? "checked" : ""} data-checklist-radio="${h(statusKey)}" />
+          <span>Bình thường</span>
+        </label>
+        ${options
+          .map((option) => `
+            <label>
+              <input type="checkbox" value="${h(option)}" ${selected.includes(option) ? "checked" : ""} data-checklist-multi="${h(multiKey)}" />
+              <span>${h(option)}</span>
+            </label>
+          `)
+          .join("")}
+      </div>
+    </fieldset>
+  `;
+}
+
 function checkBool(key, label, value) {
   return `
     <label class="handover-check">
@@ -2018,9 +2733,40 @@ function getScaleForKey(key) {
   return state.scaleData.find((s) => s.id === scaleId) || null;
 }
 
+function isVasPainScale(scale) {
+  return scale?.id === "vas_pain_score" && scale.scale && Array.isArray(scale.levels);
+}
+
+function vasLevelForScore(scale, score) {
+  const value = Number(score);
+  if (!Number.isFinite(value)) return null;
+  return (scale.levels || []).find((level) => value >= level.min && value <= level.max) || null;
+}
+
 function calculateScaleResult(key) {
   const scale = getScaleForKey(key);
-  if (!scale || !scale.items) return null;
+  if (!scale) return null;
+  if (isVasPainScale(scale)) {
+    const score = Number(state.scaleScores[key]?.vas);
+    const min = Number(scale.validation?.minValue ?? scale.scale.min ?? 0);
+    const max = Number(scale.validation?.maxValue ?? scale.scale.max ?? 10);
+    const allFilled = Number.isFinite(score) && score >= min && score <= max;
+    const level = allFilled ? vasLevelForScore(scale, score) : null;
+    const risk = level?.label || "";
+    let riskClass = "risk-low";
+    if (level?.color === "red") riskClass = "risk-very-high";
+    else if (level?.color === "orange") riskClass = "risk-medium";
+    else if (level?.color === "lime") riskClass = "risk-low";
+    return {
+      total: allFilled ? score : 0,
+      risk,
+      riskClass,
+      allFilled,
+      recommendation: level?.recommendation || "",
+      color: level?.color || "",
+    };
+  }
+  if (!scale.items) return null;
   const scores = state.scaleScores[key] || {};
   let total = 0;
   let allFilled = true;
@@ -2048,12 +2794,47 @@ function calculateScaleResult(key) {
   return { total, risk, riskClass, allFilled };
 }
 
+function renderVasPainScaleBody(key, scale, result) {
+  const min = Number(scale.scale.min ?? 0);
+  const max = Number(scale.scale.max ?? 10);
+  const step = Number(scale.scale.step ?? 1);
+  const unit = scale.scale.unit || "điểm";
+  const rawValue = state.scaleScores[key]?.vas;
+  const value = rawValue === undefined || rawValue === "" ? min : Number(rawValue);
+  return `
+    <div class="scale-vas-image-wrap">
+      <img
+        src="https://file.hstatic.net/200000740871/article/g-danh-gia-thang-diem-dau-vas_-dung-thuoc-giam-dau-theo-thang-diem-vas_b9edbad338da491daf3cb9666848576e_1024x1024.jpg"
+        alt="Bảng đánh giá thang điểm đau VAS"
+        class="scale-vas-image"
+      />
+    </div>
+    <div class="vas-scale-control">
+      <label class="assessment-field">
+        <span>Điểm đau VAS (${h(unit)})</span>
+        <input type="number" min="${min}" max="${max}" step="${step}" value="${h(value)}" data-vas-scale="${h(key)}" />
+      </label>
+      <input class="vas-range" type="range" min="${min}" max="${max}" step="${step}" value="${h(value)}" data-vas-scale="${h(key)}" />
+      <div class="vas-ticks">
+        ${Array.from({ length: max - min + 1 }, (_, index) => `<span>${min + index}</span>`).join("")}
+      </div>
+    </div>
+    ${result?.allFilled && result.risk ? `
+      <div class="vas-result-card ${h(result.riskClass)}">
+        <strong>${h(result.risk)} - ${result.total} ${h(unit)}</strong>
+        ${result.recommendation ? `<span>${h(result.recommendation)}</span>` : ""}
+      </div>
+    ` : ""}
+  `;
+}
+
 function renderScaleModal() {
   const key = state.activeScale;
   const scale = getScaleForKey(key);
   if (!scale) return "";
   const scores = state.scaleScores[key] || {};
   const result = calculateScaleResult(key);
+  const isVas = isVasPainScale(scale);
   return `
     <div class="scale-modal-overlay" data-action="close-scale-overlay">
       <div class="scale-modal">
@@ -2062,6 +2843,7 @@ function renderScaleModal() {
           <button class="scale-modal-close" data-action="close-scale">✕</button>
         </div>
         <div class="scale-modal-body">
+          ${isVas ? renderVasPainScaleBody(key, scale, result) : `
           <p class="scale-rule">Quy tắc: ${h(scale.totalScoreRule)}</p>
           ${scale.items.map((item) => `
             <fieldset class="scale-fieldset">
@@ -2077,6 +2859,7 @@ function renderScaleModal() {
               </div>
             </fieldset>
           `).join("")}
+          `}
         </div>
         <div class="scale-modal-footer">
           <div class="scale-modal-result">
@@ -2161,69 +2944,596 @@ function renderDiagnosisPanel() {
   `;
 }
 
+function renderDiagnosisPanelV2() {
+  return `
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title">Chẩn đoán điều dưỡng & mục tiêu</h2>
+          <p class="panel-subtitle">Nhập keyword để chọn nhận định từ chandoan.json; nếu không có gợi ý phù hợp có thể thêm mới nhận định.</p>
+        </div>
+        <span class="step-badge">3</span>
+      </div>
+      <div class="panel-body">
+        <div class="diagnosis-grid">
+          ${state.diagnosisRows.map((row, index) => renderDiagnosisRowV2(row, index)).join("")}
+        </div>
+        <button class="btn primary" style="margin-top: 12px;" data-action="save-diagnosis-row">Lưu</button>
+        ${renderSavedDiagnosisRows()}
+      </div>
+    </section>
+    ${state.diagnosisPicker ? renderDiagnosisPickerModal() : ""}
+  `;
+}
+
+function renderSavedDiagnosisRows() {
+  const rows = state.diagnosisSavedRows || [];
+  if (!rows.length) return "";
+  return `
+    <div class="saved-diagnosis-list">
+      <strong>Chẩn đoán và mục tiêu đã lưu</strong>
+      <ol>
+        ${rows.map((row, index) => `
+          <li class="saved-diagnosis-item">
+            <div>
+              <div><b>${h(row.diagnosis)}</b>${row.causes?.length ? ` liên quan tới ${h(row.causes.join("; "))}` : ""}</div>
+              ${row.goals?.length ? `
+                <div class="saved-diagnosis-goals">
+                  ${row.goals.map((goal, goalIndex) => `
+                    <div><b>Mục tiêu ${goalIndex + 1}:</b> ${h(goal)}</div>
+                  `).join("")}
+                </div>
+              ` : ""}
+            </div>
+            <button type="button" class="remove-row-btn" data-action="remove-saved-diagnosis" data-index="${index}">Xóa</button>
+          </li>
+        `).join("")}
+      </ol>
+    </div>
+  `;
+}
+
+function renderDiagnosisRowV2(row, index) {
+  const causes = causeOptionsForDiagnosis(row);
+  const goals = goalOptionsForDiagnosisRow(row);
+  const causeOptions = state.activeCauseSuggest === index ? filteredCauseOptionsForDiagnosis(row) : [];
+  const goalOptions = state.activeGoalSuggest === `goal:${index}` ? filteredGoalOptionsForDiagnosis(row) : [];
+  const selectedGoals = new Set(row.goals || []);
+  const query = row.diagnosisQuery || row.diagnosis || "";
+  const causeQuery = row.causeQuery || "";
+  const causeInputValue = state.activeCauseSuggest === index ? causeQuery : (causeQuery || (row.causes || []).join("; "));
+  const goalQuery = row.goalQuery || "";
+  const goalInputValue = state.activeGoalSuggest === `goal:${index}` ? goalQuery : (goalQuery || (row.goals || []).join("; "));
+  const diagnosisOptions = state.activeDiagnosisSuggest === index ? nandaCatalogOptions(query) : [];
+  const hasExactDiagnosisOption = diagnosisOptions.some((item) => searchKey(item.nanda) === searchKey(query));
+  const showAddDiagnosisOption = state.activeDiagnosisSuggest === index && cleanLine(query) && !hasExactDiagnosisOption;
+  const hasExactGoalOption = goals.some((goal) => searchKey(goal) === searchKey(goalQuery));
+  const showAddGoalOption = state.activeGoalSuggest === `goal:${index}` && cleanLine(goalQuery) && !hasExactGoalOption;
+  const selectedNandas = new Set(selectedNandasForRow(row));
+  const customSelected = cleanLine(row.diagnosis) && !row.diagnosisIds?.length && searchKey(row.diagnosis) === searchKey(query);
+  return `
+    <div class="diagnosis-item">
+      <div class="diagnosis-row-main">
+        <div class="field diagnosis-search-field diagnosis-picker-field">
+          <label>Chẩn đoán điều dưỡng</label>
+          <div class="diagnosis-combobox">
+            <input type="search" value="${h(query)}" placeholder="Nhập keyword nhận định..." data-dx-query="${index}" ${inputNextAttrs("search")} />
+            <button type="button" class="diagnosis-dropdown-toggle" data-action="toggle-dx-dropdown" data-index="${index}" aria-label="Hiển thị danh sách nhận định">▼</button>
+          </div>
+          ${diagnosisOptions.length || showAddDiagnosisOption ? `
+            <div class="suggestion-list diagnosis-dropdown-list">
+              ${diagnosisOptions.slice(0, 10).map((item) => `
+                <label class="diagnosis-dropdown-option">
+                  <input type="checkbox" ${selectedNandas.has(item.nanda) ? "checked" : ""} data-dx-catalog-check="${index}" data-nanda="${h(item.nanda)}" />
+                  <span>
+                    <strong>${h(item.nanda)}</strong>
+                    <em>${h(item.ids.length)} gợi ý</em>
+                  </span>
+                </label>
+              `).join("")}
+              ${showAddDiagnosisOption ? `
+                <label class="diagnosis-dropdown-option suggestion-add-new">
+                  <input type="checkbox" ${customSelected ? "checked" : ""} data-dx-custom-check="${index}" data-value="${h(query)}" />
+                  <span>
+                    <strong>Thêm mới nhận định</strong>
+                    <em>${h(query)}</em>
+                  </span>
+                </label>
+              ` : ""}
+            </div>
+          ` : ""}
+        </div>
+        <button class="remove-row-btn" data-action="remove-diagnosis" data-index="${index}" aria-label="Xóa chẩn đoán">Xóa</button>
+      </div>
+      ${`
+        <div class="field diagnosis-search-field diagnosis-nested-dropdown">
+          <label>Liên quan tới</label>
+          <div class="diagnosis-combobox">
+            <input type="search" value="${h(causeInputValue)}" placeholder="Nhập keyword nguyên nhân..." data-dx-cause-query="${index}" ${inputNextAttrs("search")} />
+            <button type="button" class="diagnosis-dropdown-toggle" data-action="toggle-dx-cause-dropdown" data-index="${index}" aria-label="Hiển thị danh sách nguyên nhân">▼</button>
+          </div>
+          ${state.activeCauseSuggest === index ? `
+            <div class="suggestion-list diagnosis-dropdown-list">
+              ${causeOptions.length ? causeOptions.map((item) => `
+                <label class="diagnosis-dropdown-option">
+                  <input type="checkbox" value="${h(item.cause)}" ${row.causes?.includes(item.cause) ? "checked" : ""} data-dx-cause="${index}" />
+                  <span>
+                    <strong>${h(item.cause)}</strong>
+                    <em>${h(item.ids.length)} gợi ý</em>
+                  </span>
+                </label>
+              `).join("") : `<div class="diagnosis-dropdown-empty">Không có nguyên nhân phù hợp.</div>`}
+            </div>
+          ` : ""}
+        </div>
+      `}
+      ${`
+        <div class="field diagnosis-search-field diagnosis-nested-dropdown">
+          <label>Mục tiêu can thiệp gợi ý</label>
+          <div class="diagnosis-combobox diagnosis-combobox-with-add">
+            <input type="search" value="${h(goalInputValue)}" placeholder="Nhập keyword mục tiêu..." data-dx-goal-query="${index}" ${inputNextAttrs("search")} />
+            <button type="button" class="diagnosis-add-inline-btn" data-action="add-custom-goal" data-index="${index}" aria-label="Thêm mục tiêu">+</button>
+            <button type="button" class="diagnosis-dropdown-toggle" data-action="toggle-dx-goal-dropdown" data-index="${index}" aria-label="Hiển thị danh sách mục tiêu">▼</button>
+          </div>
+          ${state.activeGoalSuggest === `goal:${index}` ? `
+            <div class="suggestion-list diagnosis-dropdown-list">
+              ${goalOptions.length ? goalOptions.map((goal) => `
+                <label class="diagnosis-dropdown-option">
+                  <input type="checkbox" value="${h(goal)}" ${selectedGoals.has(goal) ? "checked" : ""} data-dx-goal="${index}" />
+                  <span>
+                    <strong>${h(goal)}</strong>
+                  </span>
+                </label>
+              `).join("") : `<div class="diagnosis-dropdown-empty">Không có mục tiêu phù hợp.</div>`}
+              ${showAddGoalOption ? `
+                <label class="diagnosis-dropdown-option suggestion-add-new">
+                  <input type="checkbox" data-dx-custom-goal-check="${index}" data-value="${h(goalQuery)}" />
+                  <span>
+                    <strong>Thêm mục tiêu mới</strong>
+                    <em>${h(goalQuery)}</em>
+                  </span>
+                </label>
+              ` : ""}
+            </div>
+          ` : ""}
+        </div>
+      `}
+    </div>
+  `;
+}
+
+function renderDiagnosisPickerModal() {
+  const rowIndex = state.diagnosisPicker.rowIndex;
+  const row = state.diagnosisRows[rowIndex] || createDiagnosisRow();
+  const selectedIds = new Set((row.diagnosisIds || []).map(String));
+  const options = nandaCatalogOptions(state.diagnosisPicker.query || row.diagnosisQuery || "");
+  return `
+    <div class="scale-modal-overlay" data-action="close-diagnosis-picker-overlay">
+      <div class="scale-modal diagnosis-picker-modal">
+        <div class="scale-modal-header">
+          <h2>Chọn chẩn đoán phù hợp</h2>
+          <button class="scale-modal-close" data-action="close-diagnosis-picker">&times;</button>
+        </div>
+        <div class="scale-modal-body">
+          <label class="assessment-field">
+            <span>Tìm kiếm</span>
+            <input type="search" value="${h(state.diagnosisPicker.query || "")}" data-dx-picker-query="${rowIndex}" placeholder="Tìm kiếm..." ${inputNextAttrs("search")} />
+          </label>
+          <div class="diagnosis-picker-list">
+            ${options.map((item) => {
+              const firstId = String(item.ids[0]);
+              const checked = item.ids.some((id) => selectedIds.has(String(id)));
+              return `
+                <label class="diagnosis-picker-option">
+                  <span>${h(item.nanda)} <em>(${h(firstId)})</em></span>
+                  <input type="checkbox" value="${h(firstId)}" ${checked ? "checked" : ""} data-dx-picker-option="${rowIndex}" data-nanda="${h(item.nanda)}" />
+                </label>
+              `;
+            }).join("")}
+          </div>
+        </div>
+        <div class="scale-modal-footer">
+          <div class="scale-modal-result"></div>
+          <div class="scale-modal-actions">
+            <button class="btn ghost" data-action="close-diagnosis-picker">Hủy</button>
+            <button class="btn primary" data-action="confirm-diagnosis-picker">Xác nhận</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 function renderInterventionPanel() {
+  const draft = state.interventionDraft || createInterventionDraft();
+  const codeOptions = state.activeInterventionSuggest === "draft-code"
+    ? interventionDropdownOptions(draft.codeQuery, "code")
+    : [];
+  const contentOptions = state.activeInterventionSuggest === "draft-content"
+    ? interventionDropdownOptions(draft.contentQuery, "content")
+    : [];
   return `
     <section class="panel">
       <div class="panel-header">
         <div>
           <h2 class="panel-title">Can thiệp chăm sóc</h2>
-          <p class="panel-subtitle">Kèm mã can thiệp gợi ý, cho phép sửa nội dung và thêm can thiệp.</p>
+          <p class="panel-subtitle">Gợi ý theo chẩn đoán, mục tiêu và nhận định; chọn mã sẽ tự lấy nội dung, chọn nội dung sẽ tự lấy mã.</p>
         </div>
         <span class="step-badge">4</span>
       </div>
       <div class="panel-body">
+        <div class="intervention-item">
+          <div class="intervention-row-fields">
+            <div class="field intervention-search-field intervention-code-field">
+              <label>Mã can thiệp</label>
+              <div class="diagnosis-combobox">
+                <input value="${h(draft.codeQuery)}" placeholder="Nhập mã..." data-iv-code-query="draft" ${inputNextAttrs()} />
+                <button type="button" class="diagnosis-dropdown-toggle" data-action="toggle-iv-code-dropdown" aria-label="Hiển thị danh sách mã can thiệp">▼</button>
+              </div>
+              ${codeOptions.length ? `
+                <div class="suggestion-list diagnosis-dropdown-list">
+                  ${codeOptions.map((item) => `
+                    <label class="diagnosis-dropdown-option">
+                      <input type="checkbox" ${isInterventionDraftSelected(item) ? "checked" : ""} data-iv-option-check="code" data-code="${h(item.code)}" data-content="${h(item.name)}" />
+                      <span>
+                        <strong>${h(item.code)}</strong>
+                        <em>${h(item.name)}</em>
+                      </span>
+                    </label>
+                  `).join("")}
+                </div>
+              ` : ""}
+            </div>
+            <div class="field intervention-search-field">
+              <label>Nội dung can thiệp</label>
+              <div class="diagnosis-combobox">
+                <input value="${h(draft.contentQuery)}" placeholder="Nhập nội dung..." data-iv-content-query="draft" ${inputNextAttrs()} />
+                <button type="button" class="diagnosis-dropdown-toggle" data-action="toggle-iv-content-dropdown" aria-label="Hiển thị danh sách nội dung can thiệp">▼</button>
+              </div>
+              ${contentOptions.length ? `
+                <div class="suggestion-list diagnosis-dropdown-list">
+                  ${contentOptions.map((item) => `
+                    <label class="diagnosis-dropdown-option">
+                      <input type="checkbox" ${isInterventionDraftSelected(item) ? "checked" : ""} data-iv-option-check="content" data-code="${h(item.code)}" data-content="${h(item.name)}" />
+                      <span>
+                        <strong>${h(item.name)}</strong>
+                        <em>${h(item.code)}</em>
+                      </span>
+                    </label>
+                  `).join("")}
+                </div>
+              ` : ""}
+            </div>
+          </div>
+          ${draft.selected?.length ? `
+            <div class="selected-intervention-draft">
+              ${draft.selected.map((item, index) => `
+                <span>${h(item.code)} - ${h(item.content)} <button type="button" data-action="remove-draft-intervention" data-index="${index}">×</button></span>
+              `).join("")}
+            </div>
+          ` : ""}
+          <button class="btn primary" style="margin-top: 12px;" data-action="save-interventions">Lưu</button>
+        </div>
         ${state.interventionRows.length ? `
+          <div class="saved-intervention-list">
+            <strong>Can thiệp đã lưu</strong>
           <div class="intervention-grid">
             ${state.interventionRows
               .map(
                 (row, index) => {
-                  const codeOptions = state.activeInterventionSuggest === `code:${index}`
-                    ? filteredInterventionOptions(row.code, "code")
-                    : [];
-                  const contentOptions = state.activeInterventionSuggest === `content:${index}`
-                    ? filteredInterventionOptions(row.content, "content")
-                    : [];
                   return `
-                <div class="intervention-item">
-                  <div class="intervention-row-fields">
-                    <div class="field intervention-search-field intervention-code-field">
-                      <label>Mã can thiệp</label>
-                      <input value="${h(row.code)}" placeholder="Nhập mã..." data-iv-code-query="${index}" ${inputNextAttrs()} />
-                      ${codeOptions.length ? `
-                        <div class="suggestion-list">
-                          ${codeOptions.map((item) => `
-                            <button type="button" data-iv-suggestion="${index}" data-code="${h(item.code)}" data-content="${h(item.name)}">
-                              <strong>${h(item.code)}</strong> - ${h(item.name)}
-                            </button>
-                          `).join("")}
-                        </div>
-                      ` : ""}
-                    </div>
-                    <div class="field intervention-search-field">
-                      <label>Nội dung can thiệp</label>
-                      <input value="${h(row.content)}" placeholder="Nhập nội dung..." data-iv-content-query="${index}" ${inputNextAttrs()} />
-                      ${contentOptions.length ? `
-                        <div class="suggestion-list">
-                          ${contentOptions.map((item) => `
-                            <button type="button" data-iv-suggestion="${index}" data-code="${h(item.code)}" data-content="${h(item.name)}">
-                              <strong>${h(item.code)}</strong> - ${h(item.name)}
-                            </button>
-                          `).join("")}
-                        </div>
-                      ` : ""}
-                    </div>
-                  </div>
-                  <button class="remove-row-btn" data-action="remove-intervention" data-index="${index}" aria-label="Xóa gợi ý">Xóa</button>
+                <div class="intervention-item saved-intervention-card">
+                  <div class="saved-intervention-content"><b>${h(row.code)}</b> - ${h(row.content)}</div>
+                  <button class="remove-row-btn icon-remove-btn" data-action="remove-intervention" data-index="${index}" aria-label="Xóa can thiệp">×</button>
                 </div>
               `;
                 },
               )
               .join("")}
           </div>
+          </div>
         ` : ""}
-        <button class="btn" style="margin-top: 12px;" data-action="add-intervention">Thêm can thiệp tùy chọn</button>
       </div>
     </section>
+  `;
+}
+
+function renderHealthEducationPanel() {
+  const stages = [
+    { key: "admission", label: "Bắt đầu nhập viện" },
+    { key: "treatment", label: "Trong khi điều trị" },
+    { key: "discharge", label: "Trước khi ra viện" },
+    { key: "summary", label: "Tổng hợp" },
+  ];
+  const forms = ensureHealthEducationForms();
+  return `
+    <section class="panel health-education-panel">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title">Tư vấn, giáo dục sức khỏe</h2>
+          <p class="panel-subtitle">Ghi nhận nội dung tư vấn theo từng giai đoạn chăm sóc.</p>
+        </div>
+        <span class="step-badge">5</span>
+      </div>
+      <div class="panel-body">
+        <div class="health-education-buttons">
+          ${stages.map((stage) => `
+            <button type="button" class="health-education-stage-btn" data-health-education-stage="${h(stage.key)}">
+              <strong>${h(stage.label)}</strong>
+              <span>${h(healthEducationStageStatus(stage.key, forms[stage.key]))}</span>
+            </button>
+          `).join("")}
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function healthEducationStageStatus(stageKey, form) {
+  if (stageKey === "summary") return cleanLine(form?.note) ? "Đã có ghi chú" : "Xem tổng hợp";
+  const items = Array.isArray(form?.items) ? form.items : [];
+  const doneCount = items.filter((item) => cleanLine(item.need) || cleanLine(item.result) || cleanLine(item.content)).length;
+  return doneCount ? `${doneCount}/${items.length} nội dung` : "Chưa nhập";
+}
+
+function renderHealthEducationModal() {
+  const stageKey = state.activeHealthEducationStage;
+  if (!stageKey) return "";
+  const stages = {
+    admission: "Bắt đầu nhập viện",
+    treatment: "Trong khi điều trị",
+    discharge: "Trước khi ra viện",
+    summary: "Tổng hợp",
+  };
+  const forms = ensureHealthEducationForms();
+  return `
+    <div class="scale-modal-overlay" data-action="close-health-education-overlay">
+      <div class="scale-modal gdsk-modal">
+        <div class="scale-modal-header gdsk-modal-header">
+          <div>
+            <h2>Tư vấn, giáo dục sức khỏe</h2>
+            <p>${h(stages[stageKey] || stageKey)}</p>
+          </div>
+          <button class="scale-modal-close" data-action="close-health-education">&times;</button>
+        </div>
+        <div class="scale-modal-body">
+          ${renderHealthEducationForm(stageKey, forms[stageKey])}
+        </div>
+        <div class="scale-modal-footer">
+          <div class="scale-modal-result"></div>
+          <div class="scale-modal-actions">
+            <button class="btn primary" data-action="close-health-education">Xong</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function ensureHealthEducationForms(check = state.assessmentChecklist) {
+  const defaults = createDefaultHealthEducationForms();
+  const forms = check.healthEducationForms && typeof check.healthEducationForms === "object"
+    ? check.healthEducationForms
+    : {};
+  check.healthEducationForms = {
+    admission: normalizeHealthEducationStage(defaults.admission, forms.admission),
+    treatment: normalizeHealthEducationStage(defaults.treatment, forms.treatment),
+    discharge: normalizeHealthEducationStage(defaults.discharge, forms.discharge),
+    summary: { ...defaults.summary, ...(forms.summary || {}) },
+  };
+  return check.healthEducationForms;
+}
+
+function normalizeHealthEducationStage(defaultStage, savedStage = {}) {
+  const savedItems = Array.isArray(savedStage?.items) ? savedStage.items : [];
+  return {
+    ...defaultStage,
+    ...savedStage,
+    items: defaultStage.items.map((defaultItem, index) => {
+      const savedItem = savedItems.find((item) => item?.id === defaultItem.id) || savedItems[index] || {};
+      return {
+        ...defaultItem,
+        need: savedItem.need || "",
+        result: savedItem.result || "",
+      };
+    }),
+  };
+}
+
+function renderHealthEducationForm(stageKey, form) {
+  if (stageKey === "summary") {
+    return `
+      <div class="gdsk-form">
+        ${renderHealthEducationSummaryForm()}
+      </div>
+    `;
+  }
+  return `
+    <div class="gdsk-form">
+      <div class="gdsk-table">
+        <div class="gdsk-row gdsk-head">
+          <span>TT</span>
+          <span>Nội dung hướng dẫn</span>
+          <span>Nhu cầu hướng dẫn</span>
+          <span>Kết quả hướng dẫn</span>
+        </div>
+        ${(form.items || []).map((item, index) => `
+          <div class="gdsk-row">
+            <span>${index + 1}</span>
+            <span>${h(item.content || "")}</span>
+            <div class="gdsk-inline-options">
+              ${gdskRadio(stageKey, index, "need", "Có", item.need)}
+              ${gdskRadio(stageKey, index, "need", "Không", item.need)}
+            </div>
+            <div class="gdsk-inline-options">
+              ${gdskRadio(stageKey, index, "result", "HDTh", item.result)}
+              ${gdskRadio(stageKey, index, "result", "HTHD", item.result)}
+            </div>
+          </div>
+        `).join("")}
+      </div>
+      <div class="gdsk-meta-grid">
+        ${gdskMetaField(stageKey, "date", "Ngày tư vấn", form.date || currentVietnamDateInput(), "date")}
+        ${gdskMetaField(stageKey, "staffName", "Người tư vấn", form.staffName || "")}
+        ${gdskMetaField(stageKey, "patientSign", "Người bệnh/người nhà ký nhận", form.patientSign || "")}
+      </div>
+      ${gdskNoteField(stageKey, "Ghi chú", form.note || "")}
+    </div>
+  `;
+}
+
+function renderHealthEducationSummaryForm() {
+  const forms = ensureHealthEducationForms();
+  return renderGdskDetailDocument(forms);
+}
+
+function renderGdskDetailDocument(forms, context = {}) {
+  const patient = context.patient || state.patient || {};
+  const sheet = context.sheet || {};
+  return `
+    <div class="gdsk-detail-preview">
+      <div class="gdsk-detail-document">
+        <div class="gdsk-detail-top">
+          <div>
+            <strong>BỆNH VIỆN QUÂN Y 103</strong>
+            <span>Khoa: ${h(patient.department || "................................")}</span>
+          </div>
+          <div>
+            <strong>MS: CSNB-05</strong>
+            <span>Số vào viện: ${h(sheet.ma_phieu || patient.code || "................")}</span>
+          </div>
+        </div>
+        <h3>PHIẾU TƯ VẤN - HƯỚNG DẪN - GIÁO DỤC SỨC KHỎE</h3>
+        <div class="gdsk-detail-patient">
+          <span>Họ và tên người bệnh: <strong>${h(patient.name || "................................")}</strong></span>
+          <span>Tuổi: <strong>${h(patient.age || "....")}</strong></span>
+          <span>Phòng: <strong>${h(patient.room || "....")}</strong></span>
+          <span>Giường: <strong>${h(patient.bed || "....")}</strong></span>
+        </div>
+        ${renderGdskDetailSection("I", "Tư vấn, hướng dẫn khi bắt đầu nhập viện", forms.admission)}
+        ${renderGdskDetailSection("II", "Tư vấn, hướng dẫn trong khi điều trị", forms.treatment)}
+        ${renderGdskDetailSection("III", "Tư vấn, hướng dẫn trước khi ra viện", forms.discharge)}
+      </div>
+    </div>
+  `;
+}
+
+function renderGdskDetailSection(prefix, title, form = {}) {
+  const items = Array.isArray(form.items) ? form.items : [];
+  return `
+    <section class="gdsk-detail-section">
+      <h4>${h(prefix)}. ${h(title)}</h4>
+      <table class="gdsk-detail-table">
+        <thead>
+          <tr>
+            <th rowspan="2">TT</th>
+            <th rowspan="2">Nội dung</th>
+            <th colspan="2">Nhu cầu hướng dẫn</th>
+            <th colspan="2">Kết quả hướng dẫn</th>
+          </tr>
+          <tr>
+            <th>Có</th>
+            <th>Không</th>
+            <th>HDTh</th>
+            <th>HTHD</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${items.map((item, index) => `
+            <tr>
+              <td>${index + 1}</td>
+              <td>${h(item.content || "")}</td>
+              <td>${isGdskNeedYes(item.need) ? "x" : ""}</td>
+              <td>${isGdskNeedNo(item.need) ? "x" : ""}</td>
+              <td>${item.result === "HDTh" ? "x" : ""}</td>
+              <td>${item.result === "HTHD" ? "x" : ""}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+      <div class="gdsk-detail-date">Thời điểm tư vấn: <strong>${h(formatGdskDate(form.date))}</strong></div>
+      <div class="gdsk-detail-signatures">
+        <div>
+          <strong>Người thực hiện</strong>
+          <span>(Ký, ghi rõ họ tên)</span>
+          <em>${h(form.staffName || "................................")}</em>
+        </div>
+        <div>
+          <strong>Chữ ký người bệnh/thân nhân</strong>
+          <span>(Ký, ghi rõ họ tên)</span>
+          <em>${h(form.patientSign || "................................")}</em>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function formatGdskDate(value) {
+  if (!value) return "........./........./20.........";
+  return formatVietnamDate(value);
+}
+
+function isGdskNeedNo(value) {
+  return String(value || "").toLowerCase().includes("kh");
+}
+
+function isGdskNeedYes(value) {
+  return Boolean(value) && !isGdskNeedNo(value);
+}
+
+function renderHealthEducationSummaryTableLegacy() {
+  const forms = ensureHealthEducationForms();
+  const rows = ["admission", "treatment", "discharge"].flatMap((stage) =>
+    (forms[stage].items || [])
+      .filter((item) => cleanLine(item.content) || cleanLine(item.need) || cleanLine(item.result))
+      .map((item) => ({ stage, ...item })),
+  );
+  const labels = { admission: "Bắt đầu nhập viện", treatment: "Trong khi điều trị", discharge: "Trước khi ra viện" };
+  if (!rows.length) return `<div class="empty">Chưa có nội dung tư vấn, giáo dục sức khỏe.</div>`;
+  return `
+    <div class="gdsk-table gdsk-summary-table">
+      <div class="gdsk-row gdsk-head">
+        <span>Ngày/Giai đoạn</span>
+        <span>Nội dung</span>
+        <span>Nhu cầu</span>
+        <span>Kết quả</span>
+      </div>
+      ${rows.map((row) => `
+        <div class="gdsk-row">
+          <span>${h(labels[row.stage])}</span>
+          <span>${h(row.content || "-")}</span>
+          <span>${h(row.need || "-")}</span>
+          <span>${h(row.result || "-")}</span>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+function gdskRadio(stageKey, index, field, value, selected) {
+  return `
+    <label>
+      <input type="radio" name="gdsk_${h(stageKey)}_${index}_${field}" value="${h(value)}" ${selected === value ? "checked" : ""} data-gdsk-radio="${h(stageKey)}:${index}:${field}" />
+      <span>${h(value)}</span>
+    </label>
+  `;
+}
+
+function gdskNoteField(stageKey, label, value) {
+  return `
+    <label class="assessment-field assessment-full gdsk-note-field">
+      <span>${h(label)}</span>
+      <textarea data-gdsk-note="${h(stageKey)}" enterkeyhint="next" autocomplete="off" autocapitalize="sentences">${h(value)}</textarea>
+    </label>
+  `;
+}
+
+function gdskMetaField(stageKey, field, label, value, type = "text") {
+  return `
+    <label class="assessment-field">
+      <span>${h(label)}</span>
+      <input type="${type}" value="${h(value)}" data-gdsk-meta="${h(stageKey)}:${h(field)}" ${inputNextAttrs(type)} />
+    </label>
   `;
 }
 
@@ -2311,9 +3621,12 @@ function renderSheet(condition) {
 }
 
 function selectedCareDiagnoses() {
-  return state.diagnosisRows
+  const rows = (state.diagnosisSavedRows || []).length ? state.diagnosisSavedRows : state.diagnosisRows;
+  return rows
     .map((row) => ({
+      code: diagnosisCodeSummary(row),
       diagnosis: cleanLine(row.diagnosis),
+      causes: (Array.isArray(row.causes) ? row.causes : []).map(cleanLine).filter(Boolean),
       goals: (Array.isArray(row.goals) ? row.goals : row.goal ? [row.goal] : [])
         .map(cleanLine)
         .filter(Boolean)
@@ -2531,6 +3844,7 @@ async function loadCareSheetsForSelectedPatient(force = false) {
 
   if (!isSupabaseConfigured()) {
     state.careSheets = [];
+    state.careSheetsPatient = null;
     state.careSheetsLoading = false;
     state.careSheetsError = "Chưa cấu hình Supabase nên chưa tải được danh sách phiếu.";
     setTimeout(() => {
@@ -2543,15 +3857,17 @@ async function loadCareSheetsForSelectedPatient(force = false) {
     const client = getSupabaseClient();
     const { data: patient, error: patientError } = await client
       .from("dsbn")
-      .select("id")
+      .select("id, ma_benh_nhan, ho_ten, tuoi, gioi_tinh, phong, giuong, khoa")
       .eq("ma_benh_nhan", selected.code)
       .maybeSingle();
     if (patientError) throw patientError;
 
     if (!patient) {
       state.careSheets = [];
+      state.careSheetsPatient = null;
       return;
     }
+    state.careSheetsPatient = patient;
 
     const { data, error } = await client
       .from("danh_sach_phieu_cs")
@@ -2562,6 +3878,7 @@ async function loadCareSheetsForSelectedPatient(force = false) {
     state.careSheets = data || [];
   } catch (error) {
     state.careSheets = [];
+    state.careSheetsPatient = null;
     state.careSheetsError = `Không tải được danh sách phiếu: ${error.message || error}`;
   } finally {
     state.careSheetsLoading = false;
@@ -2640,6 +3957,12 @@ function assessmentChecklistSummary() {
     weight: "Cân nặng",
     height: "Chiều cao",
     bmi: "BMI",
+    allergy: "Dị ứng",
+    allergy_note: "Thông tin dị ứng",
+    allergyDrug: "Dị ứng thuốc",
+    allergyFood: "Dị ứng thức ăn",
+    allergyOther: "Dị ứng khác",
+    allergySymptoms: "Biểu hiện dị ứng",
     bodyType: "Thể trạng",
     consciousness: "Ý thức",
     mucosa: "Da niêm mạc",
@@ -2652,6 +3975,7 @@ function assessmentChecklistSummary() {
     peep: "PEEP",
     vt: "VT",
     respiratoryRate: "Nhịp thở",
+    coughStatus: "Ho",
     spo2: "SpO2",
     vasopressorOther: "Vận mạch khác",
     abdomen: "Bụng",
@@ -2660,18 +3984,38 @@ function assessmentChecklistSummary() {
     urineAmount: "Số lượng nước tiểu",
     nutritionType: "Dinh dưỡng",
     menu: "Thực đơn",
+    nutritionRoute: "Đường nuôi dưỡng",
+    nutritionRegimen: "Chế độ dinh dưỡng",
+    nutritionRegimenOther: "Chế độ dinh dưỡng khác",
+    pathologicalDietTypes: "Loại chế độ bệnh lý",
+    pathologicalDietOther: "Chế độ bệnh lý khác",
     mobilityAbility: "Khả năng vận động",
+    mobilityAbilityOther: "Khả năng vận động khác",
     muscleStrength: "Tình trạng cơ lực",
+    muscleStrengthOther: "Tình trạng cơ lực khác",
     movementStatus: "Tình trạng vận động",
+    movementStatusOther: "Tình trạng vận động khác",
     treatmentEducation: "Hướng dẫn điều trị",
     careEducation: "Hướng dẫn chăm sóc",
     preventionEducation: "Giáo dục phòng bệnh",
     circulationNote: "Tuần hoàn",
-    respiratoryNote: "Ghi chú hô hấp",
+    circulationSymptoms: "Triệu chứng cơ năng",
+    peripheralPerfusion: "Tưới máu ngoại vi",
+    heartRhythm: "Nhịp tim",
+    heartRateStatus: "Mạch",
+    heartSounds: "Tiếng tim",
+    circulationOther: "Tuần hoàn khác",
+    respiratoryNote: "Khác",
     neuroConsciousness: "Ý thức",
+    neuroConsciousnessOther: "Ý thức khác",
     neuroOrientation: "Định hướng",
+    neuroOrientationOther: "Định hướng khác",
+    neuroBehaviorStatus: "Tri giác - hành vi",
     neuroBehavior: "Tri giác - hành vi",
+    neuroBehaviorOther: "Tri giác - hành vi khác",
+    neuroFocalSignsStatus: "Dấu hiệu thần kinh khu trú",
     neuroFocalSigns: "Dấu hiệu thần kinh khu trú",
+    neuroFocalSignsOther: "Dấu hiệu thần kinh khu trú khác",
     diseasedOrgan: "Cơ quan bệnh",
     handoverOther: "Bàn giao khác",
   };
@@ -2695,6 +4039,8 @@ function assessmentChecklistSummary() {
     vasopressorAdrenaline: "Vận mạch: Adrenaline",
     vasopressorDobutamine: "Vận mạch: Dobutamine",
     vasopressorVasopressin: "Vận mạch: Vasopressin",
+    circulationOtherChecked: "Tuần hoàn: Khác",
+    pathologicalDiet: "Chế độ bệnh lý",
     fallRiskAssessment: "Thang điểm đánh giá: Nguy cơ té ngã",
     vteRiskAssessment: "Thang điểm đánh giá: Nguy cơ viêm tĩnh mạch",
     painAssessment: "Thang điểm đánh giá: Đau",
@@ -2723,35 +4069,35 @@ function buildAssessmentSectionsForSheet() {
   const sections = [];
   
   const sectionGroups = {
-    "A. Thông tin người bệnh": ["evalTime", "evaluator", "height", "weight", "bmi", "allergy", "allergy_note"],
+    "A. Thông tin người bệnh": ["evalTime", "evaluator", "height", "weight", "bmi", "allergy", "allergyDrug", "allergyFood", "allergyOther", "allergySymptoms", "allergy_note"],
     ...(state.careLevel === "1" ? { "B. Theo dõi dịch": ["fluidIn", "fluidOut", "fluidBalance"] } : {}),
     "C. Dấu hiệu sinh tồn": ["pulse", "temperature", "bloodPressure", "spo2"],
     "D. Toàn thân": ["bodyType", "consciousness", "mucosa", "edema", "systemicNote"],
-    "E. Hô hấp": ["breathingMode", "respiratoryRate", "respiratoryNote", "oxygenFlow", "ventilationAirway", "ventilatorMode", "fio2", "peep", "vt"],
-    "F. Tuần hoàn": ["circulationStable", "circulationFastPulse", "circulationHypotension", "circulationShock", "circulationVasopressor", "vasopressorNoradrenaline", "vasopressorAdrenaline", "vasopressorDobutamine", "vasopressorVasopressin", "vasopressorOther", "circulationNote"],
-    "G. Thần kinh cảm giác": ["neuroConsciousness", "neuroOrientation", "neuroBehavior", "neuroFocalSigns"],
+    "E. Hô hấp": ["breathingMode", "respiratoryRate", "respiratoryNote", "oxygenFlow", "ventilationAirway", "ventilatorMode", "fio2", "peep", "vt", "coughStatus"],
+    "F. Tuần hoàn": ["circulationSymptoms", "peripheralPerfusion", "heartRhythm", "heartRateStatus", "heartSounds", "circulationOther"],
+    "G. Thần kinh cảm giác": ["neuroConsciousness", "neuroConsciousnessOther", "neuroOrientation", "neuroOrientationOther", "neuroBehaviorStatus", "neuroBehavior", "neuroBehaviorOther", "neuroFocalSignsStatus", "neuroFocalSigns", "neuroFocalSignsOther"],
     "H. Tiêu hóa": ["abdomen", "stool"],
     "I. Bài tiết": ["urinary", "urineAmount"],
-    "J. Dinh dưỡng": ["nutritionType", "menu"],
-    "K. Vận động/Phục hồi chức năng": ["mobilityAbility", "muscleStrength", "movementStatus"],
-    "L. Giáo dục sức khỏe": ["treatmentEducation", "careEducation", "preventionEducation"],
+    "J. Dinh dưỡng": ["nutritionRoute", "nutritionRegimen", "nutritionRegimenOther", "pathologicalDiet", "pathologicalDietTypes", "pathologicalDietOther"],
+    "K. Vận động/Phục hồi chức năng": ["mobilityAbility", "mobilityAbilityOther", "muscleStrength", "muscleStrengthOther", "movementStatus", "movementStatusOther"],
+    "L. Tư vấn, giáo dục sức khỏe": ["treatmentEducation", "careEducation", "preventionEducation"],
     "M. Cơ quan bị bệnh": ["diseasedOrgan"],
     "N. Thang điểm đánh giá": ["fallRiskAssessment", "vteRiskAssessment", "painAssessment", "pressureUlcerRiskAssessment", "glasgowAssessment"],
     "O. Bàn giao": ["handoverMedicineHalf", "handoverLab", "handoverWaitLab", "handoverFilm", "handoverWaitFilm", "handoverDressing", "handoverDrain", "handoverVitals", "handoverUrine", "handoverTube", "handoverOther"]
   };
   
   const labels = {
-    evalTime: "Thời gian đánh giá", evaluator: "Người đánh giá", height: "Chiều cao", weight: "Cân nặng", bmi: "BMI", allergy: "Dị ứng", allergy_note: "Thông tin dị ứng",
+    evalTime: "Thời gian đánh giá", evaluator: "Người đánh giá", height: "Chiều cao", weight: "Cân nặng", bmi: "BMI", allergy: "Dị ứng", allergyDrug: "Dị ứng thuốc", allergyFood: "Dị ứng thức ăn", allergyOther: "Dị ứng khác", allergySymptoms: "Biểu hiện dị ứng", allergy_note: "Thông tin dị ứng",
     fluidIn: "Dịch vào", fluidOut: "Dịch ra", fluidBalance: "Bilance",
     pulse: "Mạch", temperature: "Nhiệt độ", bloodPressure: "Huyết áp", spo2: "SpO2",
     bodyType: "Thể trạng", consciousness: "Ý thức", mucosa: "Da niêm mạc", edema: "Phù", systemicNote: "Ghi chú",
-    breathingMode: "Hô hấp", respiratoryRate: "Nhịp thở", respiratoryNote: "Ghi chú", oxygenFlow: "Lưu lượng oxy", ventilationAirway: "Đường thở", ventilatorMode: "Mode thở máy", fio2: "FiO2", peep: "PEEP", vt: "VT",
-    circulationStable: "Ổn định", circulationFastPulse: "Mạch nhanh", circulationHypotension: "Hạ huyết áp", circulationShock: "Sốc", circulationVasopressor: "Có vận mạch", vasopressorNoradrenaline: "Noradrenaline", vasopressorAdrenaline: "Adrenaline", vasopressorDobutamine: "Dobutamine", vasopressorVasopressin: "Vasopressin", vasopressorOther: "Khác", circulationNote: "Ghi chú",
-    neuroSensory: "Thần kinh cảm giác", neuroConsciousness: "Ý thức", neuroOrientation: "Định hướng", neuroBehavior: "Tri giác - hành vi", neuroFocalSigns: "Dấu hiệu thần kinh khu trú",
+    breathingMode: "Hô hấp", respiratoryRate: "Nhịp thở", respiratoryNote: "Khác", oxygenFlow: "Lưu lượng oxy", ventilationAirway: "Đường thở", ventilatorMode: "Mode thở máy", fio2: "FiO2", peep: "PEEP", vt: "VT", coughStatus: "Ho",
+    circulationStable: "Ổn định", circulationFastPulse: "Mạch nhanh", circulationHypotension: "Hạ huyết áp", circulationShock: "Sốc", circulationVasopressor: "Có vận mạch", vasopressorNoradrenaline: "Noradrenaline", vasopressorAdrenaline: "Adrenaline", vasopressorDobutamine: "Dobutamine", vasopressorVasopressin: "Vasopressin", vasopressorOther: "Khác", circulationNote: "Ghi chú", circulationSymptoms: "Triệu chứng cơ năng", peripheralPerfusion: "Tưới máu ngoại vi", heartRhythm: "Nhịp tim", heartRateStatus: "Mạch", heartSounds: "Tiếng tim", circulationOther: "Khác",
+    neuroSensory: "Thần kinh cảm giác", neuroConsciousness: "Ý thức", neuroConsciousnessOther: "Ý thức khác", neuroOrientation: "Định hướng", neuroOrientationOther: "Định hướng khác", neuroBehaviorStatus: "Tri giác - hành vi", neuroBehavior: "Tri giác - hành vi", neuroBehaviorOther: "Tri giác - hành vi khác", neuroFocalSignsStatus: "Dấu hiệu thần kinh khu trú", neuroFocalSigns: "Dấu hiệu thần kinh khu trú", neuroFocalSignsOther: "Dấu hiệu thần kinh khu trú khác",
     abdomen: "Bụng", stool: "Đại tiện",
     urinary: "Bài tiết nước tiểu", urineAmount: "Số lượng nước tiểu",
-    nutritionType: "Loại", menu: "Thực đơn",
-    mobilityAbility: "Khả năng vận động", muscleStrength: "Tình trạng cơ lực", movementStatus: "Tình trạng vận động", mobilityRehab: "Vận động/PHCN", treatmentEducation: "Hướng dẫn điều trị", careEducation: "Hướng dẫn chăm sóc", preventionEducation: "Giáo dục phòng bệnh", healthEducation: "Giáo dục sức khỏe",
+    nutritionType: "Loại", menu: "Thực đơn", nutritionRoute: "Đường nuôi dưỡng", nutritionRegimen: "Chế độ dinh dưỡng", nutritionRegimenOther: "Chế độ dinh dưỡng khác", pathologicalDiet: "Chế độ bệnh lý", pathologicalDietTypes: "Loại chế độ bệnh lý", pathologicalDietOther: "Chế độ bệnh lý khác",
+    mobilityAbility: "Khả năng vận động", mobilityAbilityOther: "Khả năng vận động khác", muscleStrength: "Tình trạng cơ lực", muscleStrengthOther: "Tình trạng cơ lực khác", movementStatus: "Tình trạng vận động", movementStatusOther: "Tình trạng vận động khác", mobilityRehab: "Vận động/PHCN", treatmentEducation: "Hướng dẫn điều trị", careEducation: "Hướng dẫn chăm sóc", preventionEducation: "Giáo dục phòng bệnh", healthEducation: "Giáo dục sức khỏe",
     handoverMedicineHalf: "Thuốc còn 1/2", handoverLab: "Lấy xét nghiệm", handoverWaitLab: "Chờ xét nghiệm", handoverFilm: "Lấy phim", handoverWaitFilm: "Chờ phim", handoverDressing: "Thay băng", handoverDrain: "Theo dõi dẫn lưu", handoverVitals: "Theo dõi DHST", handoverUrine: "Theo dõi nước tiểu", handoverTube: "Chăm sóc sonde", handoverOther: "Khác",
     diseasedOrgan: "Cơ quan bị bệnh",
     fallRiskAssessment: "Đánh giá nguy cơ té ngã",
@@ -2914,12 +4260,25 @@ app.addEventListener("click", (event) => {
     return;
   }
 
+  if (event.target.dataset.action === "close-health-education-overlay") {
+    state.activeHealthEducationStage = null;
+    render();
+    return;
+  }
+
+  if (event.target.dataset.action === "close-diagnosis-picker-overlay") {
+    state.diagnosisPicker = null;
+    render();
+    return;
+  }
+
   const target = event.target.closest("button");
   if (!target) return;
 
   if (target.dataset.patientIndex) {
     state.selectedPatientIndex = Number(target.dataset.patientIndex);
     state.careSheets = [];
+    state.careSheetsPatient = null;
     state.careSheetsLoadedFor = "";
     state.careSheetsError = "";
     state.careGoalEvaluations = [];
@@ -2957,6 +4316,67 @@ app.addEventListener("click", (event) => {
   if (target.dataset.action === "evaluate-results") {
     state.screen = "careEvaluation";
     render();
+    return;
+  }
+
+  if (target.dataset.action === "open-diagnosis-picker") {
+    const rowIndex = Number(target.dataset.index);
+    const row = state.diagnosisRows[rowIndex];
+    state.diagnosisPicker = { rowIndex, query: row?.diagnosisQuery || row?.diagnosis || "" };
+    render();
+    return;
+  }
+
+  if (target.dataset.action === "close-diagnosis-picker") {
+    state.diagnosisPicker = null;
+    render();
+    return;
+  }
+
+  if (target.dataset.action === "confirm-diagnosis-picker") {
+    state.diagnosisPicker = null;
+    render();
+    return;
+  }
+
+  if (target.dataset.action === "toggle-dx-dropdown") {
+    const rowIndex = Number(target.dataset.index);
+    state.activeDiagnosisSuggest = state.activeDiagnosisSuggest === rowIndex ? null : rowIndex;
+    state.activeCauseSuggest = null;
+    state.activeGoalSuggest = null;
+    render();
+    return;
+  }
+
+  if (target.dataset.action === "toggle-diseased-organ-dropdown") {
+    state.activeDiseasedOrganSuggest = !state.activeDiseasedOrganSuggest;
+    if (state.activeDiseasedOrganSuggest && !state.diseasedOrganQuery) state.diseasedOrganQuery = "";
+    render();
+    return;
+  }
+
+  if (target.dataset.action === "toggle-dx-cause-dropdown") {
+    const rowIndex = Number(target.dataset.index);
+    state.activeCauseSuggest = state.activeCauseSuggest === rowIndex ? null : rowIndex;
+    state.activeDiagnosisSuggest = null;
+    state.activeGoalSuggest = null;
+    render();
+    return;
+  }
+
+  if (target.dataset.action === "toggle-dx-goal-dropdown") {
+    const rowIndex = Number(target.dataset.index);
+    const key = `goal:${rowIndex}`;
+    state.activeGoalSuggest = state.activeGoalSuggest === key ? null : key;
+    state.activeDiagnosisSuggest = null;
+    state.activeCauseSuggest = null;
+    render();
+    return;
+  }
+
+  if (target.dataset.action === "show-diagnosis-detail") {
+    const row = state.diagnosisRows[Number(target.dataset.index)];
+    alert(diagnosisDetailText(row || createDiagnosisRow()) || "Chưa chọn chẩn đoán.");
     return;
   }
 
@@ -3028,6 +4448,30 @@ app.addEventListener("click", (event) => {
     return;
   }
 
+  if (target.dataset.dxCatalogSuggestion !== undefined) {
+    const row = state.diagnosisRows[Number(target.dataset.dxCatalogSuggestion)];
+    applyNandaCatalogSelection(row, target.dataset.nanda || "");
+    state.activeDiagnosisSuggest = null;
+    state.activeGoalSuggest = null;
+    render();
+    return;
+  }
+
+  if (target.dataset.action === "add-custom-diagnosis") {
+    const row = state.diagnosisRows[Number(target.dataset.index)];
+    if (row) {
+      row.diagnosis = cleanLine(target.dataset.value);
+      row.diagnosisQuery = row.diagnosis;
+      row.diagnosisIds = [];
+      row.causes = [];
+      row.goals = [];
+    }
+    state.activeDiagnosisSuggest = null;
+    state.activeGoalSuggest = null;
+    render();
+    return;
+  }
+
   if (target.dataset.goalSuggestion) {
     const [rowIndex, goalIndex] = target.dataset.goalSuggestion.split(":").map(Number);
     const row = state.diagnosisRows[rowIndex];
@@ -3066,9 +4510,30 @@ app.addEventListener("click", (event) => {
     return;
   }
 
+  if (target.dataset.action === "save-diagnosis-row") {
+    const row = state.diagnosisRows[0] || createDiagnosisRow();
+    if (!hasCompleteDiagnosisDraft(row)) {
+      alert("Vui lòng chọn đủ chẩn đoán, liên quan tới và ít nhất 1 mục tiêu trước khi lưu.");
+      return;
+    }
+    state.diagnosisSavedRows.push(normalizeDiagnosisRowForSave(row));
+    state.diagnosisRows = [createDiagnosisRow()];
+    state.activeDiagnosisSuggest = null;
+    state.activeCauseSuggest = null;
+    state.activeGoalSuggest = null;
+    render();
+    return;
+  }
+
   if (target.dataset.action === "remove-diagnosis") {
     state.diagnosisRows.splice(Number(target.dataset.index), 1);
     if (!state.diagnosisRows.length) state.diagnosisRows.push(createDiagnosisRow());
+    render();
+    return;
+  }
+
+  if (target.dataset.action === "remove-saved-diagnosis") {
+    state.diagnosisSavedRows.splice(Number(target.dataset.index), 1);
     render();
     return;
   }
@@ -3084,6 +4549,21 @@ app.addEventListener("click", (event) => {
     return;
   }
 
+  if (target.dataset.action === "add-custom-goal") {
+    const row = state.diagnosisRows[Number(target.dataset.index)];
+    const goal = cleanLine(row?.goalQuery);
+    if (row && goal) {
+      if (!Array.isArray(row.goals)) row.goals = [];
+      if (!row.goals.includes(goal)) row.goals.push(goal);
+      row.goalQuery = "";
+    }
+    state.activeGoalSuggest = `goal:${target.dataset.index}`;
+    state.activeDiagnosisSuggest = null;
+    state.activeCauseSuggest = null;
+    render();
+    return;
+  }
+
   if (target.dataset.action === "remove-goal") {
     const row = state.diagnosisRows[Number(target.dataset.index)];
     if (row && Array.isArray(row.goals)) {
@@ -3095,6 +4575,51 @@ app.addEventListener("click", (event) => {
 
   if (target.dataset.action === "add-intervention") {
     state.interventionRows.push({ id: `iv-${Date.now()}`, selected: true, code: "", content: "" });
+    render();
+    return;
+  }
+
+  if (target.dataset.action === "toggle-iv-code-dropdown") {
+    state.activeInterventionSuggest = state.activeInterventionSuggest === "draft-code" ? null : "draft-code";
+    render();
+    return;
+  }
+
+  if (target.dataset.action === "toggle-iv-content-dropdown") {
+    state.activeInterventionSuggest = state.activeInterventionSuggest === "draft-content" ? null : "draft-content";
+    render();
+    return;
+  }
+
+  if (target.dataset.action === "save-interventions") {
+    const selected = state.interventionDraft?.selected || [];
+    if (!selected.length) {
+      alert("Vui lòng chọn ít nhất một can thiệp trước khi lưu.");
+      return;
+    }
+    const existing = new Set(state.interventionRows.map((item) => interventionOptionKey({ code: item.code, name: item.content })));
+    selected.forEach((item) => {
+      const key = interventionOptionKey({ code: item.code, name: item.content });
+      if (!existing.has(key)) {
+        state.interventionRows.push({
+          id: `iv-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          selected: true,
+          code: item.code,
+          content: item.content,
+        });
+        existing.add(key);
+      }
+    });
+    state.interventionDraft = createInterventionDraft();
+    state.activeInterventionSuggest = null;
+    render();
+    return;
+  }
+
+  if (target.dataset.action === "remove-draft-intervention") {
+    const selected = [...(state.interventionDraft?.selected || [])];
+    selected.splice(Number(target.dataset.index), 1);
+    state.interventionDraft = { ...(state.interventionDraft || createInterventionDraft()), selected };
     render();
     return;
   }
@@ -3146,12 +4671,39 @@ app.addEventListener("click", (event) => {
     window.print();
   }
 
+  if (target.dataset.healthEducationStage) {
+    state.healthEducationStage = target.dataset.healthEducationStage;
+    state.activeHealthEducationStage = target.dataset.healthEducationStage;
+    render();
+    return;
+  }
+
+  if (target.dataset.action === "close-health-education") {
+    state.activeHealthEducationStage = null;
+    render();
+    return;
+  }
+
+  if (target.dataset.careListTab) {
+    state.careListTab = target.dataset.careListTab;
+    render();
+    if (state.careListTab === "education") loadCareSheetsForSelectedPatient(true);
+    return;
+  }
+
   if (target.dataset.action === "open-scale" && target.dataset.scaleKey) {
     if (target.dataset.scaleKey === "current_pain") {
       state.assessmentChecklist.current_pain = "yes";
     }
     state.activeScale = target.dataset.scaleKey;
     if (!state.scaleScores[target.dataset.scaleKey]) state.scaleScores[target.dataset.scaleKey] = {};
+    const scale = getScaleForKey(target.dataset.scaleKey);
+    if (isVasPainScale(scale) && state.scaleScores[target.dataset.scaleKey].vas === undefined) {
+      const existingScore = target.dataset.scaleKey === "current_pain"
+        ? state.assessmentChecklist.pain_score
+        : state.scaleResults[target.dataset.scaleKey]?.total;
+      state.scaleScores[target.dataset.scaleKey].vas = existingScore === undefined || existingScore === "" ? 0 : Number(existingScore);
+    }
     render();
     return;
   }
@@ -3209,6 +4761,40 @@ app.addEventListener("keydown", (event) => {
   }
 });
 
+app.addEventListener("focusin", (event) => {
+  const target = event.target;
+  if (target.dataset.diseasedOrganQuery !== undefined) {
+    if (state.activeDiseasedOrganSuggest) return;
+    state.activeDiseasedOrganSuggest = true;
+    render("[data-diseased-organ-query]");
+    return;
+  }
+  if (target.dataset.dxQuery) {
+    const rowIndex = Number(target.dataset.dxQuery);
+    if (state.activeDiagnosisSuggest === rowIndex) return;
+    state.activeDiagnosisSuggest = rowIndex;
+    state.activeCauseSuggest = null;
+    state.activeGoalSuggest = null;
+    render(`[data-dx-query="${target.dataset.dxQuery}"]`);
+  }
+  if (target.dataset.dxCauseQuery !== undefined) {
+    const rowIndex = Number(target.dataset.dxCauseQuery);
+    if (state.activeCauseSuggest === rowIndex) return;
+    state.activeCauseSuggest = rowIndex;
+    state.activeDiagnosisSuggest = null;
+    state.activeGoalSuggest = null;
+    render(`[data-dx-cause-query="${target.dataset.dxCauseQuery}"]`);
+  }
+  if (target.dataset.dxGoalQuery !== undefined) {
+    const key = `goal:${target.dataset.dxGoalQuery}`;
+    if (state.activeGoalSuggest === key) return;
+    state.activeGoalSuggest = key;
+    state.activeDiagnosisSuggest = null;
+    state.activeCauseSuggest = null;
+    render(`[data-dx-goal-query="${target.dataset.dxGoalQuery}"]`);
+  }
+});
+
 app.addEventListener("input", (event) => {
   const target = event.target;
   if (target.dataset.input === "search") {
@@ -3227,14 +4813,88 @@ app.addEventListener("input", (event) => {
     return;
   }
 
+  if (target.dataset.gdskNote) {
+    const forms = ensureHealthEducationForms();
+    const form = forms[target.dataset.gdskNote];
+    if (form) form.note = target.value;
+    return;
+  }
+
+  if (target.dataset.gdskMeta) {
+    const [stageKey, field] = target.dataset.gdskMeta.split(":");
+    const forms = ensureHealthEducationForms();
+    const form = forms[stageKey];
+    if (form && ["date", "staffName", "patientSign"].includes(field)) form[field] = target.value;
+    return;
+  }
+
+  if (target.dataset.vasScale) {
+    const scaleKey = target.dataset.vasScale;
+    if (!state.scaleScores[scaleKey]) state.scaleScores[scaleKey] = {};
+    state.scaleScores[scaleKey].vas = Number(target.value);
+    render();
+    return;
+  }
+
   if (target.dataset.dxQuery) {
     const row = state.diagnosisRows[Number(target.dataset.dxQuery)];
     if (row) {
       row.diagnosisQuery = target.value;
-      row.diagnosis = target.value;
+      if (row.diagnosisIds?.length && searchKey(target.value) !== searchKey(row.diagnosis)) {
+        row.diagnosisIds = [];
+        row.diagnosis = target.value;
+        row.causes = [];
+        row.goals = [];
+        row.causeQuery = "";
+        row.goalQuery = "";
+      } else if (!row.diagnosisIds?.length) {
+        row.diagnosis = target.value;
+        row.causes = [];
+        row.goals = [];
+      }
       state.activeDiagnosisSuggest = Number(target.dataset.dxQuery);
+      state.activeCauseSuggest = null;
       state.activeGoalSuggest = null;
       render(`[data-dx-query="${target.dataset.dxQuery}"]`);
+    }
+    return;
+  }
+
+  if (target.dataset.dxCauseQuery !== undefined) {
+    const row = state.diagnosisRows[Number(target.dataset.dxCauseQuery)];
+    if (row) {
+      row.causeQuery = target.value;
+      state.activeCauseSuggest = Number(target.dataset.dxCauseQuery);
+      state.activeDiagnosisSuggest = null;
+      state.activeGoalSuggest = null;
+      render(`[data-dx-cause-query="${target.dataset.dxCauseQuery}"]`);
+    }
+    return;
+  }
+
+  if (target.dataset.dxGoalQuery !== undefined) {
+    const row = state.diagnosisRows[Number(target.dataset.dxGoalQuery)];
+    if (row) {
+      row.goalQuery = target.value;
+      state.activeGoalSuggest = `goal:${target.dataset.dxGoalQuery}`;
+      state.activeDiagnosisSuggest = null;
+      state.activeCauseSuggest = null;
+      render(`[data-dx-goal-query="${target.dataset.dxGoalQuery}"]`);
+    }
+    return;
+  }
+
+  if (target.dataset.diseasedOrganQuery !== undefined) {
+    state.diseasedOrganQuery = target.value;
+    state.activeDiseasedOrganSuggest = true;
+    render("[data-diseased-organ-query]");
+    return;
+  }
+
+  if (target.dataset.dxPickerQuery !== undefined) {
+    if (state.diagnosisPicker) {
+      state.diagnosisPicker.query = target.value;
+      render(`[data-dx-picker-query="${target.dataset.dxPickerQuery}"]`);
     }
     return;
   }
@@ -3253,6 +4913,12 @@ app.addEventListener("input", (event) => {
   }
 
   if (target.dataset.ivCodeQuery) {
+    if (target.dataset.ivCodeQuery === "draft") {
+      state.interventionDraft.codeQuery = target.value;
+      state.activeInterventionSuggest = "draft-code";
+      render('[data-iv-code-query="draft"]');
+      return;
+    }
     const row = state.interventionRows[Number(target.dataset.ivCodeQuery)];
     if (row) {
       row.code = target.value;
@@ -3266,6 +4932,12 @@ app.addEventListener("input", (event) => {
   }
 
   if (target.dataset.ivContentQuery) {
+    if (target.dataset.ivContentQuery === "draft") {
+      state.interventionDraft.contentQuery = target.value;
+      state.activeInterventionSuggest = "draft-content";
+      render('[data-iv-content-query="draft"]');
+      return;
+    }
     const row = state.interventionRows[Number(target.dataset.ivContentQuery)];
     if (row) {
       row.content = target.value;
@@ -3347,6 +5019,13 @@ app.addEventListener("change", (event) => {
 
   if (target.dataset.checklistBool) {
     state.assessmentChecklist[target.dataset.checklistBool] = target.checked;
+    if (target.dataset.checklistBool === "circulationOtherChecked" && !target.checked) {
+      state.assessmentChecklist.circulationOther = "";
+    }
+    if (target.dataset.checklistBool === "pathologicalDiet" && !target.checked) {
+      state.assessmentChecklist.pathologicalDietTypes = [];
+      state.assessmentChecklist.pathologicalDietOther = "";
+    }
     render();
     return;
   }
@@ -3355,6 +5034,165 @@ app.addEventListener("change", (event) => {
     const [scaleKey, itemKey] = target.dataset.scaleItem.split(":");
     if (!state.scaleScores[scaleKey]) state.scaleScores[scaleKey] = {};
     state.scaleScores[scaleKey][itemKey] = Number(target.value);
+    render();
+    return;
+  }
+
+  if (target.dataset.gdskRadio) {
+    const [stageKey, indexText, field] = target.dataset.gdskRadio.split(":");
+    const forms = ensureHealthEducationForms();
+    const item = forms[stageKey]?.items?.[Number(indexText)];
+    if (item && (field === "need" || field === "result")) item[field] = target.value;
+    render();
+    return;
+  }
+
+  if (target.dataset.dxCatalogCheck !== undefined) {
+    const row = state.diagnosisRows[Number(target.dataset.dxCatalogCheck)];
+    toggleNandaCatalogSelection(row, target.dataset.nanda || "", target.checked);
+    state.activeDiagnosisSuggest = null;
+    state.activeCauseSuggest = null;
+    state.activeGoalSuggest = null;
+    render();
+    return;
+  }
+
+  if (target.dataset.dxCustomCheck !== undefined) {
+    const row = state.diagnosisRows[Number(target.dataset.dxCustomCheck)];
+    if (row) {
+      const value = cleanLine(target.dataset.value);
+      if (target.checked) {
+        row.diagnosis = value;
+        row.diagnosisQuery = value;
+        row.diagnosisIds = [];
+        row.causes = [];
+        row.goals = [];
+      } else if (searchKey(row.diagnosis) === searchKey(value)) {
+        row.diagnosis = "";
+      }
+    }
+    state.activeDiagnosisSuggest = null;
+    state.activeCauseSuggest = null;
+    state.activeGoalSuggest = null;
+    render();
+    return;
+  }
+
+  if (target.dataset.dxCustomGoalCheck !== undefined) {
+    const row = state.diagnosisRows[Number(target.dataset.dxCustomGoalCheck)];
+    const goal = cleanLine(target.dataset.value);
+    if (row && goal) {
+      const values = Array.isArray(row.goals) ? [...row.goals] : [];
+      if (target.checked && !values.includes(goal)) values.push(goal);
+      if (!target.checked) {
+        const index = values.indexOf(goal);
+        if (index >= 0) values.splice(index, 1);
+      }
+      row.goals = values;
+      row.goalQuery = "";
+    }
+    state.activeGoalSuggest = null;
+    state.activeDiagnosisSuggest = null;
+    state.activeCauseSuggest = null;
+    render();
+    return;
+  }
+
+  if (target.dataset.dxPickerOption !== undefined) {
+    const row = state.diagnosisRows[Number(target.dataset.dxPickerOption)];
+    if (row) {
+      const nanda = target.dataset.nanda || "";
+      const ids = diagnosisCatalogRows()
+        .filter((item) => cleanLine(item.nanda) === nanda)
+        .map((item) => String(item.id));
+      const current = new Set((row.diagnosisIds || []).map(String));
+      if (target.checked) ids.forEach((id) => current.add(id));
+      if (!target.checked) ids.forEach((id) => current.delete(id));
+      row.diagnosisIds = [...current];
+      const selectedNandas = [...new Set(
+        diagnosisCatalogRows()
+          .filter((item) => row.diagnosisIds.includes(String(item.id)))
+          .map((item) => cleanLine(item.nanda)),
+      )];
+      row.diagnosis = selectedNandas.join("; ");
+      row.diagnosisQuery = row.diagnosis;
+      row.causes = (row.causes || []).filter((cause) =>
+        causeOptionsForDiagnosis(row).some((item) => item.cause === cause),
+      );
+      row.goals = (row.goals || []).filter((goal) =>
+        goalOptionsForDiagnosisRow(row).includes(goal),
+      );
+    }
+    render();
+    return;
+  }
+
+  if (target.dataset.ivOptionCheck) {
+    const item = {
+      code: target.dataset.code || "",
+      name: target.dataset.content || "",
+    };
+    toggleInterventionDraftSelection(item, target.checked);
+    state.interventionDraft.codeQuery = target.checked && target.dataset.ivOptionCheck === "code" ? item.code : state.interventionDraft.codeQuery;
+    state.interventionDraft.contentQuery = target.checked && target.dataset.ivOptionCheck === "content" ? item.name : state.interventionDraft.contentQuery;
+    state.activeInterventionSuggest = target.dataset.ivOptionCheck === "code" ? "draft-code" : "draft-content";
+    render();
+    return;
+  }
+
+  if (target.dataset.diseasedOrganCheck !== undefined) {
+    const values = diseasedOrganSelectedItems();
+    const value = cleanLine(target.dataset.value);
+    const index = values.findIndex((item) => searchKey(item) === searchKey(value));
+    if (target.checked && index < 0) values.push(value);
+    if (!target.checked && index >= 0) values.splice(index, 1);
+    setDiseasedOrganSelectedItems(values);
+    state.diseasedOrganQuery = "";
+    state.activeDiseasedOrganSuggest = false;
+    render();
+    return;
+  }
+
+  if (target.dataset.diseasedOrganCustomCheck !== undefined) {
+    const values = diseasedOrganSelectedItems();
+    const value = cleanLine(target.dataset.value);
+    if (target.checked && value && !values.some((item) => searchKey(item) === searchKey(value))) values.push(value);
+    setDiseasedOrganSelectedItems(values);
+    state.diseasedOrganQuery = "";
+    state.activeDiseasedOrganSuggest = false;
+    render();
+    return;
+  }
+
+  if (target.dataset.dxCause !== undefined) {
+    const row = state.diagnosisRows[Number(target.dataset.dxCause)];
+    if (row) {
+      row.causes = target.checked ? [target.value] : [];
+      row.causeQuery = target.checked ? target.value : "";
+      row.goals = (row.goals || []).filter((goal) => goalOptionsForDiagnosisRow(row).includes(goal));
+    }
+    state.activeCauseSuggest = null;
+    state.activeDiagnosisSuggest = null;
+    state.activeGoalSuggest = null;
+    render();
+    return;
+  }
+
+  if (target.dataset.dxGoal !== undefined) {
+    const row = state.diagnosisRows[Number(target.dataset.dxGoal)];
+    if (row) {
+      const values = Array.isArray(row.goals) ? [...row.goals] : [];
+      if (target.checked && !values.includes(target.value)) values.push(target.value);
+      if (!target.checked) {
+        const index = values.indexOf(target.value);
+        if (index >= 0) values.splice(index, 1);
+      }
+      row.goals = values;
+      row.goalQuery = "";
+    }
+    state.activeGoalSuggest = null;
+    state.activeDiagnosisSuggest = null;
+    state.activeCauseSuggest = null;
     render();
     return;
   }
@@ -3368,6 +5206,33 @@ app.addEventListener("change", (event) => {
       if (index >= 0) values.splice(index, 1);
     }
     state.assessmentChecklist[key] = values;
+    if (target.checked && key === "neuroBehavior") {
+      state.assessmentChecklist.neuroBehaviorStatus = "";
+    }
+    if (target.checked && key === "neuroFocalSigns") {
+      state.assessmentChecklist.neuroFocalSignsStatus = "";
+    }
+    if (key === "neuroBehavior" && !values.includes("Khác")) {
+      state.assessmentChecklist.neuroBehaviorOther = "";
+    }
+    if (key === "neuroFocalSigns" && !values.includes("Khác")) {
+      state.assessmentChecklist.neuroFocalSignsOther = "";
+    }
+    if (key === "nutritionRegimen" && !values.includes("Khác")) {
+      state.assessmentChecklist.nutritionRegimenOther = "";
+    }
+    if (key === "pathologicalDietTypes" && !values.includes("Khác")) {
+      state.assessmentChecklist.pathologicalDietOther = "";
+    }
+    if (key === "mobilityAbility" && !values.includes("Khác")) {
+      state.assessmentChecklist.mobilityAbilityOther = "";
+    }
+    if (key === "muscleStrength" && !values.includes("Khác")) {
+      state.assessmentChecklist.muscleStrengthOther = "";
+    }
+    if (key === "movementStatus" && !values.includes("Khác")) {
+      state.assessmentChecklist.movementStatusOther = "";
+    }
     render();
     return;
   }
@@ -3407,10 +5272,24 @@ app.addEventListener("change", (event) => {
       delete state.scaleScores.current_pain;
     }
     if (target.dataset.checklistRadio === "allergy" && target.value !== "yes") {
-      state.assessmentChecklist.allergy_note = "";
+      clearAllergyDetails();
     }
     if (target.dataset.checklistRadio === "breathingMode" && target.value !== "Thở máy") {
       state.assessmentChecklist.ventilationAirway = [];
+    }
+    if (target.dataset.checklistRadio === "neuroConsciousness" && target.value !== "Khác") {
+      state.assessmentChecklist.neuroConsciousnessOther = "";
+    }
+    if (target.dataset.checklistRadio === "neuroOrientation" && target.value !== "Khác") {
+      state.assessmentChecklist.neuroOrientationOther = "";
+    }
+    if (target.dataset.checklistRadio === "neuroBehaviorStatus" && target.value === "Bình thường") {
+      state.assessmentChecklist.neuroBehavior = [];
+      state.assessmentChecklist.neuroBehaviorOther = "";
+    }
+    if (target.dataset.checklistRadio === "neuroFocalSignsStatus" && target.value === "Bình thường") {
+      state.assessmentChecklist.neuroFocalSigns = [];
+      state.assessmentChecklist.neuroFocalSignsOther = "";
     }
     render();
     return;
@@ -3429,11 +5308,12 @@ app.addEventListener("change", (event) => {
 
 async function init() {
   try {
-    const [response, scaleResponse, assessmentResponse, interventionCodeResponse] = await Promise.all([
+    const [response, scaleResponse, assessmentResponse, interventionCodeResponse, diagnosisCatalogResponse] = await Promise.all([
       fetch("./cd_deu_duong.json"),
       fetch("./thangdiem.json"),
       fetch("./nhan_dinh.json"),
       fetch("./ma_can_thiep.json"),
+      fetch("./chandoan.json"),
     ]);
     if (!response.ok) throw new Error(`Khong tai duoc cd_deu_duong.json (${response.status})`);
     state.raw = await response.json();
@@ -3446,6 +5326,10 @@ async function init() {
     }
     if (interventionCodeResponse.ok) {
       state.interventionCatalog = deepFix(await interventionCodeResponse.json());
+    }
+    if (diagnosisCatalogResponse.ok) {
+      const diagnosisCatalog = deepFix(await diagnosisCatalogResponse.json());
+      state.diagnosisCatalog = Array.isArray(diagnosisCatalog.data) ? diagnosisCatalog.data : [];
     }
     state.categoryId = state.data.categories[0].id;
     state.departmentId = state.data.categories[0].khoa[0].id;
