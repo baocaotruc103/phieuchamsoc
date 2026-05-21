@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Phiếu đánh giá trải nghiệm ứng dụng</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      background: #f4f8f5;
+      color: #1f2937;
+      line-height: 1.5;
+    }
+
+    .page {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px 12px 40px;
+    }
+
+    .form-card {
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+      border: 1px solid #d8eadc;
+    }
+
+    .form-header {
+      background: #009900;
+      color: #ffffff;
+      padding: 22px 24px;
+      text-align: center;
+    }
+
+    .form-header h1 {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .form-header p {
+      margin: 8px 0 0;
+      font-size: 14px;
+      opacity: 0.95;
+    }
+
+    form {
+      padding: 20px;
+    }
+
+    .section {
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 18px;
+      background: #ffffff;
+    }
+
+    .section-title {
+      margin: -16px -16px 16px;
+      padding: 12px 16px;
+      background: #eaf8ed;
+      color: #006b00;
+      font-size: 16px;
+      font-weight: 700;
+      border-radius: 14px 14px 0 0;
+      border-bottom: 1px solid #d8eadc;
+    }
+
+    .sub-title {
+      margin: 14px 0 10px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #111827;
+    }
+
+    .field {
+      margin-bottom: 16px;
+    }
+
+    label.field-label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    input[type="text"],
+    textarea {
+      width: 100%;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      padding: 11px 12px;
+      font-size: 14px;
+      outline: none;
+      transition: 0.2s;
+      background: #ffffff;
+    }
+
+    input[type="text"]:focus,
+    textarea:focus {
+      border-color: #009900;
+      box-shadow: 0 0 0 3px rgba(0, 153, 0, 0.12);
+    }
+
+    textarea {
+      min-height: 84px;
+      resize: vertical;
+    }
+
+    .rating-group,
+    .checkbox-group {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .option-card {
+      position: relative;
+    }
+
+    .option-card input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .option-card span {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 8px 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      background: #ffffff;
+      font-size: 13px;
+      text-align: center;
+      cursor: pointer;
+      transition: 0.2s;
+      user-select: none;
+    }
+
+    .option-card input:checked + span {
+      background: #009900;
+      border-color: #009900;
+      color: #ffffff;
+      font-weight: 700;
+    }
+
+    .option-card span:hover {
+      border-color: #009900;
+    }
+
+    .checkbox-group {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      background: #ffffff;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .checkbox-item input {
+      width: 16px;
+      height: 16px;
+      accent-color: #009900;
+    }
+
+    .submit-area {
+      display: flex;
+      justify-content: center;
+      padding-top: 10px;
+    }
+
+    button {
+      width: 100%;
+      max-width: 320px;
+      border: none;
+      border-radius: 12px;
+      background: #009900;
+      color: #ffffff;
+      padding: 14px 20px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background: #007a00;
+    }
+
+    .note {
+      font-size: 13px;
+      color: #6b7280;
+      text-align: center;
+      margin-top: 12px;
+    }
+
+    .thankyou-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 9999;
+    }
+
+    .thankyou-modal.show {
+      display: flex;
+    }
+
+    .thankyou-box {
+      width: 100%;
+      max-width: 420px;
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 28px 22px;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.18);
+      animation: popIn 0.25s ease;
+    }
+
+    .thankyou-icon {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background: #eaf8ed;
+      color: #009900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 34px;
+      margin: 0 auto 16px;
+    }
+
+    .thankyou-box h3 {
+      margin: 0 0 10px;
+      font-size: 22px;
+    }
+
+    .thankyou-box p {
+      margin: 0 0 20px;
+      font-size: 15px;
+      color: #4b5563;
+      line-height: 1.6;
+    }
+
+    .thankyou-close {
+      max-width: 180px;
+    }
+
+    @keyframes popIn {
+      from { transform: scale(0.9); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    @media (max-width: 640px) {
+      .page {
+        padding: 10px 8px 24px;
+      }
+
+      .form-header {
+        padding: 18px 14px;
+      }
+
+      .form-header h1 {
+        font-size: 18px;
+      }
+
+      form {
+        padding: 12px;
+      }
+
+      .section {
+        padding: 12px;
+      }
+
+      .section-title {
+        margin: -12px -12px 14px;
+        padding: 11px 12px;
+        font-size: 15px;
+      }
+
+      .rating-group {
+        grid-template-columns: 1fr;
+      }
+
+      .checkbox-group {
+        grid-template-columns: 1fr;
+      }
+
+      .option-card span {
+        justify-content: flex-start;
+        min-height: 40px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="form-card">
+      <div class="form-header">
+        <h1>Phiếu đánh giá trải nghiệm ứng dụng / mẫu phiếu chăm sóc</h1>
+        <p>Ý kiến của anh/chị giúp cải tiến ứng dụng và hoàn thiện mẫu phiếu chăm sóc điện tử.</p>
+      </div>
+
+      <form id="feedbackForm">
+        <!-- 1. Thông tin người dùng -->
+        <section class="section">
+          <h2 class="section-title">1. Thông tin người dùng</h2>
+
+          <div class="field">
+            <label class="field-label" for="fullName">Họ và tên <span style="font-weight:400; color:#6b7280;">(không bắt buộc)</span></label>
+            <input type="text" id="fullName" name="fullName" placeholder="Nhập họ và tên" />
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="department">Đơn vị/Khoa phòng <span style="color:#dc2626;">*</span></label>
+            <input type="text" id="department" name="department" placeholder="Nhập đơn vị hoặc khoa phòng" required />
+          </div>
+        </section>
+
+        <!-- 2. Đánh giá trải nghiệm -->
+        <section class="section">
+          <h2 class="section-title">2. Đánh giá trải nghiệm sử dụng ứng dụng</h2>
+
+          <div class="sub-title">Giao diện và khả năng sử dụng</div>
+
+          <div class="field">
+            <label class="field-label">Giao diện dễ nhìn, dễ sử dụng</label>
+            <div class="rating-group">
+              <label class="option-card"><input type="radio" name="ui_easy" value="Rất kém" /><span>Rất kém</span></label>
+              <label class="option-card"><input type="radio" name="ui_easy" value="Kém" /><span>Kém</span></label>
+              <label class="option-card"><input type="radio" name="ui_easy" value="Trung bình" /><span>Trung bình</span></label>
+              <label class="option-card"><input type="radio" name="ui_easy" value="Tốt" /><span>Tốt</span></label>
+              <label class="option-card"><input type="radio" name="ui_easy" value="Rất tốt" /><span>Rất tốt</span></label>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label">Bố cục thông tin hợp lý</label>
+            <div class="rating-group">
+              <label class="option-card"><input type="radio" name="layout" value="Rất kém" /><span>Rất kém</span></label>
+              <label class="option-card"><input type="radio" name="layout" value="Kém" /><span>Kém</span></label>
+              <label class="option-card"><input type="radio" name="layout" value="Trung bình" /><span>Trung bình</span></label>
+              <label class="option-card"><input type="radio" name="layout" value="Tốt" /><span>Tốt</span></label>
+              <label class="option-card"><input type="radio" name="layout" value="Rất tốt" /><span>Rất tốt</span></label>
+            </div>
+          </div>
+          <div class="sub-title">Tính hữu ích</div>
+
+          <div class="field">
+            <label class="field-label">Ứng dụng hỗ trợ công việc hiệu quả</label>
+            <div class="rating-group">
+              <label class="option-card"><input type="radio" name="work_support" value="Rất kém" /><span>Rất kém</span></label>
+              <label class="option-card"><input type="radio" name="work_support" value="Kém" /><span>Kém</span></label>
+              <label class="option-card"><input type="radio" name="work_support" value="Trung bình" /><span>Trung bình</span></label>
+              <label class="option-card"><input type="radio" name="work_support" value="Tốt" /><span>Tốt</span></label>
+              <label class="option-card"><input type="radio" name="work_support" value="Rất tốt" /><span>Rất tốt</span></label>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label">Thông tin hiển thị đầy đủ, dễ hiểu</label>
+            <div class="rating-group">
+              <label class="option-card"><input type="radio" name="info_clear" value="Rất kém" /><span>Rất kém</span></label>
+              <label class="option-card"><input type="radio" name="info_clear" value="Kém" /><span>Kém</span></label>
+              <label class="option-card"><input type="radio" name="info_clear" value="Trung bình" /><span>Trung bình</span></label>
+              <label class="option-card"><input type="radio" name="info_clear" value="Tốt" /><span>Tốt</span></label>
+              <label class="option-card"><input type="radio" name="info_clear" value="Rất tốt" /><span>Rất tốt</span></label>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label">Các chức năng đáp ứng nhu cầu thực tế</label>
+            <div class="rating-group">
+              <label class="option-card"><input type="radio" name="real_need" value="Rất kém" /><span>Rất kém</span></label>
+              <label class="option-card"><input type="radio" name="real_need" value="Kém" /><span>Kém</span></label>
+              <label class="option-card"><input type="radio" name="real_need" value="Trung bình" /><span>Trung bình</span></label>
+              <label class="option-card"><input type="radio" name="real_need" value="Tốt" /><span>Tốt</span></label>
+              <label class="option-card"><input type="radio" name="real_need" value="Rất tốt" /><span>Rất tốt</span></label>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. Hài lòng chung -->
+        <section class="section">
+          <h2 class="section-title">3. Mức độ hài lòng chung</h2>
+          <div class="field">
+            <label class="field-label">Bạn hài lòng với ứng dụng ở mức nào?</label>
+            <div class="rating-group">
+              <label class="option-card"><input type="radio" name="satisfaction" value="Rất không hài lòng" /><span>Rất không hài lòng</span></label>
+              <label class="option-card"><input type="radio" name="satisfaction" value="Không hài lòng" /><span>Không hài lòng</span></label>
+              <label class="option-card"><input type="radio" name="satisfaction" value="Bình thường" /><span>Bình thường</span></label>
+              <label class="option-card"><input type="radio" name="satisfaction" value="Hài lòng" /><span>Hài lòng</span></label>
+              <label class="option-card"><input type="radio" name="satisfaction" value="Rất hài lòng" /><span>Rất hài lòng</span></label>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. Chức năng mong muốn -->
+        <section class="section">
+          <h2 class="section-title">4. Chức năng mong muốn bổ sung</h2>
+          <div class="checkbox-group">
+            <label class="checkbox-item"><input type="checkbox" name="wanted_features" value="Nhập dữ liệu bằng giọng nói" /> Nhập dữ liệu bằng giọng nói</label>
+            <label class="checkbox-item"><input type="checkbox" name="wanted_features" value="AI hỗ trợ phân tích/gợi ý" /> AI hỗ trợ phân tích / gợi ý</label>
+            <label class="checkbox-item"><input type="checkbox" name="wanted_features" value="Chế độ mobile tối ưu hơn" /> Chế độ mobile tối ưu hơn</label>
+            <label class="checkbox-item"><input type="checkbox" name="wanted_features" value="Khác" /> Khác</label>
+          </div>
+          <div class="field" style="margin-top:12px;">
+            <label class="field-label" for="otherFeature">Nếu chọn khác, vui lòng ghi rõ</label>
+            <input type="text" id="otherFeature" name="otherFeature" placeholder="Nhập chức năng mong muốn khác" />
+          </div>
+        </section>
+
+        <!-- 5. Đóng góp ý kiến -->
+        <section class="section">
+          <h2 class="section-title">5. Đóng góp ý kiến</h2>
+
+          <div class="field">
+            <label class="field-label" for="likedMost">Điều bạn hài lòng nhất ở ứng dụng</label>
+            <textarea id="likedMost" name="likedMost" placeholder="Nhập ý kiến của bạn"></textarea>
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="needImprove">Điều cần cải thiện</label>
+            <textarea id="needImprove" name="needImprove" placeholder="Nhập nội dung cần cải thiện"></textarea>
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="newSuggestion">Đề xuất thêm chức năng mới</label>
+            <textarea id="newSuggestion" name="newSuggestion" placeholder="Nhập đề xuất của bạn"></textarea>
+          </div>
+        </section>
+
+        <!-- 6. Đánh giá tổng thể -->
+        <section class="section">
+          <h2 class="section-title">6. Đánh giá tổng thể</h2>
+          <div class="field">
+            <label class="field-label">Đánh giá chung về ứng dụng</label>
+            <div class="rating-group">
+              <label class="option-card"><input type="radio" name="overall" value="Rất kém" /><span>Rất kém</span></label>
+              <label class="option-card"><input type="radio" name="overall" value="Kém" /><span>Kém</span></label>
+              <label class="option-card"><input type="radio" name="overall" value="Trung bình" /><span>Trung bình</span></label>
+              <label class="option-card"><input type="radio" name="overall" value="Tốt" /><span>Tốt</span></label>
+              <label class="option-card"><input type="radio" name="overall" value="Rất tốt" /><span>Rất tốt</span></label>
+            </div>
+          </div>
+        </section>
+
+        <!-- 7. Phiếu chăm sóc điện tử -->
+        <section class="section">
+          <h2 class="section-title">7. Đánh giá về mẫu phiếu chăm sóc điện tử</h2>
+
+          <div class="field">
+            <label class="field-label">Bạn đánh giá việc sử dụng mẫu phiếu chăm sóc hiện tại như thế nào?</label>
+            <div class="rating-group">
+              <label class="option-card"><input type="radio" name="current_care_form" value="Rất khó sử dụng" /><span>Rất khó sử dụng</span></label>
+              <label class="option-card"><input type="radio" name="current_care_form" value="Khó sử dụng" /><span>Khó sử dụng</span></label>
+              <label class="option-card"><input type="radio" name="current_care_form" value="Bình thường" /><span>Bình thường</span></label>
+              <label class="option-card"><input type="radio" name="current_care_form" value="Dễ sử dụng" /><span>Dễ sử dụng</span></label>
+              <label class="option-card"><input type="radio" name="current_care_form" value="Rất dễ sử dụng" /><span>Rất dễ sử dụng</span></label>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label">Bạn có mong muốn áp dụng mẫu phiếu chăm sóc này vào bệnh án điện tử không?</label>
+            <div class="rating-group">
+              <label class="option-card"><input type="radio" name="emr_apply_wish" value="Không mong muốn" /><span>Không mong muốn</span></label>
+              <label class="option-card"><input type="radio" name="emr_apply_wish" value="Ít mong muốn" /><span>Ít mong muốn</span></label>
+              <label class="option-card"><input type="radio" name="emr_apply_wish" value="Bình thường" /><span>Bình thường</span></label>
+              <label class="option-card"><input type="radio" name="emr_apply_wish" value="Mong muốn" /><span>Mong muốn</span></label>
+              <label class="option-card"><input type="radio" name="emr_apply_wish" value="Rất mong muốn" /><span>Rất mong muốn</span></label>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label">Theo bạn, việc áp dụng phiếu chăm sóc điện tử sẽ giúp nâng cao hiệu quả công việc điều dưỡng không?</label>
+            <div class="rating-group">
+              <label class="option-card"><input type="radio" name="nursing_effectiveness" value="Không hiệu quả" /><span>Không hiệu quả</span></label>
+              <label class="option-card"><input type="radio" name="nursing_effectiveness" value="Ít hiệu quả" /><span>Ít hiệu quả</span></label>
+              <label class="option-card"><input type="radio" name="nursing_effectiveness" value="Bình thường" /><span>Bình thường</span></label>
+              <label class="option-card"><input type="radio" name="nursing_effectiveness" value="Hiệu quả" /><span>Hiệu quả</span></label>
+              <label class="option-card"><input type="radio" name="nursing_effectiveness" value="Rất hiệu quả" /><span>Rất hiệu quả</span></label>
+            </div>
+          </div>
+        </section>
+
+        <div class="submit-area">
+          <button type="submit">Gửi phản hồi</button>
+        </div>
+        <p class="note">Xin cảm ơn anh/chị đã đóng góp ý kiến.</p>
+      </form>
+    </div>
+  </div>
+
+  <div id="thankyouModal" class="thankyou-modal">
+    <div class="thankyou-box">
+      <div class="thankyou-icon">✓</div>
+      <h3>Cảm ơn anh/chị!</h3>
+      <p>Cảm ơn anh/chị đã tham gia đóng góp ý kiến. Những phản hồi này sẽ giúp chúng tôi cải tiến ứng dụng và hoàn thiện mẫu phiếu chăm sóc điện tử tốt hơn.</p>
+      <button type="button" class="thankyou-close" onclick="closeThankYouModal()">Đóng</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./supabase-config.js"></script>
+  <script>
+    function feedbackPayload(data) {
+      return {
+        full_name: data.fullName || null,
+        department: data.department || "",
+        ui_easy: data.ui_easy || null,
+        layout: data.layout || null,
+        work_support: data.work_support || null,
+        info_clear: data.info_clear || null,
+        real_need: data.real_need || null,
+        satisfaction: data.satisfaction || null,
+        wanted_features: Array.isArray(data.wanted_features)
+          ? data.wanted_features
+          : data.wanted_features ? [data.wanted_features] : [],
+        other_feature: data.otherFeature || null,
+        liked_most: data.likedMost || null,
+        need_improve: data.needImprove || null,
+        new_suggestion: data.newSuggestion || null,
+        overall: data.overall || null,
+        current_care_form: data.current_care_form || null,
+        emr_apply_wish: data.emr_apply_wish || null,
+        nursing_effectiveness: data.nursing_effectiveness || null,
+        payload: data,
+      };
+    }
+
+    async function saveFeedback(data) {
+      const config = window.SUPABASE_CONFIG || {};
+      if (!config.url || !config.anonKey) {
+        console.warn("Chưa cấu hình Supabase, chỉ ghi log phản hồi.", data);
+        return;
+      }
+      const response = await fetch(`${config.url}/rest/v1/danh_gia_mau_phieu_cham_soc`, {
+        method: "POST",
+        headers: {
+          apikey: config.anonKey,
+          Authorization: `Bearer ${config.anonKey}`,
+          "Content-Type": "application/json",
+          Prefer: "return=minimal",
+        },
+        body: JSON.stringify(feedbackPayload(data)),
+      });
+      if (!response.ok) {
+        const message = await response.text();
+        throw new Error(message || `Supabase insert failed (${response.status})`);
+      }
+    }
+
+    document.getElementById("feedbackForm").addEventListener("submit", async function (event) {
+      event.preventDefault();
+
+      const formData = new FormData(event.target);
+      const data = {};
+
+      formData.forEach((value, key) => {
+        if (data[key]) {
+          if (!Array.isArray(data[key])) {
+            data[key] = [data[key]];
+          }
+          data[key].push(value);
+        } else {
+          data[key] = value;
+        }
+      });
+
+      try {
+        await saveFeedback(data);
+        console.log("Dữ liệu phản hồi:", data);
+        document.getElementById("thankyouModal").classList.add("show");
+        event.target.reset();
+      } catch (error) {
+        alert(`Không lưu được phản hồi: ${error.message || error}`);
+      }
+    });
+  
+    function closeThankYouModal() {
+      document.getElementById("thankyouModal").classList.remove("show");
+      window.location.href = "./index.html";
+    }
+  </script>
+</body>
+</html>

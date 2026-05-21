@@ -1317,10 +1317,27 @@ function appBar(title, backTarget = "") {
   `;
 }
 
+function patientHomeAppBar() {
+  return `
+    <header class="app-bar patient-home-app-bar">
+      <button class="nav-icon" aria-label="Quay lại">‹</button>
+      <button type="button" class="home-evaluation-btn" data-action="open-sample-evaluation">
+        Đánh giá mẫu phiếu chăm sóc
+      </button>
+      <button class="grid-icon" data-screen="patients" aria-label="Danh sách">
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+      </button>
+    </header>
+  `;
+}
+
 function renderPatientListScreen() {
   return `
     <div class="mobile-app patient-list-screen">
-      ${appBar("(Tất Cả Khoa Phòng)")}
+      ${patientHomeAppBar()}
+      <p class="home-evaluation-note">
+        Sau khi trải nghiệm nhập phiếu chăm sóc, Anh/Chị vui lòng quay lại trang chủ và bấm nút đánh giá mẫu phiếu chăm sóc.
+      </p>
       <section class="search-bar">
         <span class="search-icon">⌕</span>
         <input placeholder="Tìm kiếm..." />
@@ -4510,6 +4527,23 @@ app.addEventListener("click", (event) => {
   if (target.dataset.screen) {
     state.screen = target.dataset.screen;
     render();
+    return;
+  }
+
+  if (target.dataset.action === "open-sample-evaluation") {
+    fetch("./danhgia.json")
+      .then((response) => {
+        if (!response.ok) throw new Error(`Không mở được danhgia.json (${response.status})`);
+        return response.text();
+      })
+      .then((html) => {
+        document.open();
+        document.write(html);
+        document.close();
+      })
+      .catch((error) => {
+        alert(error.message || error);
+      });
     return;
   }
 

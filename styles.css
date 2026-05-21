@@ -764,6 +764,38 @@ button {
   font-weight: 800;
 }
 
+.home-evaluation-btn {
+  min-width: 0;
+  min-height: 44px;
+  border: 1px solid #b7d7c2;
+  border-radius: 8px;
+  background: #e8f7ed;
+  color: #dc2626;
+  padding: 8px 12px;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.home-evaluation-btn:hover {
+  background: #d8f0df;
+  border-color: #8fc79f;
+}
+
+.home-evaluation-note {
+  margin: 10px 16px 0;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #1e3a8a;
+  padding: 9px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
 .nav-icon,
 .grid-icon,
 .filter-icon,
