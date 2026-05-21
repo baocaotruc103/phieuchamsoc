@@ -284,6 +284,26 @@ function createDefaultAssessmentChecklist() {
   };
 }
 
+function latestPreviousChecklist() {
+  return (state.careSheets || [])
+    .map((sheet) => sheet?.nhan_dinh_json?.checklist)
+    .find((checklist) => checklist && (cleanLine(checklist.height) || cleanLine(checklist.weight)));
+}
+
+function applyPreviousVitalsToChecklist(checklist) {
+  const previous = latestPreviousChecklist();
+  if (!previous) return checklist;
+  if (!cleanLine(checklist.height) && cleanLine(previous.height)) checklist.height = previous.height;
+  if (!cleanLine(checklist.weight) && cleanLine(previous.weight)) checklist.weight = previous.weight;
+  checklist.fluidBalance = calculateFluidBalance(checklist.fluidIn, checklist.fluidOut);
+  if (cleanLine(checklist.height) && cleanLine(checklist.weight)) {
+    const weight = Number(checklist.weight);
+    const height = Number(checklist.height);
+    if (weight > 0 && height > 0) checklist.bmi = (weight / (height / 100) ** 2).toFixed(1);
+  }
+  return checklist;
+}
+
 function allergyDetailsFromChecklist(check) {
   const details = [
     ["Thuốc", check.allergyDrug],
@@ -648,6 +668,7 @@ function searchKey(text) {
   return String(text || "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[\u0111\u0110]/g, "d")
     .toLowerCase();
 }
 
@@ -693,6 +714,63 @@ function filteredGoalOptions(row, goalValue = "") {
 
 function diagnosisCatalogRows() {
   return Array.isArray(state.diagnosisCatalog) ? state.diagnosisCatalog : [];
+}
+
+function splitCatalogList(value) {
+  return String(value || "")
+    .split(";")
+    .map(cleanLine)
+    .filter(Boolean);
+}
+
+function catalogField(item, exactKey, fallbackKeys = []) {
+  const entries = Object.entries(item || {});
+  const exact = entries.find(([key]) => searchKey(key) === exactKey);
+  if (exact) return exact[1];
+  for (const fallback of fallbackKeys) {
+    const match = entries.find(([key]) => searchKey(key).includes(fallback));
+    if (match) return match[1];
+  }
+  return "";
+}
+
+function normalizeDiagnosisCatalogRow(item, index) {
+  const codes = splitCatalogList(catalogField(item, "ma can thiep") || item.ma_can_thiep || item.code || item.interventionCode);
+  const names = splitCatalogList(catalogField(item, "can thiep") || item.can_thiep || item.name || item.intervention);
+  const fullItems = splitCatalogList(catalogField(item, "full ma va can thiep", ["full ma"]) || item.full_ma_va_can_thiep);
+  const interventions = [];
+  const maxLength = Math.max(codes.length, names.length, fullItems.length);
+  for (let idx = 0; idx < maxLength; idx += 1) {
+    let code = codes[idx] || "";
+    let name = names[idx] || "";
+    const full = fullItems[idx] || "";
+    if ((!code || !name) && full) {
+      const match = full.match(/^\s*([^-]+?)\s*-\s*(.+)$/);
+      if (match) {
+        code = code || cleanLine(match[1]);
+        name = name || cleanLine(match[2]);
+      } else {
+        name = name || full;
+      }
+    }
+    if (code || name) interventions.push({ code, name });
+  }
+  return {
+    id: String(item.STT ?? item.id ?? index + 1),
+    nanda: cleanLine(catalogField(item, "nhan dinh") || item.nanda || item.diagnosis),
+    cause: cleanLine(catalogField(item, "nguyen nhan") || item.cause),
+    noc: cleanLine(catalogField(item, "muc tieu") || item.noc || item.goal),
+    nic: fullItems.join("; "),
+    interventionCodes: codes,
+    interventionNames: names,
+    interventions,
+    raw: item,
+  };
+}
+
+function normalizeDiagnosisCatalog(data) {
+  const rows = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+  return rows.map(normalizeDiagnosisCatalogRow).filter((item) => item.nanda);
 }
 
 function nandaCatalogOptions(query = "") {
@@ -816,10 +894,18 @@ function causeOptionsForDiagnosis(row) {
   return [...grouped.values()];
 }
 
-function selectedDiagnosisRecords(row) {
+function selectedDiagnosisRecords(row, options = {}) {
   const selectedCauses = new Set(row.causes || []);
+  const selectedGoals = new Set(row.goals || []);
   const candidates = diagnosisRowsForSelectedNanda(row);
-  return candidates.filter((item) => !selectedCauses.size || selectedCauses.has(cleanLine(item.cause)));
+  return candidates.filter((item) => {
+    if (selectedCauses.size && !selectedCauses.has(cleanLine(item.cause))) return false;
+    if (options.filterGoals && selectedGoals.size) {
+      const goals = splitCatalogList(item.noc);
+      return goals.some((goal) => selectedGoals.has(goal));
+    }
+    return true;
+  });
 }
 
 function goalOptionsForDiagnosisRow(row) {
@@ -863,20 +949,19 @@ function diagnosisDetailText(row) {
 }
 
 function interventionCatalogItems() {
-  return (state.interventionCatalog || []).flatMap((group) => {
-    if (Array.isArray(group.interventions)) {
-      return group.interventions.map((item) => ({
+  const grouped = new Map();
+  for (const record of diagnosisCatalogRows()) {
+    for (const item of record.interventions || []) {
+      const option = {
         code: cleanLine(item.code),
         name: cleanLine(item.name),
-        group: cleanLine(group.group),
-      }));
+        group: cleanLine(record.nanda),
+      };
+      const key = interventionOptionKey(option);
+      if ((option.code || option.name) && !grouped.has(key)) grouped.set(key, option);
     }
-    return [{
-      code: cleanLine(group.ma_hoa || group.code),
-      name: cleanLine(group.danh_muc_huong_dan_cham_soc || group.name),
-      group: cleanLine(group.group),
-    }];
-  }).filter((item) => item.code || item.name);
+  }
+  return [...grouped.values()];
 }
 
 function findInterventionByCode(code) {
@@ -932,33 +1017,25 @@ function interventionMatchScore(catalogItem, sourceText) {
   return sourceTokens.reduce((score, token) => score + (catalog.includes(token) ? 1 : 0), 0);
 }
 
-function savedDiagnosisInterventionSourceTexts() {
+function savedDiagnosisInterventionRecords() {
   const rows = state.diagnosisSavedRows || [];
   return rows.flatMap((row) =>
-    selectedDiagnosisRecords(row).flatMap((record) => {
-      const context = [row.diagnosis, ...(row.causes || []), ...(row.goals || [])].join(" ");
-      return String(record.nic || "")
-        .split(";")
-        .map(cleanLine)
-        .filter(Boolean)
-        .map((nic) => `${nic} ${context}`);
-    }),
+    selectedDiagnosisRecords(row, { filterGoals: true }),
   );
 }
 
 function diagnosisBasedInterventionOptions() {
   const grouped = new Map();
-  const catalog = interventionCatalogItems();
-  for (const sourceText of savedDiagnosisInterventionSourceTexts()) {
-    catalog
-      .map((item) => ({ item, score: interventionMatchScore(item, sourceText) }))
-      .filter((entry) => entry.score > 0)
-      .sort((a, b) => b.score - a.score || a.item.code.localeCompare(b.item.code))
-      .slice(0, 6)
-      .forEach(({ item }) => grouped.set(interventionOptionKey(item), {
-        ...item,
+  for (const record of savedDiagnosisInterventionRecords()) {
+    for (const item of record.interventions || []) {
+      const option = {
+        code: cleanLine(item.code),
+        name: cleanLine(item.name),
         group: "Gợi ý theo chẩn đoán",
-      }));
+      };
+      const key = interventionOptionKey(option);
+      if ((option.code || option.name) && !grouped.has(key)) grouped.set(key, option);
+    }
   }
   return [...grouped.values()];
 }
@@ -1030,7 +1107,7 @@ function interventionSuggestions(condition) {
 function resetCareFormState({ resetChecklist = false } = {}) {
   if (resetChecklist) {
     state.careLevel = "1";
-    state.assessmentChecklist = createDefaultAssessmentChecklist();
+    state.assessmentChecklist = applyPreviousVitalsToChecklist(createDefaultAssessmentChecklist());
     state.patient = defaultCarePatientState();
     state.scaleScores = {};
     state.scaleResults = {};
@@ -2028,7 +2105,6 @@ function render(focusSelector = "") {
       ${appBar("Phiếu Chăm Sóc", "careEmpty")}
       <div class="form-actions">
         <button class="btn ghost" data-action="save-care">${state.editingCareSheetId ? "Cập nhật phiếu" : "Lưu phiếu và ký"}</button>
-        <button class="btn primary" data-action="print">In phiếu</button>
       </div>
 
       <main class="layout">
@@ -2058,11 +2134,12 @@ function render(focusSelector = "") {
 
 function careFormTabs() {
   return [
-    { id: "patient", label: "Thông tin người bệnh" },
+    { id: "patient", label: "Thông tin NB" },
     { id: "assessment", label: "Nhận định" },
-    { id: "diagnosis", label: "Chẩn đoán điều dưỡng" },
-    { id: "intervention", label: "Can thiệp điều dưỡng" },
-    { id: "education", label: "Tư vấn HD GDSK / Bàn giao" },
+    { id: "diagnosis", label: "Chẩn đoán" },
+    { id: "intervention", label: "Can thiệp" },
+    { id: "handover", label: "Bàn giao" },
+    { id: "education", label: "TVHD GDSK" },
   ];
 }
 
@@ -2093,7 +2170,7 @@ function renderActiveCareFormTab(assessments) {
     case "intervention":
       return renderInterventionPanel();
     case "education":
-      return `${renderHealthEducationPanel()}${renderHandoverPanel()}`;
+      return renderHealthEducationPanel();
     case "handover":
       return renderHandoverPanel();
     case "patient":
@@ -2118,16 +2195,16 @@ function renderCareHeaderPanel() {
         </div>
       </div>
       <div class="panel-body">
-        <div class="field-grid patient-form-grid">
-          ${field("name", "Họ tên NB", info.name)}
-          ${field("code", "Mã y tế", info.code)}
-          ${field("age", "Tuổi", info.age)}
-          ${field("sex", "Giới tính", info.sex)}
-          ${field("date", "Ngày", info.date, "date")}
-          ${field("room", "Phòng", info.room)}
-          ${field("bed", "Giường", info.bed)}
-          ${field("department", "Khoa", info.department)}
-          ${field("diagnosis", "Chẩn đoán y khoa", info.diagnosis)}
+        <div class="patient-detail-grid" aria-label="Thông tin người bệnh">
+          ${patientDetail("Họ và tên", info.name)}
+          ${patientDetail("Mã y tế", info.code)}
+          ${patientDetail("Tuổi", info.age)}
+          ${patientDetail("Giới", info.sex)}
+          ${patientDetail("Ngày vào viện", info.date)}
+          ${patientDetail("Phòng", info.room)}
+          ${patientDetail("Giường", info.bed)}
+          ${patientDetail("Khoa", info.department)}
+          ${patientDetail("Chẩn đoán y khoa", info.diagnosis, "wide")}
         </div>
         <div class="care-info-grid care-header-grid">
           ${checkField("evalTime", "Thời gian đánh giá", state.assessmentChecklist.evalTime, "datetime-local")}
@@ -2239,6 +2316,15 @@ function field(key, label, value, type = "text") {
   `;
 }
 
+function patientDetail(label, value, variant = "") {
+  return `
+    <div class="patient-detail-item ${variant === "wide" ? "wide" : ""}">
+      <span class="patient-detail-label">${h(label)}:</span>
+      <span class="patient-detail-value">${h(value || "Chưa có")}</span>
+    </div>
+  `;
+}
+
 function renderAssessmentPanel(assessments) {
   const check = state.assessmentChecklist;
   return `
@@ -2246,7 +2332,6 @@ function renderAssessmentPanel(assessments) {
       <div class="panel-header">
         <div>
           <h2 class="panel-title">Nhận định điều dưỡng</h2>
-          <p class="panel-subtitle">Cấu trúc theo file.md: dấu hiệu sinh tồn, toàn thân, hô hấp, tuần hoàn, tiêu hóa, tiết niệu, dinh dưỡng và cơ quan bệnh.</p>
         </div>
       </div>
       <div class="panel-body">
@@ -2261,13 +2346,13 @@ function renderAssessmentPanel(assessments) {
         </div>
 
         <div class="assessment-section-card">
-          <h3>Toàn thân <span class="section-hint">(bao gồm da, niêm mạc)</span></h3>
+          <h3>Toàn thân</h3>
           <div class="assessment-form compact-form">
             ${radioGroup("bodyType", "Thể trạng", ["Gầy", "Trung bình", "Béo"], check.bodyType)}
             ${radioGroup("consciousness", "Ý thức", ["Tỉnh", "Lơ mơ", "Hôn mê", "Kích thích", "An thần"], check.consciousness)}
             ${radioGroup("mucosa", "Da niêm mạc", ["Hồng", "Nhợt"], check.mucosa)}
             ${radioGroup("edema", "Phù", ["Có", "Không"], check.edema)}
-            ${checkArea("systemicNote", "Ghi chú toàn thân", check.systemicNote)}
+            ${checkArea("systemicNote", "Khác", check.systemicNote)}
           </div>
         </div>
 
@@ -3051,7 +3136,7 @@ function renderDiagnosisPanelV2() {
       <div class="panel-header">
         <div>
           <h2 class="panel-title">Chẩn đoán điều dưỡng & mục tiêu</h2>
-          <p class="panel-subtitle">Nhập keyword để chọn nhận định từ chandoan.json; nếu không có gợi ý phù hợp có thể thêm mới nhận định.</p>
+          <p class="panel-subtitle">Nhập keyword để chọn nhận định từ chandoanall.json; nguyên nhân, mục tiêu và can thiệp được gợi ý theo cùng dòng dữ liệu.</p>
         </div>
         <span class="step-badge">3</span>
       </div>
@@ -4128,7 +4213,7 @@ function assessmentChecklistSummary() {
     treatmentEducation: "Hướng dẫn điều trị",
     careEducation: "Hướng dẫn chăm sóc",
     preventionEducation: "Giáo dục phòng bệnh",
-    circulationNote: "Tuần hoàn",
+    circulationNote: "Khác",
     circulationSymptoms: "Triệu chứng cơ năng",
     peripheralPerfusion: "Tưới máu ngoại vi",
     heartRhythm: "Nhịp tim",
@@ -4220,9 +4305,9 @@ function buildAssessmentSectionsForSheet() {
     evalTime: "Thời gian đánh giá", evaluator: "Người đánh giá", height: "Chiều cao", weight: "Cân nặng", bmi: "BMI", allergy: "Dị ứng", allergyDrug: "Dị ứng thuốc", allergyFood: "Dị ứng thức ăn", allergyOther: "Dị ứng khác", allergySymptoms: "Biểu hiện dị ứng", allergy_note: "Thông tin dị ứng",
     fluidIn: "Dịch vào", fluidOut: "Dịch ra", fluidBalance: "Bilance",
     pulse: "Mạch", temperature: "Nhiệt độ", bloodPressure: "Huyết áp", spo2: "SpO2",
-    bodyType: "Thể trạng", consciousness: "Ý thức", mucosa: "Da niêm mạc", edema: "Phù", systemicNote: "Ghi chú",
+    bodyType: "Thể trạng", consciousness: "Ý thức", mucosa: "Da niêm mạc", edema: "Phù", systemicNote: "Khác",
     breathingMode: "Hô hấp", respiratoryRate: "Nhịp thở", respiratoryNote: "Khác", oxygenFlow: "Lưu lượng oxy", ventilationAirway: "Đường thở", ventilatorMode: "Mode thở máy", fio2: "FiO2", peep: "PEEP", vt: "VT", coughStatus: "Ho",
-    circulationStable: "Ổn định", circulationFastPulse: "Mạch nhanh", circulationHypotension: "Hạ huyết áp", circulationShock: "Sốc", circulationVasopressor: "Có vận mạch", vasopressorNoradrenaline: "Noradrenaline", vasopressorAdrenaline: "Adrenaline", vasopressorDobutamine: "Dobutamine", vasopressorVasopressin: "Vasopressin", vasopressorOther: "Khác", circulationNote: "Ghi chú", circulationSymptoms: "Triệu chứng cơ năng", peripheralPerfusion: "Tưới máu ngoại vi", heartRhythm: "Nhịp tim", heartRateStatus: "Mạch", heartSounds: "Tiếng tim", circulationOther: "Khác",
+    circulationStable: "Ổn định", circulationFastPulse: "Mạch nhanh", circulationHypotension: "Hạ huyết áp", circulationShock: "Sốc", circulationVasopressor: "Có vận mạch", vasopressorNoradrenaline: "Noradrenaline", vasopressorAdrenaline: "Adrenaline", vasopressorDobutamine: "Dobutamine", vasopressorVasopressin: "Vasopressin", vasopressorOther: "Khác", circulationNote: "Khác", circulationSymptoms: "Triệu chứng cơ năng", peripheralPerfusion: "Tưới máu ngoại vi", heartRhythm: "Nhịp tim", heartRateStatus: "Mạch", heartSounds: "Tiếng tim", circulationOther: "Khác",
     neuroSensory: "Thần kinh cảm giác", neuroConsciousness: "Ý thức", neuroConsciousnessOther: "Ý thức khác", neuroOrientation: "Định hướng", neuroOrientationOther: "Định hướng khác", neuroBehaviorStatus: "Tri giác - hành vi", neuroBehavior: "Tri giác - hành vi", neuroBehaviorOther: "Tri giác - hành vi khác", neuroFocalSignsStatus: "Dấu hiệu thần kinh khu trú", neuroFocalSigns: "Dấu hiệu thần kinh khu trú", neuroFocalSignsOther: "Dấu hiệu thần kinh khu trú khác",
     abdomen: "Bụng", stool: "Đại tiện",
     urinary: "Bài tiết nước tiểu", urineAmount: "Số lượng nước tiểu",
@@ -5422,7 +5507,7 @@ app.addEventListener("change", (event) => {
     target.dataset.dxField ||
     target.dataset.ivField
   ) {
-    render();
+    return;
   }
 });
 
@@ -5433,7 +5518,7 @@ async function init() {
       fetch("./thangdiem.json"),
       fetch("./nhan_dinh.json"),
       fetch("./ma_can_thiep.json"),
-      fetch("./chandoan.json"),
+      fetch("./chandoanall.json"),
     ]);
     if (!response.ok) throw new Error(`Khong tai duoc cd_deu_duong.json (${response.status})`);
     state.raw = await response.json();
@@ -5449,7 +5534,7 @@ async function init() {
     }
     if (diagnosisCatalogResponse.ok) {
       const diagnosisCatalog = deepFix(await diagnosisCatalogResponse.json());
-      state.diagnosisCatalog = Array.isArray(diagnosisCatalog.data) ? diagnosisCatalog.data : [];
+      state.diagnosisCatalog = normalizeDiagnosisCatalog(diagnosisCatalog);
     }
     state.categoryId = state.data.categories[0].id;
     state.departmentId = state.data.categories[0].khoa[0].id;
