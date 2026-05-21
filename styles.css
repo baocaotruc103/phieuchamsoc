@@ -3039,6 +3039,20 @@ button {
   text-align: left;
 }
 
+.gdsk-mark-cell {
+  text-align: center;
+}
+
+.gdsk-checkmark {
+  display: inline-grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  color: #111827;
+  font-weight: 900;
+  line-height: 1;
+}
+
 .gdsk-detail-date {
   margin-top: 7px;
   font-style: italic;
@@ -3796,6 +3810,7 @@ button {
 
   .gdsk-detail-table td:nth-child(n + 3) {
     display: flex;
+    align-items: center;
     justify-content: space-between;
     gap: 8px;
     border-top: 1px solid #d1d5db;
@@ -3822,6 +3837,33 @@ button {
 
   .gdsk-detail-table td:nth-child(6)::before {
     content: "Kết quả: HTHD";
+  }
+
+  .gdsk-detail-table .gdsk-mark-cell {
+    min-height: 32px;
+  }
+
+  .gdsk-detail-table .gdsk-mark-cell::after {
+    content: "";
+    display: inline-grid;
+    flex: 0 0 auto;
+    width: 22px;
+    height: 22px;
+    place-items: center;
+    border: 1px solid #94a3b8;
+    border-radius: 4px;
+    background: #fff;
+    color: #111827;
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .gdsk-detail-table .gdsk-mark-cell[data-checked="true"]::after {
+    content: "x";
+  }
+
+  .gdsk-detail-table .gdsk-checkmark {
+    display: none;
   }
 
   .gdsk-detail-date {
@@ -4373,6 +4415,36 @@ body {
 }
 
 @media (max-width: 640px) {
+  .care-form-tabs {
+    top: 60px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    padding: 8px;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .care-form-tab {
+    flex: initial;
+    min-width: 0;
+    min-height: 38px;
+    padding: 7px 6px;
+    font-size: 12px;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+  }
+
+  .care-tab-workspace,
+  .care-tab-content,
+  .care-tab-content > .panel {
+    min-width: 0;
+  }
+
+  .patient-detail-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .scale-modal { max-width: 100%; border-radius: 12px; }
   .scale-modal-header { padding: 14px 16px; }
   .scale-modal-body { padding: 14px 16px; }
@@ -4386,4 +4458,50 @@ body {
   .gdsk-row > .gdsk-inline-options,
   .gdsk-head > span:nth-child(3),
   .gdsk-head > span:nth-child(4) { grid-column: 2; }
+}
+
+@media (max-width: 320px) {
+  .app-bar {
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+  }
+
+  .app-bar h1 {
+    min-width: 0;
+    font-size: 16px;
+  }
+
+  .nav-icon,
+  .grid-icon {
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  .form-mode .layout {
+    padding: 8px;
+  }
+
+  .care-form-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .care-form-tab {
+    min-height: 36px;
+    padding: 6px 4px;
+    font-size: 11px;
+  }
+
+  .patient-detail-grid,
+  .care-header-grid,
+  .care-info-grid,
+  .allergy-detail-grid,
+  .vital-grid,
+  .fluid-balance-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .patient-detail-item.wide,
+  .care-header-grid .assessment-field:nth-child(n),
+  .fluid-balance-grid .assessment-field:nth-child(n) {
+    grid-column: auto;
+  }
 }

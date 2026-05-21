@@ -725,10 +725,11 @@ function splitCatalogList(value) {
 
 function catalogField(item, exactKey, fallbackKeys = []) {
   const entries = Object.entries(item || {});
-  const exact = entries.find(([key]) => searchKey(key) === exactKey);
+  const keySearch = (key) => searchKey(String(key || "").replace(/[_-]+/g, " "));
+  const exact = entries.find(([key]) => keySearch(key) === exactKey);
   if (exact) return exact[1];
   for (const fallback of fallbackKeys) {
-    const match = entries.find(([key]) => searchKey(key).includes(fallback));
+    const match = entries.find(([key]) => keySearch(key).includes(fallback));
     if (match) return match[1];
   }
   return "";
@@ -757,9 +758,9 @@ function normalizeDiagnosisCatalogRow(item, index) {
   }
   return {
     id: String(item.STT ?? item.id ?? index + 1),
-    nanda: cleanLine(catalogField(item, "nhan dinh") || item.nanda || item.diagnosis),
-    cause: cleanLine(catalogField(item, "nguyen nhan") || item.cause),
-    noc: cleanLine(catalogField(item, "muc tieu") || item.noc || item.goal),
+    nanda: cleanLine(item.chan_doan || catalogField(item, "chan doan") || catalogField(item, "nhan dinh") || item.nanda || item.diagnosis),
+    cause: cleanLine(item.nguyen_nhan || catalogField(item, "nguyen nhan") || item.cause),
+    noc: cleanLine(item.muc_tieu || catalogField(item, "muc tieu") || item.noc || item.goal),
     nic: fullItems.join("; "),
     interventionCodes: codes,
     interventionNames: names,
@@ -3153,7 +3154,6 @@ function renderDiagnosisPanelV2() {
       <div class="panel-header">
         <div>
           <h2 class="panel-title">Chẩn đoán điều dưỡng & mục tiêu</h2>
-          <p class="panel-subtitle">Nhập keyword để chọn nhận định từ chandoanall.json; nguyên nhân, mục tiêu và can thiệp được gợi ý theo cùng dòng dữ liệu.</p>
         </div>
         <span class="step-badge">3</span>
       </div>
@@ -3674,10 +3674,10 @@ function renderGdskDetailSection(prefix, title, form = {}) {
             <tr>
               <td>${index + 1}</td>
               <td>${h(item.content || "")}</td>
-              <td>${isGdskNeedYes(item.need) ? "x" : ""}</td>
-              <td>${isGdskNeedNo(item.need) ? "x" : ""}</td>
-              <td>${item.result === "HDTh" ? "x" : ""}</td>
-              <td>${item.result === "HTHD" ? "x" : ""}</td>
+              ${gdskMarkCell(isGdskNeedYes(item.need))}
+              ${gdskMarkCell(isGdskNeedNo(item.need))}
+              ${gdskMarkCell(item.result === "HDTh")}
+              ${gdskMarkCell(item.result === "HTHD")}
             </tr>
           `).join("")}
         </tbody>
@@ -3697,6 +3697,10 @@ function renderGdskDetailSection(prefix, title, form = {}) {
       </div>
     </section>
   `;
+}
+
+function gdskMarkCell(checked) {
+  return `<td class="gdsk-mark-cell" data-checked="${checked ? "true" : "false"}">${checked ? `<span class="gdsk-checkmark">x</span>` : ""}</td>`;
 }
 
 function formatGdskDate(value) {
