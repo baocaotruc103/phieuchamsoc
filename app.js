@@ -920,6 +920,32 @@ function normalizeDiagnosisCatalog(data) {
   return rows.map(normalizeDiagnosisCatalogRow).filter((item) => item.nanda);
 }
 
+async function loadDiagnosisCatalogFromSupabase() {
+  const client = getSupabaseClient();
+  const pageSize = 1000;
+  let from = 0;
+  const rows = [];
+
+  while (true) {
+    const to = from + pageSize - 1;
+    const { data, error } = await client
+      .from("nanda_nic_noc_dataset")
+      .select("*")
+      .range(from, to);
+
+    if (error) {
+      throw new Error(`Không tải được bảng nanda_nic_noc_dataset: ${error.message}`);
+    }
+
+    const page = Array.isArray(data) ? data : [];
+    rows.push(...page);
+    if (page.length < pageSize) break;
+    from += pageSize;
+  }
+
+  return normalizeDiagnosisCatalog(deepFix(rows));
+}
+
 function nandaCatalogOptions(query = "") {
   const key = searchKey(query);
   const grouped = new Map();
@@ -6226,12 +6252,12 @@ app.addEventListener("change", (event) => {
 
 async function init() {
   try {
-    const [response, scaleResponse, assessmentResponse, interventionCodeResponse, diagnosisCatalogResponse] = await Promise.all([
+    const [response, scaleResponse, assessmentResponse, interventionCodeResponse, diagnosisCatalog] = await Promise.all([
       fetch("./cd_deu_duong.json"),
       fetch("./thangdiem.json"),
       fetch("./nhan_dinh.json"),
       fetch("./ma_can_thiep.json"),
-      fetch("./chandoanall.json"),
+      loadDiagnosisCatalogFromSupabase(),
     ]);
     if (!response.ok) throw new Error(`Khong tai duoc cd_deu_duong.json (${response.status})`);
     state.raw = await response.json();
@@ -6245,10 +6271,7 @@ async function init() {
     if (interventionCodeResponse.ok) {
       state.interventionCatalog = deepFix(await interventionCodeResponse.json());
     }
-    if (diagnosisCatalogResponse.ok) {
-      const diagnosisCatalog = deepFix(await diagnosisCatalogResponse.json());
-      state.diagnosisCatalog = normalizeDiagnosisCatalog(diagnosisCatalog);
-    }
+    state.diagnosisCatalog = diagnosisCatalog;
     state.categoryId = state.data.categories[0].id;
     state.departmentId = state.data.categories[0].khoa[0].id;
     state.conditionId = state.data.categories[0].khoa[0].mat_benh[0].id;
