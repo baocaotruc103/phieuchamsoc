@@ -254,6 +254,13 @@ const state = {
   diagnosisRows: [],
   diagnosisSavedRows: [],
   diagnosisCatalog: [],
+  diagnosisCatalogLoaded: false,
+  diagnosisCatalogLoading: false,
+  diagnosisCatalogError: "",
+  diagnosisCatalogPromise: null,
+  diagnosisCatalogSearchKey: "",
+  diagnosisCatalogLastSearch: null,
+  diagnosisCatalogSearchError: "",
   diagnosisPicker: null,
   diagnosisDetail: null,
   interventionRows: [],
@@ -920,6 +927,91 @@ function normalizeDiagnosisCatalog(data) {
   return rows.map(normalizeDiagnosisCatalogRow).filter((item) => item.nanda);
 }
 
+function mergeDiagnosisCatalogRows(rows) {
+  const current = diagnosisCatalogRows();
+  const grouped = new Map(current.map((item) => [`${item.id}|${item.nanda}|${item.cause}|${item.noc}`, item]));
+  for (const item of normalizeDiagnosisCatalog(deepFix(rows))) {
+    grouped.set(`${item.id}|${item.nanda}|${item.cause}|${item.noc}`, item);
+  }
+  state.diagnosisCatalog = [...grouped.values()];
+  return state.diagnosisCatalog;
+}
+
+function supabaseSearchValue(value) {
+  return cleanLine(value)
+    .replace(/[%,()]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function diagnosisCatalogSearchFilter(query, mode = "diagnosis") {
+  const value = supabaseSearchValue(query);
+  if (!value) return "";
+  const pattern = `*${value}*`;
+  if (mode === "intervention") {
+    return [
+      `ma_can_thiep.ilike.${pattern}`,
+      `can_thiep.ilike.${pattern}`,
+      `full_ma_va_can_thiep.ilike.${pattern}`,
+    ].join(",");
+  }
+  if (mode === "cause") {
+    return [
+      `nguyen_nhan.ilike.${pattern}`,
+      `chan_doan.ilike.${pattern}`,
+      `nhom_benh.ilike.${pattern}`,
+    ].join(",");
+  }
+  return [
+    `nhom_benh.ilike.${pattern}`,
+    `chan_doan.ilike.${pattern}`,
+  ].join(",");
+}
+
+async function fetchDiagnosisCatalogFromSupabase(query, mode = "diagnosis") {
+  const filter = diagnosisCatalogSearchFilter(query, mode);
+  if (!filter) return [];
+  const { data, error } = await getSupabaseClient()
+    .from("nanda_nic_noc_dataset")
+    .select("*")
+    .or(filter)
+    .limit(120);
+  if (error) throw new Error(`Không tải được bảng nanda_nic_noc_dataset: ${error.message}`);
+  return mergeDiagnosisCatalogRows(data || []);
+}
+
+function requestDiagnosisCatalogSearch(query, mode = "diagnosis") {
+  const value = supabaseSearchValue(query);
+  if (value.length < 2) return Promise.resolve(diagnosisCatalogRows());
+  const requestKey = `${mode}:${searchKey(value)}`;
+  if (state.diagnosisCatalogLoading && state.diagnosisCatalogSearchKey === requestKey && state.diagnosisCatalogPromise) {
+    return state.diagnosisCatalogPromise;
+  }
+
+  state.diagnosisCatalogLoading = true;
+  state.diagnosisCatalogError = "";
+  state.diagnosisCatalogSearchError = "";
+  state.diagnosisCatalogSearchKey = requestKey;
+  state.diagnosisCatalogLastSearch = { query: value, mode };
+  state.diagnosisCatalogPromise = fetchDiagnosisCatalogFromSupabase(value, mode)
+    .then((catalog) => {
+      state.diagnosisCatalogLoaded = true;
+      return catalog;
+    })
+    .catch((error) => {
+      state.diagnosisCatalogSearchError = error.message || String(error);
+      state.diagnosisCatalogError = state.diagnosisCatalogSearchError;
+      return diagnosisCatalogRows();
+    })
+    .finally(() => {
+      state.diagnosisCatalogLoading = false;
+      state.diagnosisCatalogPromise = null;
+      render();
+    });
+
+  return state.diagnosisCatalogPromise;
+}
+
 async function loadDiagnosisCatalogFromSupabase() {
   const client = getSupabaseClient();
   const pageSize = 1000;
@@ -944,6 +1036,44 @@ async function loadDiagnosisCatalogFromSupabase() {
   }
 
   return normalizeDiagnosisCatalog(deepFix(rows));
+}
+
+function ensureDiagnosisCatalogLoaded({ renderOnComplete = true } = {}) {
+  if (state.diagnosisCatalogLoaded) return Promise.resolve(state.diagnosisCatalog);
+  if (state.diagnosisCatalogLoading && state.diagnosisCatalogPromise) return state.diagnosisCatalogPromise;
+
+  state.diagnosisCatalogLoading = true;
+  state.diagnosisCatalogError = "";
+  state.diagnosisCatalogPromise = loadDiagnosisCatalogFromSupabase()
+    .then((catalog) => {
+      state.diagnosisCatalog = catalog;
+      state.diagnosisCatalogLoaded = true;
+      return catalog;
+    })
+    .catch((error) => {
+      state.diagnosisCatalogError = error.message || String(error);
+      return [];
+    })
+    .finally(() => {
+      state.diagnosisCatalogLoading = false;
+      state.diagnosisCatalogPromise = null;
+      if (renderOnComplete) render();
+    });
+
+  return state.diagnosisCatalogPromise;
+}
+
+function renderDiagnosisCatalogStatus() {
+  if (!state.diagnosisCatalogError) {
+    return `<div class="empty care-list-empty">Đang tải dữ liệu NANDA/NIC/NOC từ Supabase...</div>`;
+  }
+  return `
+    <div class="empty care-list-empty">
+      <strong>Không tải được dữ liệu NANDA/NIC/NOC.</strong>
+      <p>${h(state.diagnosisCatalogError)}</p>
+      <button type="button" class="btn primary" data-action="retry-diagnosis-catalog">Tải lại</button>
+    </div>
+  `;
 }
 
 function nandaCatalogOptions(query = "") {
@@ -2846,7 +2976,8 @@ function renderDiseasedOrganDropdown() {
   const hasExactOption = options.some((item) => searchKey(item.nanda) === searchKey(state.diseasedOrganQuery));
   const customValue = cleanLine(state.diseasedOrganQuery);
   const hasSelectedCustom = selectedSet.has(searchKey(customValue));
-  const showAdd = state.activeDiseasedOrganSuggest && customValue && !hasSelectedCustom && !hasExactOption;
+  const isCatalogPending = state.activeDiseasedOrganSuggest && state.diagnosisCatalogLoading;
+  const showAdd = state.activeDiseasedOrganSuggest && !isCatalogPending && customValue && !hasSelectedCustom && !hasExactOption;
   return `
     <div class="field diagnosis-search-field">
       <label>Nhận định cơ quan bị bệnh</label>
@@ -2856,7 +2987,7 @@ function renderDiseasedOrganDropdown() {
       </div>
       ${state.activeDiseasedOrganSuggest ? `
         <div class="suggestion-list diagnosis-dropdown-list" data-diseased-organ-list>
-          ${options.length ? options.map((item) => `
+          ${isCatalogPending ? renderDiagnosisCatalogStatus() : options.length ? options.map((item) => `
             <label class="diagnosis-dropdown-option">
               <input type="checkbox" ${selectedSet.has(searchKey(item.nanda)) ? "checked" : ""} data-diseased-organ-check data-value="${h(item.nanda)}" />
               <span>
@@ -3724,7 +3855,8 @@ function renderDiagnosisRowV2(row, index) {
   const goalInputValue = state.activeGoalSuggest === `goal:${index}` ? goalQuery : (goalQuery || (row.goals || []).join("; "));
   const diagnosisOptions = state.activeDiagnosisSuggest === index ? nandaCatalogOptions(query) : [];
   const hasExactDiagnosisOption = diagnosisOptions.some((item) => searchKey(item.nanda) === searchKey(query));
-  const showAddDiagnosisOption = state.activeDiagnosisSuggest === index && cleanLine(query) && !hasExactDiagnosisOption;
+  const diagnosisLoading = state.activeDiagnosisSuggest === index && state.diagnosisCatalogLoading;
+  const showAddDiagnosisOption = state.activeDiagnosisSuggest === index && !diagnosisLoading && cleanLine(query) && !hasExactDiagnosisOption;
   const hasExactGoalOption = goals.some((goal) => searchKey(goal) === searchKey(goalQuery));
   const showAddGoalOption = state.activeGoalSuggest === `goal:${index}` && cleanLine(goalQuery) && !hasExactGoalOption;
   const selectedNandas = new Set(selectedNandasForRow(row));
@@ -3738,8 +3870,9 @@ function renderDiagnosisRowV2(row, index) {
             <input type="search" value="${h(query)}" placeholder="Nhập keyword nhận định..." data-dx-query="${index}" ${inputNextAttrs("search")} />
             <button type="button" class="diagnosis-dropdown-toggle" data-action="toggle-dx-dropdown" data-index="${index}" aria-label="Hiển thị danh sách nhận định">▼</button>
           </div>
-          ${diagnosisOptions.length || showAddDiagnosisOption ? `
+          ${state.activeDiagnosisSuggest === index && (diagnosisLoading || diagnosisOptions.length || showAddDiagnosisOption) ? `
             <div class="suggestion-list diagnosis-dropdown-list" data-dx-list="${index}">
+              ${diagnosisLoading ? renderDiagnosisCatalogStatus() : ""}
               ${diagnosisOptions.slice(0, 10).map((item) => `
                 <label class="diagnosis-dropdown-option">
                   <input type="checkbox" ${selectedNandas.has(item.nanda) ? "checked" : ""} data-dx-catalog-check="${index}" data-nanda="${h(item.nanda)}" />
@@ -3825,6 +3958,7 @@ function renderDiagnosisPickerModal() {
   const row = state.diagnosisRows[rowIndex] || createDiagnosisRow();
   const selectedIds = new Set((row.diagnosisIds || []).map(String));
   const options = nandaCatalogOptions(state.diagnosisPicker.query || row.diagnosisQuery || "");
+  const pickerLoading = state.diagnosisCatalogLoading;
   return `
     <div class="scale-modal-overlay" data-action="close-diagnosis-picker-overlay">
       <div class="scale-modal diagnosis-picker-modal">
@@ -3838,6 +3972,7 @@ function renderDiagnosisPickerModal() {
             <input type="search" value="${h(state.diagnosisPicker.query || "")}" data-dx-picker-query="${rowIndex}" placeholder="Tìm kiếm..." ${inputNextAttrs("search")} />
           </label>
           <div class="diagnosis-picker-list">
+            ${pickerLoading ? renderDiagnosisCatalogStatus() : ""}
             ${options.map((item) => {
               const firstId = String(item.ids[0]);
               const checked = item.ids.some((id) => selectedIds.has(String(id)));
@@ -3870,6 +4005,8 @@ function renderInterventionPanel() {
   const contentOptions = state.activeInterventionSuggest === "draft-content"
     ? interventionDropdownOptions(draft.contentQuery, "content")
     : [];
+  const codeLoading = state.activeInterventionSuggest === "draft-code" && state.diagnosisCatalogLoading;
+  const contentLoading = state.activeInterventionSuggest === "draft-content" && state.diagnosisCatalogLoading;
   return `
     <section class="panel">
       <div class="panel-header">
@@ -3888,8 +4025,9 @@ function renderInterventionPanel() {
                 <input value="${h(draft.codeQuery)}" placeholder="Nhập mã..." data-iv-code-query="draft" ${inputNextAttrs()} />
                 <button type="button" class="diagnosis-dropdown-toggle" data-action="toggle-iv-code-dropdown" aria-label="Hiển thị danh sách mã can thiệp">▼</button>
               </div>
-              ${codeOptions.length ? `
+              ${codeLoading || codeOptions.length ? `
                 <div class="suggestion-list diagnosis-dropdown-list" data-iv-list="code">
+                  ${codeLoading ? renderDiagnosisCatalogStatus() : ""}
                   ${codeOptions.map((item) => `
                     <label class="diagnosis-dropdown-option">
                       <input type="checkbox" ${isInterventionDraftSelected(item) ? "checked" : ""} data-iv-option-check="code" data-code="${h(item.code)}" data-content="${h(item.name)}" />
@@ -3908,8 +4046,9 @@ function renderInterventionPanel() {
                 <input value="${h(draft.contentQuery)}" placeholder="Nhập nội dung..." data-iv-content-query="draft" ${inputNextAttrs()} />
                 <button type="button" class="diagnosis-dropdown-toggle" data-action="toggle-iv-content-dropdown" aria-label="Hiển thị danh sách nội dung can thiệp">▼</button>
               </div>
-              ${contentOptions.length ? `
+              ${contentLoading || contentOptions.length ? `
                 <div class="suggestion-list diagnosis-dropdown-list" data-iv-list="content">
+                  ${contentLoading ? renderDiagnosisCatalogStatus() : ""}
                   ${contentOptions.map((item) => `
                     <label class="diagnosis-dropdown-option">
                       <input type="checkbox" ${isInterventionDraftSelected(item) ? "checked" : ""} data-iv-option-check="content" data-code="${h(item.code)}" data-content="${h(item.name)}" />
@@ -5127,6 +5266,13 @@ app.addEventListener("click", (event) => {
     return;
   }
 
+  if (target.dataset.action === "retry-diagnosis-catalog") {
+    const lastSearch = state.diagnosisCatalogLastSearch;
+    if (lastSearch?.query) requestDiagnosisCatalogSearch(lastSearch.query, lastSearch.mode);
+    render();
+    return;
+  }
+
   if (target.dataset.action === "open-sample-evaluation") {
     fetch("./danhgia.json")
       .then((response) => {
@@ -5216,6 +5362,7 @@ app.addEventListener("click", (event) => {
     const rowIndex = Number(target.dataset.index);
     const row = state.diagnosisRows[rowIndex];
     state.diagnosisPicker = { rowIndex, query: row?.diagnosisQuery || row?.diagnosis || "" };
+    requestDiagnosisCatalogSearch(state.diagnosisPicker.query, "diagnosis");
     render();
     return;
   }
@@ -5237,6 +5384,10 @@ app.addEventListener("click", (event) => {
     state.activeDiagnosisSuggest = state.activeDiagnosisSuggest === rowIndex ? null : rowIndex;
     state.activeCauseSuggest = null;
     state.activeGoalSuggest = null;
+    if (state.activeDiagnosisSuggest === rowIndex) {
+      const row = state.diagnosisRows[rowIndex];
+      requestDiagnosisCatalogSearch(row?.diagnosisQuery || row?.diagnosis || "", "diagnosis");
+    }
     render();
     return;
   }
@@ -5244,6 +5395,7 @@ app.addEventListener("click", (event) => {
   if (target.dataset.action === "toggle-diseased-organ-dropdown") {
     state.activeDiseasedOrganSuggest = !state.activeDiseasedOrganSuggest;
     if (state.activeDiseasedOrganSuggest && !state.diseasedOrganQuery) state.diseasedOrganQuery = "";
+    if (state.activeDiseasedOrganSuggest) requestDiagnosisCatalogSearch(state.diseasedOrganQuery, "cause");
     render();
     return;
   }
@@ -5259,6 +5411,10 @@ app.addEventListener("click", (event) => {
     state.activeCauseSuggest = state.activeCauseSuggest === rowIndex ? null : rowIndex;
     state.activeDiagnosisSuggest = null;
     state.activeGoalSuggest = null;
+    if (state.activeCauseSuggest === rowIndex) {
+      const row = state.diagnosisRows[rowIndex];
+      if (!causeOptionsForDiagnosis(row).length) requestDiagnosisCatalogSearch(`${row?.diagnosis || ""} ${row?.causeQuery || ""}`, "cause");
+    }
     render();
     return;
   }
@@ -5489,12 +5645,14 @@ app.addEventListener("click", (event) => {
 
   if (target.dataset.action === "toggle-iv-code-dropdown") {
     state.activeInterventionSuggest = state.activeInterventionSuggest === "draft-code" ? null : "draft-code";
+    if (state.activeInterventionSuggest === "draft-code") requestDiagnosisCatalogSearch(state.interventionDraft?.codeQuery || "", "intervention");
     render();
     return;
   }
 
   if (target.dataset.action === "toggle-iv-content-dropdown") {
     state.activeInterventionSuggest = state.activeInterventionSuggest === "draft-content" ? null : "draft-content";
+    if (state.activeInterventionSuggest === "draft-content") requestDiagnosisCatalogSearch(state.interventionDraft?.contentQuery || "", "intervention");
     render();
     return;
   }
@@ -5784,6 +5942,7 @@ app.addEventListener("input", (event) => {
       state.activeDiagnosisSuggest = rowIndex;
       state.activeCauseSuggest = null;
       state.activeGoalSuggest = null;
+      requestDiagnosisCatalogSearch(target.value, "diagnosis");
       render(`[data-dx-query="${target.dataset.dxQuery}"]`);
     }
     return;
@@ -5797,6 +5956,7 @@ app.addEventListener("input", (event) => {
       state.activeCauseSuggest = rowIndex;
       state.activeDiagnosisSuggest = null;
       state.activeGoalSuggest = null;
+      if (!causeOptionsForDiagnosis(row).length) requestDiagnosisCatalogSearch(`${row.diagnosis || ""} ${target.value}`, "cause");
       render(`[data-dx-cause-query="${target.dataset.dxCauseQuery}"]`);
     }
     return;
@@ -5818,6 +5978,7 @@ app.addEventListener("input", (event) => {
   if (target.dataset.diseasedOrganQuery !== undefined) {
     state.diseasedOrganQuery = target.value;
     state.activeDiseasedOrganSuggest = true;
+    requestDiagnosisCatalogSearch(target.value, "cause");
     render("[data-diseased-organ-query]");
     return;
   }
@@ -5825,6 +5986,7 @@ app.addEventListener("input", (event) => {
   if (target.dataset.dxPickerQuery !== undefined) {
     if (state.diagnosisPicker) {
       state.diagnosisPicker.query = target.value;
+      requestDiagnosisCatalogSearch(target.value, "diagnosis");
       render(`[data-dx-picker-query="${target.dataset.dxPickerQuery}"]`);
     }
     return;
@@ -5847,6 +6009,7 @@ app.addEventListener("input", (event) => {
     if (target.dataset.ivCodeQuery === "draft") {
       state.interventionDraft.codeQuery = target.value;
       state.activeInterventionSuggest = "draft-code";
+      requestDiagnosisCatalogSearch(target.value, "intervention");
       render('[data-iv-code-query="draft"]');
       return;
     }
@@ -5866,6 +6029,7 @@ app.addEventListener("input", (event) => {
     if (target.dataset.ivContentQuery === "draft") {
       state.interventionDraft.contentQuery = target.value;
       state.activeInterventionSuggest = "draft-content";
+      requestDiagnosisCatalogSearch(target.value, "intervention");
       render('[data-iv-content-query="draft"]');
       return;
     }
@@ -6252,12 +6416,11 @@ app.addEventListener("change", (event) => {
 
 async function init() {
   try {
-    const [response, scaleResponse, assessmentResponse, interventionCodeResponse, diagnosisCatalog] = await Promise.all([
+    const [response, scaleResponse, assessmentResponse, interventionCodeResponse] = await Promise.all([
       fetch("./cd_deu_duong.json"),
       fetch("./thangdiem.json"),
       fetch("./nhan_dinh.json"),
       fetch("./ma_can_thiep.json"),
-      loadDiagnosisCatalogFromSupabase(),
     ]);
     if (!response.ok) throw new Error(`Khong tai duoc cd_deu_duong.json (${response.status})`);
     state.raw = await response.json();
@@ -6271,7 +6434,6 @@ async function init() {
     if (interventionCodeResponse.ok) {
       state.interventionCatalog = deepFix(await interventionCodeResponse.json());
     }
-    state.diagnosisCatalog = diagnosisCatalog;
     state.categoryId = state.data.categories[0].id;
     state.departmentId = state.data.categories[0].khoa[0].id;
     state.conditionId = state.data.categories[0].khoa[0].mat_benh[0].id;
