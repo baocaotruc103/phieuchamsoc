@@ -263,6 +263,7 @@ const state = {
   scaleScores: {},
   scaleResults: {},
   activeScale: null,
+  activeFallRiskScalePicker: null,
   activeCareFormTab: "patient",
   activeDiagnosisSuggest: null,
   activeDiseasedOrganSuggest: false,
@@ -339,6 +340,150 @@ const scaleMapping = {
 const scaleResultFields = {
   vip_score_point: "vip_score_conclusion",
   braden_score: "braden_conclusion",
+};
+
+const OFRAS_SCALE = {
+  id: "ofras_obstetric_fall_scale",
+  name: "Thang điểm OFRAS (sản khoa)",
+  totalScoreRule: "Cộng tổng điểm các tiêu chí được chọn; nếu có bất kỳ tiêu chí 3 điểm hoặc tổng điểm từ 5 trở lên là nguy cơ cao.",
+  multiSelect: true,
+  items: [
+    {
+      key: "prior_history",
+      label: "Prior History (Tiền sử trước đây)",
+      options: [
+        { label: "Không có", score: 0 },
+        { label: "Có sử dụng kính có gọng/kính áp tròng kê đơn, nhưng hiện tại không đeo", score: 1 },
+        { label: "Có tiền sử nằm bất động tại giường (trong vòng 2 tháng qua)", score: 2 },
+        { label: "Có tiền sử té ngã (ngay trước đó hoặc trong vòng 3 tháng qua)", score: 3 },
+        { label: "Suy giảm thị lực nghiêm trọng (vượt quá mức có thể điều chỉnh bằng kính gọng hoặc kính áp tròng)", score: 3 },
+      ],
+    },
+    {
+      key: "cardiovascular",
+      label: "Cardiovascular (Tim mạch)",
+      options: [
+        { label: "Không có", score: 0 },
+        { label: "Chóng mặt", score: 2 },
+        { label: "Có tiền sử thiếu máu và/hoặc tiền sản giật", score: 2 },
+        { label: "Hạ huyết áp tư thế đứng", score: 3 },
+      ],
+    },
+    {
+      key: "hemorrhage",
+      label: "Hemorrhage (Xuất huyết)",
+      options: [
+        { label: "Không có", score: 0 },
+        { label: "Cắt tử cung", score: 2 },
+        { label: "Được chẩn đoán nhau bong non hoặc nhau tiền đạo", score: 2 },
+        { label: "Băng huyết sau sinh lớn hơn 500 ml", score: 3 },
+      ],
+    },
+    {
+      key: "anesthesia",
+      label: "Anesthesia / Cognition (Gây tê / Nhận thức)",
+      options: [
+        { label: "Không gây tê ngoài màng cứng hoặc gây tê tủy sống", score: 0 },
+        { label: "Tê bì ở vùng đùi", score: 2 },
+        { label: "Hiện đang truyền thuốc gây tê ngoài màng cứng liên tục", score: 3 },
+        { label: "Đã tắt/rút gây tê ngoài màng cứng chưa đầy 3 giờ", score: 3 },
+        { label: "Gây tê tủy sống trong vòng 12 giờ đầu tiên", score: 3 },
+        { label: "Biến đổi nhận thức / Suy giảm nhận thức", score: 3 },
+      ],
+    },
+    {
+      key: "motor",
+      label: "Motor / Activity (Vận động / Hoạt động)",
+      options: [
+        { label: "Có thể cử động chân - tự đi lại độc lập", score: 0 },
+        { label: "Có thể cử động chân - đi lại cần dụng cụ hỗ trợ (ví dụ: khung tập đi, gậy...)", score: 1 },
+        { label: "Có thể nhấc thẳng chân (SLR) nhưng không thể làm động tác cầu bập bênh", score: 2 },
+        { label: "Không thể nhấc thẳng chân (SLR)", score: 3 },
+      ],
+    },
+  ],
+  riskInterpretation: [
+    { min: 0, max: 2, risk: "Nguy cơ thấp" },
+    { min: 3, max: 4, risk: "Nguy cơ trung bình" },
+    { min: 5, max: 99, risk: "Nguy cơ cao" },
+  ],
+};
+
+const HUMPTY_DUMPTY_SCALE = {
+  id: "humpty_dumpty_fall_scale",
+  name: "Thang điểm Humpty Dumpty (Trẻ em)",
+  totalScoreRule: "Cộng tổng điểm 7 nhóm tiêu chí. 7-11 điểm: nguy cơ thấp; 12-23 điểm: nguy cơ cao.",
+  items: [
+    {
+      key: "age",
+      label: "Tuổi bệnh nhi",
+      options: [
+        { label: "Dưới 3 tuổi", score: 4 },
+        { label: "Từ 3 tuổi đến dưới 7 tuổi", score: 3 },
+        { label: "Từ 7 tuổi đến dưới 13 tuổi", score: 2 },
+        { label: "Từ 13 tuổi đến 18 tuổi", score: 1 },
+      ],
+    },
+    {
+      key: "gender",
+      label: "Giới tính",
+      options: [
+        { label: "Nam", score: 2 },
+        { label: "Nữ", score: 1 },
+      ],
+    },
+    {
+      key: "diagnosis",
+      label: "Chẩn đoán bệnh lý",
+      options: [
+        { label: "Chẩn đoán về thần kinh (Động kinh, chấn thương sọ não, u não...)", score: 4 },
+        { label: "Thay đổi về oxy hóa cơ quan (Hô hấp, mất máu, thiếu máu, tim mạch...)", score: 3 },
+        { label: "Rối loạn hành vi / Tâm thần", score: 2 },
+        { label: "Chẩn đoán khác", score: 1 },
+      ],
+    },
+    {
+      key: "cognition",
+      label: "Suy giảm nhận thức",
+      options: [
+        { label: "Không nhận thức được giới hạn của bản thân (mê sảng, hiếu động quá mức...)", score: 3 },
+        { label: "Quên mất các giới hạn vật lý (trẻ nhỏ chưa ý thức được nguy hiểm)", score: 2 },
+        { label: "Tỉnh táo, định hướng tốt, tự biết giới hạn của mình", score: 1 },
+      ],
+    },
+    {
+      key: "environment",
+      label: "Yếu tố môi trường",
+      options: [
+        { label: "Có tiền sử té ngã hoặc trẻ sơ sinh/trẻ nhỏ được đặt trên giường/võng không an toàn", score: 4 },
+        { label: "Trẻ có sử dụng dụng cụ hỗ trợ (xe lăn, nạng, xe đẩy) hoặc nằm giường bệnh viện", score: 3 },
+        { label: "Trẻ nằm giường cũi hoặc nằm phòng điều trị ban ngày", score: 2 },
+        { label: "Khu vực chơi ngoại trú / phòng khám", score: 1 },
+      ],
+    },
+    {
+      key: "anesthesia",
+      label: "Phẫu thuật / Gây mê / An thần",
+      options: [
+        { label: "Trong vòng 24 giờ qua", score: 3 },
+        { label: "Trong vòng 48 giờ qua", score: 2 },
+        { label: "Trên 48 giờ hoặc không phẫu thuật", score: 1 },
+      ],
+    },
+    {
+      key: "medication",
+      label: "Sử dụng thuốc điều trị",
+      options: [
+        { label: "Sử dụng đồng thời nhiều loại thuốc: an thần, gây ngủ, chống động kinh, vận mạch, giãn cơ, lợi tiểu, opioids", score: 3 },
+        { label: "Sử dụng một trong các loại thuốc kể trên", score: 2 },
+        { label: "Các loại thuốc khác hoặc không dùng thuốc", score: 1 },
+      ],
+    },
+  ],
+  riskInterpretation: [
+    { min: 7, max: 11, risk: "Nguy cơ thấp" },
+    { min: 12, max: 23, risk: "Nguy cơ cao" },
+  ],
 };
 
 const patients = [
@@ -758,6 +903,7 @@ function normalizeDiagnosisCatalogRow(item, index) {
   }
   return {
     id: String(item.STT ?? item.id ?? index + 1),
+    group: cleanLine(item.nhom_benh || catalogField(item, "nhom benh") || item.group || item.category),
     nanda: cleanLine(item.chan_doan || catalogField(item, "chan doan") || catalogField(item, "nhan dinh") || item.nanda || item.diagnosis),
     cause: cleanLine(item.nguyen_nhan || catalogField(item, "nguyen nhan") || item.cause),
     noc: cleanLine(item.muc_tieu || catalogField(item, "muc tieu") || item.noc || item.goal),
@@ -778,12 +924,14 @@ function nandaCatalogOptions(query = "") {
   const key = searchKey(query);
   const grouped = new Map();
   for (const item of diagnosisCatalogRows()) {
-    const nanda = cleanLine(item.nanda);
-    if (!nanda) continue;
-    if (key && !searchKey(`${nanda} ${item.id}`).includes(key)) continue;
-    if (!grouped.has(nanda)) grouped.set(nanda, { nanda, ids: [], rows: [] });
-    grouped.get(nanda).ids.push(item.id);
-    grouped.get(nanda).rows.push(item);
+    const group = cleanLine(item.group);
+    for (const nanda of splitSuggestionLines(item.nanda)) {
+      if (key && !searchKey(`${group} ${nanda} ${item.id}`).includes(key)) continue;
+      if (!grouped.has(nanda)) grouped.set(nanda, { nanda, group, ids: [], rows: [] });
+      if (group && !grouped.get(nanda).group) grouped.get(nanda).group = group;
+      grouped.get(nanda).ids.push(item.id);
+      grouped.get(nanda).rows.push(item);
+    }
   }
   return [...grouped.values()].slice(0, 80);
 }
@@ -797,6 +945,35 @@ function diseasedOrganSelectedItems() {
 
 function setDiseasedOrganSelectedItems(items) {
   state.assessmentChecklist.diseasedOrgan = [...new Set(items.map(cleanLine).filter(Boolean))].join("; ");
+}
+
+function splitSuggestionLines(value) {
+  return String(value || "")
+    .split(";")
+    .map(cleanLine)
+    .filter(Boolean);
+}
+
+function renderSuggestionLines(value, tag = "em") {
+  const safeTag = tag === "strong" ? "strong" : "em";
+  const lines = splitSuggestionLines(value);
+  return lines.map((line) => `<${safeTag}>${h(line)}</${safeTag}>`).join("");
+}
+
+function catalogValueHasLine(value, line) {
+  const key = searchKey(line);
+  return Boolean(key) && splitSuggestionLines(value).some((item) => searchKey(item) === key);
+}
+
+function addCustomDiseasedOrgan(value = state.diseasedOrganQuery) {
+  const values = diseasedOrganSelectedItems();
+  const customValue = cleanLine(value);
+  if (customValue && !values.some((item) => searchKey(item) === searchKey(customValue))) {
+    values.push(customValue);
+    setDiseasedOrganSelectedItems(values);
+  }
+  state.diseasedOrganQuery = "";
+  state.activeDiseasedOrganSuggest = false;
 }
 
 function diseasedOrganOptions(query = "") {
@@ -816,7 +993,7 @@ function diseasedOrganOptions(query = "") {
 function nandaCatalogOptionByName(nanda) {
   const name = cleanLine(nanda);
   if (!name) return null;
-  const rows = diagnosisCatalogRows().filter((item) => cleanLine(item.nanda) === name);
+  const rows = diagnosisCatalogRows().filter((item) => catalogValueHasLine(item.nanda, name));
   if (!rows.length) return null;
   return {
     nanda: name,
@@ -844,7 +1021,8 @@ function selectedNandasForRow(row) {
   return [...new Set(
     diagnosisCatalogRows()
       .filter((item) => selected.has(String(item.id)))
-      .map((item) => cleanLine(item.nanda))
+      .flatMap((item) => splitSuggestionLines(item.nanda))
+      .filter((nanda) => !row?.diagnosis || searchKey(nanda) === searchKey(row.diagnosis))
       .filter(Boolean),
   )];
 }
@@ -878,19 +1056,21 @@ function diagnosisRowsForSelectedNanda(row) {
   const selectedNandas = new Set(
     diagnosisCatalogRows()
       .filter((item) => selected.has(String(item.id)) || selected.has(item.id))
-      .map((item) => cleanLine(item.nanda)),
+      .flatMap((item) => splitSuggestionLines(item.nanda)),
   );
   if (!selectedNandas.size && row.diagnosis) selectedNandas.add(row.diagnosis);
-  return diagnosisCatalogRows().filter((item) => selectedNandas.has(cleanLine(item.nanda)));
+  return diagnosisCatalogRows().filter((item) =>
+    splitSuggestionLines(item.nanda).some((nanda) => selectedNandas.has(nanda)),
+  );
 }
 
 function causeOptionsForDiagnosis(row) {
   const grouped = new Map();
   for (const item of diagnosisRowsForSelectedNanda(row)) {
-    const cause = cleanLine(item.cause);
-    if (!cause) continue;
-    if (!grouped.has(cause)) grouped.set(cause, { cause, ids: [] });
-    grouped.get(cause).ids.push(item.id);
+    for (const cause of splitSuggestionLines(item.cause)) {
+      if (!grouped.has(cause)) grouped.set(cause, { cause, ids: [] });
+      grouped.get(cause).ids.push(item.id);
+    }
   }
   return [...grouped.values()];
 }
@@ -900,7 +1080,7 @@ function selectedDiagnosisRecords(row, options = {}) {
   const selectedGoals = new Set(row.goals || []);
   const candidates = diagnosisRowsForSelectedNanda(row);
   return candidates.filter((item) => {
-    if (selectedCauses.size && !selectedCauses.has(cleanLine(item.cause))) return false;
+    if (selectedCauses.size && !splitSuggestionLines(item.cause).some((cause) => selectedCauses.has(cause))) return false;
     if (options.filterGoals && selectedGoals.size) {
       const goals = splitCatalogList(item.noc);
       return goals.some((goal) => selectedGoals.has(goal));
@@ -1110,9 +1290,10 @@ function resetCareFormState({ resetChecklist = false } = {}) {
     state.careLevel = "1";
     state.assessmentChecklist = applyPreviousVitalsToChecklist(createDefaultAssessmentChecklist());
     state.patient = defaultCarePatientState();
-    state.scaleScores = {};
-    state.scaleResults = {};
-    state.activeScale = null;
+  state.scaleScores = {};
+  state.scaleResults = {};
+  state.activeScale = null;
+  state.activeFallRiskScalePicker = null;
   }
   state.selectedAssessments = new Set();
   state.assessmentEdits = {};
@@ -1154,6 +1335,7 @@ function hydrateCareFormFromSheet(sheet) {
   );
   state.scaleResults = sheet.thang_diem_json || {};
   state.activeScale = null;
+  state.activeFallRiskScalePicker = null;
   state.selectedAssessments = new Set();
   state.assessmentEdits = {};
   state.activeDiagnosisSuggest = null;
@@ -1204,6 +1386,43 @@ function hydrateCareFormFromSheet(sheet) {
     };
   }
   state.interventionDraft = createInterventionDraft();
+  state.screen = "careForm";
+  render();
+}
+
+function startHomeCareTest(activeTab = "patient", activeScale = "") {
+  state.careSheets = [];
+  state.careSheetsPatient = null;
+  state.careSheetsLoadedFor = "";
+  state.careSheetsError = "";
+  state.careGoalEvaluations = [];
+  state.careGoalEvaluationsLoadedFor = "";
+  state.careGoalEvaluationsError = "";
+  state.editingCareSheetId = null;
+  state.selectedCareSheetId = null;
+  state.hasCareSheet = true;
+  resetCareFormState({ resetChecklist: true });
+  state.activeCareFormTab = activeTab;
+  if (activeScale) {
+    state.assessmentChecklist[activeScale] = true;
+    state.activeScale = activeScale;
+    if (!state.scaleScores[activeScale]) state.scaleScores[activeScale] = {};
+  }
+  state.screen = "careForm";
+  render();
+}
+
+function startStandaloneScale(scaleKey) {
+  resetCareFormState({ resetChecklist: true });
+  state.hasCareSheet = true;
+  state.activeCareFormTab = "assessment";
+  state.assessmentChecklist[scaleKey] = true;
+  if (isFallRiskScaleKey(scaleKey)) {
+    openFallRiskScalePicker(scaleKey);
+  } else {
+    state.activeScale = scaleKey;
+    if (!state.scaleScores[scaleKey]) state.scaleScores[scaleKey] = {};
+  }
   state.screen = "careForm";
   render();
 }
@@ -1321,10 +1540,8 @@ function appBar(title, backTarget = "") {
 function patientHomeAppBar() {
   return `
     <header class="app-bar patient-home-app-bar">
-      <button class="nav-icon" aria-label="Quay lại">‹</button>
-      <button type="button" class="home-evaluation-btn" data-action="open-sample-evaluation">
-        Đánh giá mẫu phiếu chăm sóc
-      </button>
+      <span></span>
+      <h1>Trải nghiệm Form điện tử</h1>
       <button class="grid-icon" data-screen="patients" aria-label="Danh sách">
         <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
       </button>
@@ -1332,30 +1549,65 @@ function patientHomeAppBar() {
   `;
 }
 
+const homeExperienceCards = [
+  {
+    title: "Giới thiệu mẫu phiếu chăm sóc điều dưỡng trên bệnh án điện tử",
+    action: "show-experience-guide",
+    icon: "i",
+    note: "Xem mục tiêu, cách trải nghiệm và góp ý hoàn thiện mẫu phiếu.",
+  },
+  {
+    title: "Test chức năng phiếu chăm sóc đầy đủ",
+    action: "start-full-care-test",
+    icon: "+",
+    note: "Mở form phiếu chăm sóc với đầy đủ các tab nhập liệu.",
+  },
+  {
+    title: "Test chức năng Chẩn đoán điều dưỡng",
+    action: "start-diagnosis-test",
+    icon: "CĐ",
+    note: "Vào trực tiếp phần chẩn đoán, nguyên nhân và mục tiêu.",
+  },
+  {
+    title: "Test chức năng Tư vấn, hướng dẫn GDSK",
+    action: "start-education-test",
+    icon: "TV",
+    note: "Mở phần tư vấn, hướng dẫn, giáo dục sức khỏe.",
+  },
+  {
+    title: "Test chức năng đánh giá nguy cơ (theo thang điểm)",
+    action: "start-scale-test",
+    icon: "Đ",
+    note: "Mở nhận định và bảng chấm điểm nguy cơ.",
+  },
+  {
+    title: "Đánh giá sau trải nghiệm Form điện tử",
+    action: "open-sample-evaluation",
+    tone: "danger",
+    icon: "✓",
+    note: "Gửi phản hồi sau khi hoàn tất trải nghiệm.",
+  },
+];
+
 function renderPatientListScreen() {
   return `
-    <div class="mobile-app patient-list-screen">
+    <div class="mobile-app patient-list-screen home-screen">
       ${patientHomeAppBar()}
-      <p class="home-evaluation-note">
-        Sau khi trải nghiệm nhập phiếu chăm sóc, Anh/Chị vui lòng quay lại trang chủ và bấm nút đánh giá mẫu phiếu chăm sóc.
-      </p>
-      <section class="search-bar">
-        <span class="search-icon">⌕</span>
-        <input placeholder="Tìm kiếm..." />
-        <button class="filter-icon">☷</button>
-        <button class="qr-icon">▦</button>
+      <section class="home-hero">
+        <div>
+          <h2>Chọn nội dung cần trải nghiệm</h2>
+          <p>Mỗi thẻ bên dưới sẽ mở trực tiếp đúng chức năng cần test trên mẫu phiếu điện tử.</p>
+        </div>
       </section>
-      <div class="patient-table-head">
-        <span>STT Bệnh nhân</span><span>Đối tượng</span><span>Tuổi</span><span>Buồng/Giường</span><span>Ngày khám</span><span>Ngày</span>
-      </div>
-      <section class="patient-list">${patients.map(renderPatientRow).join("")}</section>
-      <footer class="bottom-filter">
-        <span class="active">Tất cả <b>27</b></span>
-        <span>Đang điều trị <b>22</b></span>
-        <span>Đã kết thúc <b>4</b></span>
-        <span>Đã chuyển khoa <b>5</b></span>
-        <span>BN BHYT <b>24</b></span>
-      </footer>
+      <section class="home-action-grid" aria-label="Danh sách chức năng trải nghiệm">
+        ${homeExperienceCards.map((card) => `
+          <button type="button" class="home-action-card ${card.tone ? `home-action-card-${h(card.tone)}` : ""}" data-action="${h(card.action)}">
+            <span class="home-action-icon">${h(card.icon)}</span>
+            <strong>${h(card.title)}</strong>
+            <small>${h(card.note)}</small>
+          </button>
+        `).join("")}
+      </section>
     </div>
   `;
 }
@@ -1373,6 +1625,62 @@ function renderPatientRow(patient, index) {
       <span class="date">${h(patient.date).replace(/\n/g, "<br>")}</span>
       <span class="day-badge">${patient.day}</span>
     </button>
+  `;
+}
+
+const riskScaleCards = [
+  {
+    title: "Đánh giá nguy cơ té ngã",
+    note: "Chọn Morse, Humpty Dumpty hoặc OFRAS theo đối tượng người bệnh.",
+    icon: "TN",
+    scaleKey: "fallRiskAssessment",
+  },
+  {
+    title: "Đánh giá mức độ viêm tĩnh mạch (VIP)",
+    note: "Chấm điểm vị trí đường truyền và mức độ viêm tĩnh mạch.",
+    icon: "VIP",
+    scaleKey: "vteRiskAssessment",
+  },
+  {
+    title: "Đánh giá đau (VAS)",
+    note: "Chấm điểm đau theo thang điểm VAS.",
+    icon: "VAS",
+    scaleKey: "painAssessment",
+  },
+  {
+    title: "Đánh giá nguy cơ loét tỳ đè (Braden)",
+    note: "Đánh giá nguy cơ loét do tỳ đè.",
+    icon: "BR",
+    scaleKey: "pressureUlcerRiskAssessment",
+  },
+  {
+    title: "Đánh giá Glasgow (GCS)",
+    note: "Đánh giá tri giác bằng thang điểm Glasgow.",
+    icon: "GCS",
+    scaleKey: "glasgowAssessment",
+  },
+];
+
+function renderRiskScaleHomeScreen() {
+  return `
+    <div class="mobile-app patient-list-screen home-screen risk-scale-screen">
+      ${appBar("Đánh giá nguy cơ", "patients")}
+      <section class="home-hero">
+        <div>
+          <h2>Chọn bảng điểm đánh giá nguy cơ</h2>
+          <p>Chọn một bảng điểm để mở form chấm điểm tương ứng.</p>
+        </div>
+      </section>
+      <section class="home-action-grid risk-scale-grid" aria-label="Danh sách bảng điểm đánh giá nguy cơ">
+        ${riskScaleCards.map((card) => `
+          <button type="button" class="home-action-card" data-action="open-risk-scale" data-scale-key="${h(card.scaleKey)}">
+            <span class="home-action-icon">${h(card.icon)}</span>
+            <strong>${h(card.title)}</strong>
+            <small>${h(card.note)}</small>
+          </button>
+        `).join("")}
+      </section>
+    </div>
   `;
 }
 
@@ -2084,6 +2392,10 @@ function render(focusSelector = "") {
     app.innerHTML = renderPatientListScreen();
     return;
   }
+  if (state.screen === "riskScales") {
+    app.innerHTML = renderRiskScaleHomeScreen();
+    return;
+  }
   if (state.screen === "record") {
     app.innerHTML = renderRecordScreen();
     return;
@@ -2135,6 +2447,7 @@ function render(focusSelector = "") {
       </main>
     </div>
     ${state.activeScale ? renderScaleModal() : ""}
+    ${state.activeFallRiskScalePicker ? renderFallRiskScalePickerModal() : ""}
     ${state.activeHealthEducationStage ? renderHealthEducationModal() : ""}
   `;
 
@@ -2505,7 +2818,9 @@ function renderDiseasedOrganDropdown() {
   const options = state.activeDiseasedOrganSuggest ? diseasedOrganOptions(state.diseasedOrganQuery) : [];
   const selectedSet = new Set(selected.map(searchKey));
   const hasExactOption = options.some((item) => searchKey(item.nanda) === searchKey(state.diseasedOrganQuery));
-  const showAdd = state.activeDiseasedOrganSuggest && cleanLine(state.diseasedOrganQuery) && !hasExactOption;
+  const customValue = cleanLine(state.diseasedOrganQuery);
+  const hasSelectedCustom = selectedSet.has(searchKey(customValue));
+  const showAdd = state.activeDiseasedOrganSuggest && customValue && !hasSelectedCustom && !hasExactOption;
   return `
     <div class="field diagnosis-search-field">
       <label>Nhận định cơ quan bị bệnh</label>
@@ -2520,7 +2835,7 @@ function renderDiseasedOrganDropdown() {
               <input type="checkbox" ${selectedSet.has(searchKey(item.nanda)) ? "checked" : ""} data-diseased-organ-check data-value="${h(item.nanda)}" />
               <span>
                 <strong>${h(item.nanda)}</strong>
-                <em>${h(item.causes.slice(0, 3).join("; "))}</em>
+                ${renderSuggestionLines(item.causes.slice(0, 3).join("; "))}
               </span>
             </label>
           `).join("") : `<div class="diagnosis-dropdown-empty">Không có nhận định phù hợp.</div>`}
@@ -2933,6 +3248,8 @@ function renderScaleCheckItem(key, label, value) {
 }
 
 function getScaleForKey(key) {
+  if (isFallRiskScaleKey(key) && state.scaleScores[key]?._scaleType === "humpty") return HUMPTY_DUMPTY_SCALE;
+  if (isFallRiskScaleKey(key) && state.scaleScores[key]?._scaleType === "ofras") return OFRAS_SCALE;
   const scaleId = scaleMapping[key];
   return state.scaleData.find((s) => s.id === scaleId) || null;
 }
@@ -2950,6 +3267,42 @@ function vasLevelForScore(scale, score) {
 function calculateScaleResult(key) {
   const scale = getScaleForKey(key);
   if (!scale) return null;
+  if (scale.multiSelect) {
+    const scores = state.scaleScores[key] || {};
+    let total = 0;
+    let allFilled = true;
+    let hasItemScore3 = false;
+    for (const item of scale.items || []) {
+      const values = Array.isArray(scores[item.key]) ? scores[item.key] : [];
+      if (!values.length) {
+        allFilled = false;
+        continue;
+      }
+      values.forEach((value) => {
+        const score = Number(String(value).split(":").pop());
+        if (Number.isFinite(score)) {
+          total += score;
+          if (score === 3) hasItemScore3 = true;
+        }
+      });
+    }
+    let risk = "";
+    if (allFilled) {
+      if (total >= 5 || hasItemScore3) risk = "Nguy cơ cao";
+      else if (total >= 3) risk = "Nguy cơ trung bình";
+      else risk = "Nguy cơ thấp";
+    }
+    const riskClass = risk.includes("cao") ? "risk-high" : risk.includes("trung bình") ? "risk-medium" : "risk-low";
+    return {
+      total,
+      risk,
+      riskClass,
+      allFilled,
+      scaleId: scale.id,
+      scaleName: scale.name,
+      recommendation: hasItemScore3 && total < 5 ? "Có bất kỳ tiêu chí nào đạt mức 3 điểm đơn lẻ." : "",
+    };
+  }
   if (isVasPainScale(scale)) {
     const score = Number(state.scaleScores[key]?.vas);
     const min = Number(scale.validation?.minValue ?? scale.scale.min ?? 0);
@@ -3032,6 +3385,113 @@ function renderVasPainScaleBody(key, scale, result) {
   `;
 }
 
+function renderMultiSelectScaleBody(key, scale, scores) {
+  return `
+    <p class="scale-rule">Quy tắc: ${h(scale.totalScoreRule)}</p>
+    ${scale.items.map((item) => {
+      const selected = Array.isArray(scores[item.key]) ? scores[item.key].map(String) : [];
+      const groupTotal = selected.reduce((sum, value) => sum + Number(String(value).split(":").pop()), 0);
+      return `
+        <fieldset class="scale-fieldset">
+          <legend>${h(item.label)} <span class="ofras-group-score">${groupTotal} điểm</span></legend>
+          <div class="scale-options">
+            ${item.options.map((opt, optionIndex) => {
+              const optionValue = `${optionIndex}:${opt.score}`;
+              const checked = selected.includes(optionValue);
+              return `
+                <label class="scale-option ${checked ? "selected" : ""}">
+                  <input type="checkbox" value="${h(optionValue)}" ${checked ? "checked" : ""} data-scale-multi-item="${h(key)}:${h(item.key)}" />
+                  <span class="scale-option-label">${h(opt.label)}</span>
+                  <span class="scale-option-score">${opt.score}</span>
+                </label>
+              `;
+            }).join("")}
+          </div>
+        </fieldset>
+      `;
+    }).join("")}
+  `;
+}
+
+function isFallRiskScaleKey(key) {
+  return key === "fallRiskAssessment" || key === "fall_risk_score";
+}
+
+function openFallRiskScalePicker(key) {
+  state.activeFallRiskScalePicker = key;
+  state.activeScale = null;
+}
+
+function startFallRiskScale(type) {
+  const key = state.activeFallRiskScalePicker || "fallRiskAssessment";
+  if (!state.scaleScores[key]) state.scaleScores[key] = {};
+  state.scaleScores[key]._scaleType = type === "ofras" ? "ofras" : type === "humpty" ? "humpty" : "morse";
+  if (type === "ofras") {
+    OFRAS_SCALE.items.forEach((item) => {
+      if (!Array.isArray(state.scaleScores[key][item.key])) state.scaleScores[key][item.key] = ["0:0"];
+    });
+  } else if (type === "humpty") {
+    HUMPTY_DUMPTY_SCALE.items.forEach((item) => {
+      if (state.scaleScores[key][item.key] === undefined) {
+        const defaultOption = item.options[item.options.length - 1];
+        state.scaleScores[key][item.key] = defaultOption.score;
+      }
+    });
+  }
+  state.activeFallRiskScalePicker = null;
+  state.activeScale = key;
+}
+
+function renderFallRiskScalePickerModal() {
+  const key = state.activeFallRiskScalePicker || "fallRiskAssessment";
+  const hasMorse = Boolean(getScaleForKey(key));
+  const inpatientTimes = [
+    "Trong 24 giờ đầu sau khi nhập viện.",
+    "Khi chuyển khoa/phòng.",
+    "Sau phẫu thuật, thủ thuật, gây mê/gây tê.",
+    "Sau khi bắt đầu hoặc điều chỉnh thuốc ảnh hưởng đến tri giác/vận động (an thần, hạ áp, lợi tiểu, opioid...).",
+    "Sau khi tình trạng bệnh thay đổi đáng kể.",
+    "Ngay sau mỗi lần té ngã.",
+    "Định kỳ mỗi ca trực (ít nhất 1 lần/ngày) đối với người bệnh nguy cơ cao.",
+  ];
+  const obstetricTimes = [
+    "Khi nhập viện (antepartum, intrapartum, postpartum).",
+    "Ngay khi chuyển từ phòng sinh/phòng mổ về khoa Hậu sản.",
+    "Mỗi 2 giờ sau khi rút ống thông gây tê ngoài màng cứng cho đến khi hồi phục vận động hoàn toàn.",
+    "Ngay sau các biến cố: băng huyết, ngất, chóng mặt; khi chỉ định Magnesium Sulfate, thuốc hạ áp, an thần.",
+    "Định kỳ mỗi ngày (đầu ca sáng).",
+  ];
+  return `
+    <div class="scale-modal-overlay" data-action="close-fall-risk-picker-overlay">
+      <div class="scale-modal fall-risk-picker-modal">
+        <div class="scale-modal-header">
+          <h2>Đánh giá nguy cơ té ngã</h2>
+          <button class="scale-modal-close" data-action="close-fall-risk-picker">✕</button>
+        </div>
+        <div class="scale-modal-body fall-risk-picker-body">
+          <section class="fall-risk-time-section">
+            <h3>Các thời điểm đánh giá</h3>
+            <div class="fall-risk-time-table">
+              <div class="fall-risk-time-label"><strong>Nội trú (Người lớn & Nhi)</strong></div>
+              <ul>${inpatientTimes.map((item) => `<li>${h(item)}</li>`).join("")}</ul>
+              <div class="fall-risk-time-label"><strong>Sản khoa (OFRAS)</strong></div>
+              <ul>${obstetricTimes.map((item) => `<li>${h(item)}</li>`).join("")}</ul>
+            </div>
+          </section>
+          <section class="fall-risk-scale-section">
+            <h3>Chọn thang điểm</h3>
+            <div class="fall-risk-scale-buttons">
+              <button type="button" class="fall-risk-scale-btn" data-action="select-fall-risk-scale" data-fall-risk-scale="morse" ${hasMorse ? "" : "disabled"}>Thang điểm Morse (Người lớn)</button>
+              <button type="button" class="fall-risk-scale-btn" data-action="select-fall-risk-scale" data-fall-risk-scale="humpty">Thang điểm Humpty Dumpty (Trẻ em)</button>
+              <button type="button" class="fall-risk-scale-btn" data-action="select-fall-risk-scale" data-fall-risk-scale="ofras">Thang điểm OFRAS (sản khoa)</button>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 function renderScaleModal() {
   const key = state.activeScale;
   const scale = getScaleForKey(key);
@@ -3039,6 +3499,7 @@ function renderScaleModal() {
   const scores = state.scaleScores[key] || {};
   const result = calculateScaleResult(key);
   const isVas = isVasPainScale(scale);
+  const isMulti = Boolean(scale.multiSelect);
   return `
     <div class="scale-modal-overlay" data-action="close-scale-overlay">
       <div class="scale-modal">
@@ -3047,7 +3508,7 @@ function renderScaleModal() {
           <button class="scale-modal-close" data-action="close-scale">✕</button>
         </div>
         <div class="scale-modal-body">
-          ${isVas ? renderVasPainScaleBody(key, scale, result) : `
+          ${isVas ? renderVasPainScaleBody(key, scale, result) : isMulti ? renderMultiSelectScaleBody(key, scale, scores) : `
           <p class="scale-rule">Quy tắc: ${h(scale.totalScoreRule)}</p>
           ${scale.items.map((item) => `
             <fieldset class="scale-fieldset">
@@ -3257,7 +3718,7 @@ function renderDiagnosisRowV2(row, index) {
                 <label class="diagnosis-dropdown-option">
                   <input type="checkbox" ${selectedNandas.has(item.nanda) ? "checked" : ""} data-dx-catalog-check="${index}" data-nanda="${h(item.nanda)}" />
                   <span>
-                    <strong>${h(item.nanda)}</strong>
+                    ${renderSuggestionLines(item.nanda, "strong")}
                     <em>${h(item.ids.length)} gợi ý</em>
                   </span>
                 </label>
@@ -3289,7 +3750,7 @@ function renderDiagnosisRowV2(row, index) {
                 <label class="diagnosis-dropdown-option">
                   <input type="checkbox" value="${h(item.cause)}" ${row.causes?.includes(item.cause) ? "checked" : ""} data-dx-cause="${index}" />
                   <span>
-                    <strong>${h(item.cause)}</strong>
+                    ${renderSuggestionLines(item.cause, "strong")}
                     <em>${h(item.ids.length)} gợi ý</em>
                   </span>
                 </label>
@@ -3312,7 +3773,7 @@ function renderDiagnosisRowV2(row, index) {
                 <label class="diagnosis-dropdown-option">
                   <input type="checkbox" value="${h(goal)}" ${selectedGoals.has(goal) ? "checked" : ""} data-dx-goal="${index}" />
                   <span>
-                    <strong>${h(goal)}</strong>
+                    ${renderSuggestionLines(goal, "strong")}
                   </span>
                 </label>
               `).join("") : `<div class="diagnosis-dropdown-empty">Không có mục tiêu phù hợp.</div>`}
@@ -3408,7 +3869,7 @@ function renderInterventionPanel() {
                       <input type="checkbox" ${isInterventionDraftSelected(item) ? "checked" : ""} data-iv-option-check="code" data-code="${h(item.code)}" data-content="${h(item.name)}" />
                       <span>
                         <strong>${h(item.code)}</strong>
-                        <em>${h(item.name)}</em>
+                        ${renderSuggestionLines(item.name)}
                       </span>
                     </label>
                   `).join("")}
@@ -3427,7 +3888,7 @@ function renderInterventionPanel() {
                     <label class="diagnosis-dropdown-option">
                       <input type="checkbox" ${isInterventionDraftSelected(item) ? "checked" : ""} data-iv-option-check="content" data-code="${h(item.code)}" data-content="${h(item.name)}" />
                       <span>
-                        <strong>${h(item.name)}</strong>
+                        ${renderSuggestionLines(item.name, "strong")}
                         <em>${h(item.code)}</em>
                       </span>
                     </label>
@@ -3894,6 +4355,106 @@ function handoverPayload() {
     handoverTube: check.handoverTube,
     handoverOther: check.handoverOther,
   };
+}
+
+function hasAnyFilledValue(values) {
+  return values.some((value) => {
+    if (Array.isArray(value)) return value.some((item) => cleanLine(item));
+    if (typeof value === "boolean") return value;
+    return Boolean(cleanLine(value));
+  });
+}
+
+function hasAssessmentTabContent() {
+  const check = state.assessmentChecklist;
+  const assessmentFields = [
+    "pulse",
+    "temperature",
+    "bloodPressure",
+    "spo2",
+    "bodyType",
+    "consciousness",
+    "mucosa",
+    "edema",
+    "systemicNote",
+    "breathingMode",
+    "ventilationAirway",
+    "oxygenFlow",
+    "ventilatorMode",
+    "fio2",
+    "peep",
+    "vt",
+    "respiratoryRate",
+    "coughStatus",
+    "respiratoryNote",
+    "circulationSymptoms",
+    "peripheralPerfusion",
+    "heartRhythm",
+    "heartRateStatus",
+    "heartSounds",
+    "circulationOtherChecked",
+    "circulationOther",
+    "neuroConsciousness",
+    "neuroConsciousnessOther",
+    "neuroOrientation",
+    "neuroOrientationOther",
+    "neuroBehaviorStatus",
+    "neuroBehavior",
+    "neuroBehaviorOther",
+    "neuroFocalSignsStatus",
+    "neuroFocalSigns",
+    "neuroFocalSignsOther",
+    "abdomen",
+    "stool",
+    "urinary",
+    "urineAmount",
+    "nutritionRoute",
+    "nutritionRegimen",
+    "nutritionRegimenOther",
+    "pathologicalDiet",
+    "pathologicalDietTypes",
+    "pathologicalDietOther",
+    "mobilityAbility",
+    "mobilityAbilityOther",
+    "muscleStrength",
+    "muscleStrengthOther",
+    "movementStatus",
+    "movementStatusOther",
+    "diseasedOrgan",
+    "fallRiskAssessment",
+    "vteRiskAssessment",
+    "painAssessment",
+    "pressureUlcerRiskAssessment",
+    "glasgowAssessment",
+  ];
+  if (state.careLevel === "1") {
+    assessmentFields.push("fluidIn", "fluidOut", "fluidBalance");
+  }
+  const hasStructuredContent = hasAnyFilledValue(assessmentFields.map((field) => check[field]));
+  const hasSuggestedContent = [...state.selectedAssessments].some((id) =>
+    id.startsWith("custom-assessment-") ? cleanLine(state.assessmentEdits[id]) : true,
+  );
+  return hasStructuredContent || hasSuggestedContent;
+}
+
+function hasHealthEducationTabContent() {
+  const forms = ensureHealthEducationForms();
+  return ["admission", "treatment", "discharge"].some((stageKey) => {
+    const form = forms[stageKey] || {};
+    const hasItemContent = (form.items || []).some((item) => cleanLine(item.need) || cleanLine(item.result));
+    return hasItemContent || hasAnyFilledValue([form.staffName, form.patientSign, form.note]);
+  }) || hasAnyFilledValue([forms.summary?.note]);
+}
+
+function missingCareFormTabs() {
+  const missing = [];
+  const handover = handoverPayload();
+  if (!hasAssessmentTabContent()) missing.push({ id: "assessment", label: "Nhận định" });
+  if (!selectedCareDiagnoses().length) missing.push({ id: "diagnosis", label: "Chẩn đoán" });
+  if (!selectedCareInterventions().length) missing.push({ id: "intervention", label: "Can thiệp" });
+  if (!hasAnyFilledValue(Object.values(handover))) missing.push({ id: "handover", label: "Bàn giao" });
+  if (!hasHealthEducationTabContent()) missing.push({ id: "education", label: "TVHD GDSK" });
+  return missing;
 }
 
 async function saveCareSheetToSupabase() {
@@ -4496,6 +5057,12 @@ app.addEventListener("click", (event) => {
     return;
   }
 
+  if (event.target.dataset.action === "close-fall-risk-picker-overlay") {
+    state.activeFallRiskScalePicker = null;
+    render();
+    return;
+  }
+
   if (event.target.dataset.action === "close-health-education-overlay") {
     state.activeHealthEducationStage = null;
     render();
@@ -4548,6 +5115,53 @@ app.addEventListener("click", (event) => {
       .catch((error) => {
         alert(error.message || error);
       });
+    return;
+  }
+
+  if (target.dataset.action === "show-experience-guide") {
+    alert([
+      "Giới thiệu mẫu phiếu chăm sóc điều dưỡng trên bệnh án điện tử",
+      "",
+      "👉 Đây là mẫu phiếu chăm sóc xây dựng để điều dưỡng có thể ghi chép phiếu chăm sóc trên điện thoại/Máy tính bảng. Mục tiêu hạn chế tối đa phải nhập thông tin, sử dụng tính năng tích chọn để giảm thao tác cũng như thời gian cho việc ghi chép phiếu chăm sóc của điều dưỡng.",
+      "",
+      "👉 Các anh/chị/em vào trải nghiệm và cho ý kiến đóng góp hoàn thiện form ghi phiếu chăm sóc điều dưỡng để triển khai trên bệnh án điện tử.",
+      "",
+      "👉 Vui lòng chọn ĐÁNH GIÁ SAU TRẢI NGHIỆM FORM ĐIỆN TỬ để cho ý kiến về mẫu ghi phiếu chăm sóc điều dưỡng.",
+      "",
+      "👉 Phần chẩn đoán điều dưỡng, mục tiêu can thiệp, can thiệp điều dưỡng được cấu hình logic với nhau.",
+      "",
+      "✅ Chọn chẩn đoán điều dưỡng 👉 nhập vấn đề/triệu chứng của người bệnh (ví dụ Đau hoặc sốt) 👉 Chọn tiếp liên quan (hệ thống sẽ gợi ý nội dung phù hợp với vấn đề/triệu chứng) 👉 tích chọn nội dung phù hợp.",
+      "",
+      "Mục tiêu can thiệp: Hệ thống tự gợi ý các nội dung can thiệp phù hợp với chẩn đoán điều dưỡng.",
+      "",
+      "Can thiệp điều dưỡng: Tương tự hệ thống tự động gợi ý can thiệp điều dưỡng phù hợp với chẩn đoán và mục tiêu.",
+    ].join("\n"));
+    return;
+  }
+
+  if (target.dataset.action === "start-full-care-test") {
+    startHomeCareTest("patient");
+    return;
+  }
+
+  if (target.dataset.action === "start-diagnosis-test") {
+    startHomeCareTest("diagnosis");
+    return;
+  }
+
+  if (target.dataset.action === "start-education-test") {
+    startHomeCareTest("education");
+    return;
+  }
+
+  if (target.dataset.action === "start-scale-test") {
+    state.screen = "riskScales";
+    render();
+    return;
+  }
+
+  if (target.dataset.action === "open-risk-scale" && target.dataset.scaleKey) {
+    startStandaloneScale(target.dataset.scaleKey);
     return;
   }
 
@@ -4604,6 +5218,12 @@ app.addEventListener("click", (event) => {
   if (target.dataset.action === "toggle-diseased-organ-dropdown") {
     state.activeDiseasedOrganSuggest = !state.activeDiseasedOrganSuggest;
     if (state.activeDiseasedOrganSuggest && !state.diseasedOrganQuery) state.diseasedOrganQuery = "";
+    render();
+    return;
+  }
+
+  if (target.dataset.action === "add-diseased-organ-custom") {
+    addCustomDiseasedOrgan(target.dataset.value);
     render();
     return;
   }
@@ -4910,6 +5530,14 @@ app.addEventListener("click", (event) => {
   }
 
   if (target.dataset.action === "save-care") {
+    const missingTabs = missingCareFormTabs();
+    if (missingTabs.length) {
+      state.activeCareFormTab = missingTabs[0].id;
+      alert(`Các thẻ sau chưa có thông tin: ${missingTabs.map((tab) => tab.label).join(", ")}.\nVui lòng tiếp tục thực hiện ghi phiếu trước khi lưu.`);
+      render();
+      return;
+    }
+
     const originalText = target.textContent;
     target.disabled = true;
     target.textContent = "Đang lưu...";
@@ -4954,6 +5582,11 @@ app.addEventListener("click", (event) => {
   }
 
   if (target.dataset.action === "open-scale" && target.dataset.scaleKey) {
+    if (isFallRiskScaleKey(target.dataset.scaleKey)) {
+      openFallRiskScalePicker(target.dataset.scaleKey);
+      render();
+      return;
+    }
     if (target.dataset.scaleKey === "current_pain") {
       state.assessmentChecklist.current_pain = "yes";
     }
@@ -4972,6 +5605,18 @@ app.addEventListener("click", (event) => {
 
   if (target.dataset.action === "close-scale" || target.dataset.action === "close-scale-overlay") {
     state.activeScale = null;
+    render();
+    return;
+  }
+
+  if (target.dataset.action === "close-fall-risk-picker") {
+    state.activeFallRiskScalePicker = null;
+    render();
+    return;
+  }
+
+  if (target.dataset.action === "select-fall-risk-scale") {
+    startFallRiskScale(target.dataset.fallRiskScale);
     render();
     return;
   }
@@ -5012,6 +5657,16 @@ app.addEventListener("click", (event) => {
 
 app.addEventListener("keydown", (event) => {
   const target = event.target;
+  if (target.dataset?.diseasedOrganQuery !== undefined && event.key === "Enter") {
+    const value = cleanLine(target.value);
+    if (value && !diseasedOrganOptions(value).length) {
+      event.preventDefault();
+      event.stopPropagation();
+      addCustomDiseasedOrgan(value);
+      render();
+      return;
+    }
+  }
   if (!target.closest?.(".form-mode")) return;
   const isEditableInput = target.matches?.(
     'input:not([type="checkbox"]):not([type="radio"]):not([readonly]):not([disabled]), textarea:not([readonly]):not([disabled])',
@@ -5084,7 +5739,8 @@ app.addEventListener("input", (event) => {
   }
 
   if (target.dataset.dxQuery) {
-    const row = state.diagnosisRows[Number(target.dataset.dxQuery)];
+    const rowIndex = Number(target.dataset.dxQuery);
+    const row = state.diagnosisRows[rowIndex];
     if (row) {
       row.diagnosisQuery = target.value;
       if (row.diagnosisIds?.length && searchKey(target.value) !== searchKey(row.diagnosis)) {
@@ -5099,38 +5755,44 @@ app.addEventListener("input", (event) => {
         row.causes = [];
         row.goals = [];
       }
-      if (state.activeDiagnosisSuggest === Number(target.dataset.dxQuery)) {
-        refreshDiagnosisDropdown(target.dataset.dxQuery, "dx");
-      }
+      state.activeDiagnosisSuggest = rowIndex;
+      state.activeCauseSuggest = null;
+      state.activeGoalSuggest = null;
+      render(`[data-dx-query="${target.dataset.dxQuery}"]`);
     }
     return;
   }
 
   if (target.dataset.dxCauseQuery !== undefined) {
-    const row = state.diagnosisRows[Number(target.dataset.dxCauseQuery)];
+    const rowIndex = Number(target.dataset.dxCauseQuery);
+    const row = state.diagnosisRows[rowIndex];
     if (row) {
       row.causeQuery = target.value;
-      if (state.activeCauseSuggest === Number(target.dataset.dxCauseQuery)) {
-        refreshDiagnosisDropdown(target.dataset.dxCauseQuery, "cause");
-      }
+      state.activeCauseSuggest = rowIndex;
+      state.activeDiagnosisSuggest = null;
+      state.activeGoalSuggest = null;
+      render(`[data-dx-cause-query="${target.dataset.dxCauseQuery}"]`);
     }
     return;
   }
 
   if (target.dataset.dxGoalQuery !== undefined) {
-    const row = state.diagnosisRows[Number(target.dataset.dxGoalQuery)];
+    const rowIndex = Number(target.dataset.dxGoalQuery);
+    const row = state.diagnosisRows[rowIndex];
     if (row) {
       row.goalQuery = target.value;
-      if (state.activeGoalSuggest === `goal:${target.dataset.dxGoalQuery}`) {
-        refreshDiagnosisDropdown(target.dataset.dxGoalQuery, "goal");
-      }
+      state.activeGoalSuggest = `goal:${target.dataset.dxGoalQuery}`;
+      state.activeDiagnosisSuggest = null;
+      state.activeCauseSuggest = null;
+      render(`[data-dx-goal-query="${target.dataset.dxGoalQuery}"]`);
     }
     return;
   }
 
   if (target.dataset.diseasedOrganQuery !== undefined) {
     state.diseasedOrganQuery = target.value;
-    if (state.activeDiseasedOrganSuggest) refreshDiseasedOrganDropdown();
+    state.activeDiseasedOrganSuggest = true;
+    render("[data-diseased-organ-query]");
     return;
   }
 
@@ -5158,7 +5820,8 @@ app.addEventListener("input", (event) => {
   if (target.dataset.ivCodeQuery) {
     if (target.dataset.ivCodeQuery === "draft") {
       state.interventionDraft.codeQuery = target.value;
-      if (state.activeInterventionSuggest === "draft-code") refreshInterventionDropdown("code");
+      state.activeInterventionSuggest = "draft-code";
+      render('[data-iv-code-query="draft"]');
       return;
     }
     const row = state.interventionRows[Number(target.dataset.ivCodeQuery)];
@@ -5176,7 +5839,8 @@ app.addEventListener("input", (event) => {
   if (target.dataset.ivContentQuery) {
     if (target.dataset.ivContentQuery === "draft") {
       state.interventionDraft.contentQuery = target.value;
-      if (state.activeInterventionSuggest === "draft-content") refreshInterventionDropdown("content");
+      state.activeInterventionSuggest = "draft-content";
+      render('[data-iv-content-query="draft"]');
       return;
     }
     const row = state.interventionRows[Number(target.dataset.ivContentQuery)];
@@ -5247,6 +5911,11 @@ app.addEventListener("change", (event) => {
     const scaleKey = target.dataset.scaleCheck;
     state.assessmentChecklist[scaleKey] = target.checked;
     if (target.checked) {
+      if (isFallRiskScaleKey(scaleKey)) {
+        openFallRiskScalePicker(scaleKey);
+        render();
+        return;
+      }
       const scale = getScaleForKey(scaleKey);
       if (scale) {
         state.activeScale = scaleKey;
@@ -5277,6 +5946,29 @@ app.addEventListener("change", (event) => {
     const [scaleKey, itemKey] = target.dataset.scaleItem.split(":");
     if (!state.scaleScores[scaleKey]) state.scaleScores[scaleKey] = {};
     state.scaleScores[scaleKey][itemKey] = Number(target.value);
+    render();
+    return;
+  }
+
+  if (target.dataset.scaleMultiItem) {
+    const [scaleKey, itemKey] = target.dataset.scaleMultiItem.split(":");
+    const [optionIndexText, scoreText] = String(target.value || "").split(":");
+    const optionIndex = Number(optionIndexText);
+    const score = Number(scoreText);
+    const optionValue = `${optionIndex}:${score}`;
+    if (!state.scaleScores[scaleKey]) state.scaleScores[scaleKey] = {};
+    const current = Array.isArray(state.scaleScores[scaleKey][itemKey]) ? [...state.scaleScores[scaleKey][itemKey]] : [];
+    if (target.checked && score === 0) {
+      state.scaleScores[scaleKey][itemKey] = [optionValue];
+    } else {
+      let next = current.filter((value) => Number(String(value).split(":").pop()) !== 0);
+      if (target.checked && !next.includes(optionValue)) next.push(optionValue);
+      if (!target.checked) {
+        const removeAt = next.findIndex((value) => String(value) === optionValue);
+        if (removeAt >= 0) next.splice(removeAt, 1);
+      }
+      state.scaleScores[scaleKey][itemKey] = next.length ? next : ["0:0"];
+    }
     render();
     return;
   }
@@ -5325,14 +6017,8 @@ app.addEventListener("change", (event) => {
     const row = state.diagnosisRows[Number(target.dataset.dxCustomGoalCheck)];
     const goal = cleanLine(target.dataset.value);
     if (row && goal) {
-      const values = Array.isArray(row.goals) ? [...row.goals] : [];
-      if (target.checked && !values.includes(goal)) values.push(goal);
-      if (!target.checked) {
-        const index = values.indexOf(goal);
-        if (index >= 0) values.splice(index, 1);
-      }
-      row.goals = values;
-      row.goalQuery = "";
+      row.goals = target.checked ? [goal] : [];
+      row.goalQuery = target.checked ? goal : "";
     }
     state.activeGoalSuggest = null;
     state.activeDiagnosisSuggest = null;
@@ -5397,12 +6083,7 @@ app.addEventListener("change", (event) => {
   }
 
   if (target.dataset.diseasedOrganCustomCheck !== undefined) {
-    const values = diseasedOrganSelectedItems();
-    const value = cleanLine(target.dataset.value);
-    if (target.checked && value && !values.some((item) => searchKey(item) === searchKey(value))) values.push(value);
-    setDiseasedOrganSelectedItems(values);
-    state.diseasedOrganQuery = "";
-    state.activeDiseasedOrganSuggest = false;
+    if (target.checked) addCustomDiseasedOrgan(target.dataset.value);
     render();
     return;
   }
@@ -5424,14 +6105,8 @@ app.addEventListener("change", (event) => {
   if (target.dataset.dxGoal !== undefined) {
     const row = state.diagnosisRows[Number(target.dataset.dxGoal)];
     if (row) {
-      const values = Array.isArray(row.goals) ? [...row.goals] : [];
-      if (target.checked && !values.includes(target.value)) values.push(target.value);
-      if (!target.checked) {
-        const index = values.indexOf(target.value);
-        if (index >= 0) values.splice(index, 1);
-      }
-      row.goals = values;
-      row.goalQuery = "";
+      row.goals = target.checked ? [target.value] : [];
+      row.goalQuery = target.checked ? target.value : "";
     }
     state.activeGoalSuggest = null;
     state.activeDiagnosisSuggest = null;

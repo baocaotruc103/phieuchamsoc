@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đánh giá Nguy cơ Té ngã Humpty Dumpty</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind CSS Config for custom print/theme styles -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        pediatric: {
+                            50: '#f5f3ff',
+                            100: '#ede9fe',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @media print {
+            body {
+                background-color: white !important;
+                color: black !important;
+                font-size: 12px;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-border {
+                border: 1px solid #ccc !important;
+                border-radius: 4px;
+            }
+            .print-card {
+                box-shadow: none !important;
+                border: 1px solid #e5e7eb !important;
+                margin-bottom: 15px !important;
+                padding: 15px !important;
+            }
+            .print-bg-gray {
+                background-color: #f3f4f6 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen pb-12">
+
+    <!-- Header / Banner -->
+    <header class="bg-pediatric-700 text-white shadow-md no-print">
+        <div class="max-w-4xl mx-auto px-4 py-5 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <!-- Pediatric/Child Icon SVG -->
+                <svg class="w-8 h-8 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <div>
+                    <h1 class="text-xl font-bold tracking-wide">PHẦN MỀM LÂM SÀNG</h1>
+                    <p class="text-xs text-indigo-100 uppercase tracking-widest">Đánh giá nguy cơ té ngã cho bệnh nhi (0-18 tuổi)</p>
+                </div>
+            </div>
+            <div class="text-sm text-right hidden sm:block">
+                <p class="font-medium text-indigo-200">Thang điểm Humpty Dumpty</p>
+                <p class="text-xs opacity-75">Chuẩn hóa Quy trình Chăm sóc Nhi khoa</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 mt-6">
+        
+        <!-- Hospital/Institution Header for PRINT -->
+        <div class="hidden print:block mb-6">
+            <div class="flex justify-between items-start border-b pb-4">
+                <div>
+                    <p class="font-bold text-sm uppercase">SỞ Y TẾ / BỆNH VIỆN PHỤ SẢN - NHI</p>
+                    <p class="text-xs">Khoa Nhi / Sơ sinh: ................................................</p>
+                </div>
+                <div class="text-right">
+                    <h2 class="text-base font-bold uppercase">PHIẾU ĐÁNH GIÁ NGUY CƠ TÉ NGÃ HUMPTY DUMPTY</h2>
+                    <p class="text-xs text-gray-500">(Áp dụng cho bệnh nhi từ 0 đến 18 tuổi - Thang điểm chuẩn)</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Flow Container: Questionnaire then Results -->
+        <div class="space-y-6">
+            
+            <!-- SECTION 1: Questionnaire Cards -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden print-card">
+                <div class="p-6 space-y-6">
+                    
+                    <!-- CATEGORY 1: Tuổi -->
+                    <div class="category-group" data-category="age">
+                        <div class="flex items-center justify-between border-b pb-2 mb-3">
+                            <h3 class="font-bold text-slate-800 flex items-center">
+                                <span class="w-6 h-6 rounded-full bg-pediatric-600 text-white text-xs flex items-center justify-center mr-2">1</span>
+                                Tuổi bệnh nhi
+                            </h3>
+                            <span class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-semibold group-score">1 điểm</span>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            <label class="flex items-start p-2.5 border border-slate-100 rounded hover:bg-slate-50 cursor-pointer text-sm transition">
+                                <input type="radio" name="age" value="4" class="mt-1 mr-3 h-4 w-4 text-pediatric-600 focus:ring-pediatric-500">
+                                <span class="flex-grow">Dưới 3 tuổi</span>
+                                <span class="text-slate-500 font-semibold ml-2">4đ</span>
+                            </label>
+                            <label class="flex items-start p-2.5 border border-slate-100 rounded hover:bg-slate-50 cursor-pointer text-sm transition">
+                                <input type="radio" name="age" value="3" class="mt-1 mr-3 h-4 w-4 text-pediatric-600 focus:ring-pediatric-500">
+                                <span class="flex-grow">Từ 3 tuổi đến dưới 7 tuổi</span>
+                                <span class="text-slate-500 font-semibold ml-2">3đ</span>
+                            </label>
+                            <label class="flex items-start p-2.5 border border-slate-100 rounded hover:bg-slate-50 cursor-pointer text-sm transition">
+                                <input type="radio" name="age" value="2" class="mt-1 mr-3 h-4 w-4 text-pediatric-600 focus:ring-pediatric-500">
+                                <span class="flex-grow">Từ 7 tuổi đến dưới 13 tuổi</span>
+                                <span class="text-slate-500 font-semibold ml-2">2đ</span>
+                            </label>
+                            <label class="flex items-start p-2.5 border border-slate-100 rounded hover:bg-slate-50 cursor-pointer text-sm transition">
+                                <input type="radio" name="age" value="1" class="mt-1 mr-3 h-4 w-4 text-pediatric-600 focus:ring-pediatric-500" checked>
+                                <span class="flex-grow">Từ 13 tuổi đến 18 tuổi</span>
+                                <span class="text-slate-500 font-semibold ml-2">1đ</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- CATEGORY 2: Giới tính -->
+                    <div class="category-group" data-category="gender">
+                        <div class="flex items-center justify-between border-b pb-2 mb-3">
+                            <h3 class="font-bold text-slate-800 flex items-center">
+                                <span class="w-6 h-6 rounded-full bg-pediatric-600 text-white text-xs flex items-center justify-center mr-2">2</span>
+                                Giới tính
+                            </h3>
+                            <span class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-semibold group-score">1 điểm</span>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            <label class="flex items-start p-2.5 border border-slate-100 rounded hover:bg-slate-50 cursor-pointer text-sm transition">
+                                <input type="radio" name="gender" value="2" class="mt-1 mr-3 h-4 w-4 text-pediatric-600 focus:ring-pediatric-500">
+                                <span class="flex-grow">Nam</span>
+                                <span class="text-slate-500 font-semibold ml-2">2đ</span>
+                            </label>
+                            <label class="flex items-start p-2.5 border border-slate-100 rounded hover:bg-slate-50 cursor-pointer text-sm transition">
+                                <input type="radio" name="gender" value="1" class="mt-1 mr-3 h-4 w-4 text-pediatric-600 focus:ring-pediatric-500" checked>
+                                <span class="flex-grow">Nữ</span>
+                                <span class="text-slate-500 font-semibold ml-2">1đ</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- CATEGORY 3: Chẩn đoán -->
+                    <div class="category-group" data-category="diagnosis">
+                        <div class="flex items-center justify-between border-b pb-2 mb-3">
+                            <h3 class="font-bold text-slate-800 flex items-center">
+                                <span class="w-6 h-6 rounded-full bg-pediatric-600 text-white text-xs flex items-center justify-center mr-2">3</span>
+                                Chẩn đoán bệnh lý
+                            </h3>
+                            <span class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-semibold group-score">1 điểm</span>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="flex items-start p-2.5 border border-slate-100 rounded hover:bg-slate-50 cursor-pointer text-sm transition">
+                                <input type="radio" name="diagnosis" value="4" class="mt-1 mr-3 h-4 w-4 text-pediatric-600 focus:ring-pediatric-500">
+                                <span class="flex-grow">Chẩn đoán về Thần kinh <span class="text-xs text-slate-500 font-normal">(Động kinh, chấn thương sọ não, u não...)</span></span>
+                                <span class="text-slate-500 font-semibold ml-2 w-8 text-right">4đ</span>
+                            </label>
+                            <label class="flex items-start p-2.5 border border-slate-100 rounded hover:bg-slate-50 cursor-pointer text-sm transition">
+                                <input type="radio" name="diagnosis" value="3" class="mt-1 mr-3 h-4 w-4 text-pediatric-600 focus:ring-pediatric-500">
+                                <span class="flex-grow">Thay đổi về oxy hóa cơ quan <span class="text-xs text-slate-500 font-normal">(Hô hấp, mất máu, thiếu máu, tim mạch...)</span></span>
+                                <span class="text-slate-500 font-semibold ml-2 w-8 text-right">3đ</span>
+                            </label>
+                            <label class="flex items-start p-2.5 border border-slate-100 rounded hover:bg-slate-50 cursor-pointer text-sm transition">
+                                <input type="radio" name="diagnosis" value="2" class="mt-1 mr-3 h-4 w-4 text-pediatric-600 focus:ring-pediatric-500">
+                                <span class="flex-grow">Rối loạn hành vi / Tâm thần</span>
+                                <span class="text-slate-500 font-semibold ml-2 w-8 text-right">2đ</span>
+                            </label>
+                            <label class="flex items-start p-2.5 border border-slate-100 rounded hover:bg-slate-50 cursor-pointer text-sm transition">
+                                <input type="radio" name="diagnosis" value="1" class="mt-1 mr-3 h-4 w-4 text-pediatric-600 focus:ring-pediatric-500" checked>
+                                <span class="flex-grow">Chẩn đoán khác</span>
+                                <span class="text-slate-500 font-semibold ml-2 w-8 text-right">1đ</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- CATEGORY 4: Suy giảm nhận thức -->
+                    <div class="category-group" data-category="cognition">
+                        <div class="flex items-center justify-between border-b pb-2 mb-3">
+                            <h3 class="font-bold text-slate-800 flex items-center">
+                                <span class="w-6 h-6 rounded-full bg-pediatric-600 text-white text-xs flex items-center justify-center mr-2">4</span>
+                                Suy giảm nhận thức
+                            </h3>
+                            <span class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-semibold group-score">1 điểm</span>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="flex items-start p-2.5 border border-slate-100 rounded hover:bg-slate-50 cursor-pointer text-sm transition">
+                                <input type="radio" name="cognition" value="3" class="mt-1 mr-3 h-4 w-4 text-pediatric-600 focus:ring-pediatric-500">
+                                <span class="flex-grow">Không nhận thức được giới hạn của bản thân <span class="text-xs text-slate-500 font-normal">(Mê sảng, hiếu động quá mức...)</span></span>
+                                <span class="text-slate-500 font-semibold ml-2 w-8 text-right">3đ</span>
+                            </label>
+                            <label class="flex items-start p-2.5 border border-slate-100 rounded hover:bg-slate-50 cursor-pointer text-sm transition">
+                                <input type="radio" name="cognition" value="2" class="mt-1 mr-3 h-4 w-4 text-pediatric-600 focus:ring-pediatric-500">
+                                <span class="flex-grow">Quên mất các giới hạn vật lý <span class="text-xs text-slate-500 font-normal">(Trẻ nhỏ chưa ý thức được nguy hiểm)</span></span>
+                                <span class="text-slate-500 font-semibold ml-2 w-8 text-right">2đ</span>
+                            </label>
+                            <label class="flex items-start p-2.5 border border-slate-100 rounded hover:bg-slate-50 cursor-pointer text-sm transition">
+                                <input type="radio" name="cognition" value="1" class="mt-1 mr-3 h-4 w-4 text-pediatric-600 focus:ring-pediatric-500" checked>
+                                <span class="flex-grow">Tỉnh táo, định hướng tốt, tự biết giới hạn của mình</span>
+                                <span class="text-slate-500 font-semibold ml-2 w-8 text-right">1đ</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- CATEGORY 5: Yếu tố môi trường -->
+                    <div class="category-group" data-category="environment">
+                        <div class="flex items-center justify-between border-b pb-2 mb-3">
+                            <h3 class="font-bold text-slate-800 flex items-center">
+                                <span class="w-6 h-6 rounded-full bg-pediatric-600 text-white text-xs flex items-center justify-center mr-2">5</span>
+                                Yếu tố môi trường
+                            </h3>
+                            <span class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-semibold group-score">1 điểm</span>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="flex items-start p-2.5 border border-slate-100 rounded hover:bg-slate-50 cursor-pointer text-sm transition">
+                                <input type="radio" name="environment" value="4" class="mt-1 mr-3 h-4 w-4 text-pediatric-600 focus:ring-pediatric-500">
+                                <span class="flex-grow">Có tiền sử té ngã HOẶC Trẻ sơ sinh/Trẻ nhỏ được đặt trên giường/võng không an toàn</span>
+                                <span class="text-slate-500 font-semibold ml-2 w-8 text-right">4đ</span>
+                            </label>
+                            <label class="flex items-start p-2.5 border border-slate-100 rounded hover:bg-slate-50 cursor-pointer text-sm transition">
+                                <input type="radio" name="environment" value="3" class="mt-1 mr-3 h-4 w-4 text-pediatric-600 focus:ring-pediatric-500">
+                                <span class="flex-grow">Trẻ có sử dụng dụng cụ hỗ trợ <span class="text-xs text-slate-500 font-normal">(Xe lăn, nạng, xe đẩy)</span> hoặc nằm giường bệnh viện</span>
+                                <span class="text-slate-500 font-semibold ml-2 w-8 text-right">3đ</span>
+                            </label>
+                            <label class="flex items-start p-2.5 border border-slate-100 rounded hover:bg-slate-50 cursor-pointer text-sm transition">
+                                <input type="radio" name="environment" value="2" class="mt-1 mr-3 h-4 w-4 text-pediatric-600 focus:ring-pediatric-500">
+                                <span class="flex-grow">Trẻ nằm giường cũi (Crib) hoặc nằm phòng điều trị ban ngày</span>
+                                <span class="text-slate-500 font-semibold ml-2 w-8 text-right">2đ</span>
+                            </label>
+                            <label class="flex items-start p-2.5 border border-slate-100 rounded hover:bg-slate-50 cursor-pointer text-sm transition">
+                                <input type="radio" name="environment" value="1" class="mt-1 mr-3 h-4 w-4 text-pediatric-600 focus:ring-pediatric-500" checked>
+                                <span class="flex-grow">Khu vực chơi ngoại trú / Phòng khám</span>
+                                <span class="text-slate-500 font-semibold ml-2 w-8 text-right">1đ</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- CATEGORY 6: PT/Gây mê/An thần -->
+                    <div class="category-group" data-category="anesthesia">
+                        <div class="flex items-center justify-between border-b pb-2 mb-3">
+                            <h3 class="font-bold text-slate-800 flex items-center">
+                                <span class="w-6 h-6 rounded-full bg-pediatric-600 text-white text-xs flex items-center justify-center mr-2">6</span>
+                                Phẫu thuật / Gây mê / An thần
+                            </h3>
+                            <span class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-semibold group-score">1 điểm</span>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                            <label class="flex items-start p-2.5 border border-slate-100 rounded hover:bg-slate-50 cursor-pointer text-sm transition">
+                                <input type="radio" name="anesthesia" value="3" class="mt-1 mr-3 h-4 w-4 text-pediatric-600 focus:ring-pediatric-500">
+                                <span class="flex-grow">Trong vòng 24 giờ qua</span>
+                                <span class="text-slate-500 font-semibold ml-2">3đ</span>
+                            </label>
+                            <label class="flex items-start p-2.5 border border-slate-100 rounded hover:bg-slate-50 cursor-pointer text-sm transition">
+                                <input type="radio" name="anesthesia" value="2" class="mt-1 mr-3 h-4 w-4 text-pediatric-600 focus:ring-pediatric-500">
+                                <span class="flex-grow">Trong vòng 48 giờ qua</span>
+                                <span class="text-slate-500 font-semibold ml-2">2đ</span>
+                            </label>
+                            <label class="flex items-start p-2.5 border border-slate-100 rounded hover:bg-slate-50 cursor-pointer text-sm transition">
+                                <input type="radio" name="anesthesia" value="1" class="mt-1 mr-3 h-4 w-4 text-pediatric-600 focus:ring-pediatric-500" checked>
+                                <span class="flex-grow">Trên 48 giờ HOẶC Không phẫu thuật</span>
+                                <span class="text-slate-500 font-semibold ml-2">1đ</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- CATEGORY 7: Sử dụng thuốc -->
+                    <div class="category-group" data-category="medication">
+                        <div class="flex items-center justify-between border-b pb-2 mb-3">
+                            <h3 class="font-bold text-slate-800 flex items-center">
+                                <span class="w-6 h-6 rounded-full bg-pediatric-600 text-white text-xs flex items-center justify-center mr-2">7</span>
+                                Sử dụng thuốc điều trị
+                            </h3>
+                            <span class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-semibold group-score">1 điểm</span>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="flex items-start p-2.5 border border-slate-100 rounded hover:bg-slate-50 cursor-pointer text-sm transition">
+                                <input type="radio" name="medication" value="3" class="mt-1 mr-3 h-4 w-4 text-pediatric-600 focus:ring-pediatric-500">
+                                <span class="flex-grow flex flex-col">
+                                    <span>Sử dụng đồng thời nhiều loại thuốc:</span>
+                                    <span class="text-xs text-slate-500 font-normal mt-0.5">Thuốc an thần, gây ngủ, chống động kinh, thuốc vận mạch, thuốc giãn cơ, thuốc lợi tiểu, Opioids.</span>
+                                </span>
+                                <span class="text-slate-500 font-semibold ml-2 w-8 text-right">3đ</span>
+                            </label>
+                            <label class="flex items-start p-2.5 border border-slate-100 rounded hover:bg-slate-50 cursor-pointer text-sm transition">
+                                <input type="radio" name="medication" value="2" class="mt-1 mr-3 h-4 w-4 text-pediatric-600 focus:ring-pediatric-500">
+                                <span class="flex-grow">Sử dụng một trong các loại thuốc kể trên</span>
+                                <span class="text-slate-500 font-semibold ml-2 w-8 text-right">2đ</span>
+                            </label>
+                            <label class="flex items-start p-2.5 border border-slate-100 rounded hover:bg-slate-50 cursor-pointer text-sm transition">
+                                <input type="radio" name="medication" value="1" class="mt-1 mr-3 h-4 w-4 text-pediatric-600 focus:ring-pediatric-500" checked>
+                                <span class="flex-grow">Các loại thuốc khác HOẶC Không dùng thuốc</span>
+                                <span class="text-slate-500 font-semibold ml-2 w-8 text-right">1đ</span>
+                            </label>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- SECTION 2: Evaluation Results Panel (At the Bottom) -->
+            <div class="bg-white rounded-xl shadow-md border-2 border-slate-200 overflow-hidden print-card">
+                <div class="bg-slate-800 text-white px-6 py-4 flex justify-between items-center print-bg-gray print:text-black">
+                    <span class="font-bold tracking-wide uppercase">KẾT QUẢ ĐÁNH GIÁ CHUNG</span>
+                    <span class="text-xs bg-slate-700 text-slate-300 px-2 py-0.5 rounded font-mono no-print">Live</span>
+                </div>
+
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                        
+                        <!-- Left inside column: Score & Risk Visual -->
+                        <div class="space-y-4">
+                            <!-- Score Display -->
+                            <div class="text-center bg-slate-50 rounded-xl p-4 border border-slate-100 print-bg-gray">
+                                <span class="block text-xs font-bold text-slate-400 uppercase tracking-wider">Tổng điểm Humpty Dumpty</span>
+                                <div class="flex items-baseline justify-center mt-1">
+                                    <span id="total_score" class="text-6xl font-extrabold text-slate-800 tracking-tight transition-all duration-300">7</span>
+                                    <span class="text-slate-400 font-bold text-lg ml-1">/ 23</span>
+                                </div>
+                            </div>
+
+                            <!-- Risk Classification Indicator -->
+                            <div>
+                                <span class="block text-xs font-semibold text-slate-400 uppercase mb-2 text-center">Phân loại mức độ nguy cơ</span>
+                                
+                                <!-- Low Risk -->
+                                <div id="risk_low" class="flex flex-col items-center bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg p-4 transition-all duration-300">
+                                    <span class="text-2xl font-black uppercase tracking-wide">NGUY CƠ THẤP</span>
+                                    <span class="text-xs text-emerald-600 mt-1 font-medium">(Phạm vi điểm: 7 - 11 điểm)</span>
+                                </div>
+
+                                <!-- High Risk -->
+                                <div id="risk_high" class="hidden flex flex-col items-center bg-rose-50 border border-rose-200 text-rose-800 rounded-lg p-4 transition-all duration-300">
+                                    <span class="text-2xl font-black uppercase tracking-wide text-rose-600">NGUY CƠ CAO ⚠️</span>
+                                    <span class="text-xs text-rose-600 mt-1 font-medium">(Phạm vi điểm: 12 - 23 điểm)</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right inside column: Reference Table & Action Buttons -->
+                        <div class="space-y-4">
+                            <!-- Standard Reference Mini-Table -->
+                            <div class="border border-slate-100 rounded-lg p-3 bg-slate-50 print-bg-gray">
+                                <p class="text-xs font-bold text-slate-700 uppercase mb-2">Quy định phân loại:</p>
+                                <div class="space-y-1.5 text-xs">
+                                    <div class="flex justify-between text-emerald-700 font-semibold border-b border-dashed border-slate-200 pb-1">
+                                        <span>7 - 11 điểm</span>
+                                        <span>Mức nguy cơ THẤP</span>
+                                    </div>
+                                    <div class="flex justify-between text-rose-700 font-bold">
+                                        <span>12 - 23 điểm</span>
+                                        <span>Mức nguy cơ CAO ⚠️</span>
+                                    </div>
+                                </div>
+                                <p class="text-[10px] text-slate-400 mt-2 leading-relaxed">
+                                    * Thang điểm Humpty Dumpty chuẩn áp dụng cho tất cả bệnh nhi nội trú từ sơ sinh đến dưới 18 tuổi.
+                                </p>
+                            </div>
+
+                            <!-- Interactive Buttons -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 no-print">
+                                <button onclick="window.print()" class="w-full bg-pediatric-600 hover:bg-pediatric-700 text-white font-bold py-2.5 px-4 rounded-lg transition duration-200 flex items-center justify-center space-x-2 shadow">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                                    </svg>
+                                    <span>In kết quả (A4)</span>
+                                </button>
+                                <button onclick="resetForm()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold py-2.5 px-4 rounded-lg transition duration-150">
+                                    Xóa & Làm lại
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Print Only Signatures Section -->
+            <div class="hidden print:grid grid-cols-2 gap-4 mt-8 text-center text-xs">
+                <div>
+                    <p class="italic">Ngày ...... tháng ...... năm 20......</p>
+                    <p class="font-bold uppercase mt-1">SẢN PHỤ / NGƯỜI THÂN TRẺ</p>
+                    <p class="text-slate-400 mt-12">(Ký và ghi rõ họ tên)</p>
+                </div>
+                <div>
+                    <p class="italic">Ngày ...... tháng ...... năm 20......</p>
+                    <p class="font-bold uppercase mt-1">NGƯỜI ĐÁNH GIÁ (ĐD/HS/BS)</p>
+                    <p class="text-slate-400 mt-12">(Ký và ghi rõ họ tên)</p>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Script to calculate score dynamically -->
+    <script>
+        window.onload = function() {
+            // Initialize event listeners
+            initListeners();
+            calculateHumptyScore();
+        };
+
+        function initListeners() {
+            // Select all radio inputs in the document
+            const radios = document.querySelectorAll('input[type="radio"]');
+            
+            radios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    calculateHumptyScore();
+                });
+            });
+        }
+
+        function calculateHumptyScore() {
+            let total = 0;
+            const groups = document.querySelectorAll('.category-group');
+
+            groups.forEach(group => {
+                const checkedRadio = group.querySelector('input[type="radio"]:checked');
+                let groupScore = 0;
+                
+                if (checkedRadio) {
+                    groupScore = parseInt(checkedRadio.value);
+                }
+                
+                total += groupScore;
+
+                // Update UI badge score for this category
+                const badge = group.querySelector('.group-score');
+                if (badge) {
+                    badge.innerText = `${groupScore} điểm`;
+                    
+                    // Highlight categories with high contribution scores (> 2đ)
+                    if (groupScore >= 3) {
+                        badge.classList.remove('bg-slate-100', 'text-slate-600');
+                        badge.classList.add('bg-indigo-100', 'text-indigo-800');
+                    } else {
+                        badge.classList.remove('bg-indigo-100', 'text-indigo-800');
+                        badge.classList.add('bg-slate-100', 'text-slate-600');
+                    }
+                }
+            });
+
+            // Update Total Score on UI
+            const scoreDisplay = document.getElementById('total_score');
+            scoreDisplay.innerText = total;
+
+            // Determine Risk Level (Humpty Dumpty Scale: Low Risk is 7-11, High Risk is 12-23)
+            const lowBox = document.getElementById('risk_low');
+            const highBox = document.getElementById('risk_high');
+
+            // Hide all first
+            lowBox.classList.add('hidden');
+            highBox.classList.add('hidden');
+
+            if (total >= 12) {
+                highBox.classList.remove('hidden');
+                scoreDisplay.className = "text-6xl font-extrabold text-rose-600 tracking-tight transition-all duration-300";
+            } else {
+                lowBox.classList.remove('hidden');
+                scoreDisplay.className = "text-6xl font-extrabold text-emerald-600 tracking-tight transition-all duration-300";
+            }
+        }
+
+        function resetForm() {
+            // Default selected options (lowest scores) for resetting
+            const defaults = {
+                age: "1",
+                gender: "1",
+                diagnosis: "1",
+                cognition: "1",
+                environment: "1",
+                anesthesia: "1",
+                medication: "1"
+            };
+
+            for (const [name, val] of Object.entries(defaults)) {
+                const radio = document.querySelector(`input[name="${name}"][value="${val}"]`);
+                if (radio) radio.checked = true;
+            }
+
+            calculateHumptyScore();
+        }
+    </script>
+</body>
+</html>

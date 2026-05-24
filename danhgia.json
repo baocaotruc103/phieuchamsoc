@@ -23,6 +23,28 @@
       padding: 20px 12px 40px;
     }
 
+    .home-return {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      margin-bottom: 12px;
+      border: 1px solid #b7d7c2;
+      border-radius: 10px;
+      background: #ffffff;
+      color: #006b00;
+      padding: 9px 14px;
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: 0.2s;
+    }
+
+    .home-return:hover {
+      border-color: #009900;
+      background: #eaf8ed;
+    }
+
     .form-card {
       background: #ffffff;
       border-radius: 16px;
@@ -316,6 +338,7 @@
 </head>
 <body>
   <div class="page">
+    <a class="home-return" href="./index.html">&#8592; V&#7873; trang ch&#7911;</a>
     <div class="form-card">
       <div class="form-header">
         <h1>Phiếu đánh giá trải nghiệm ứng dụng / mẫu phiếu chăm sóc</h1>
