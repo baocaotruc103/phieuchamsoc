@@ -105,23 +105,48 @@
       .feedback-filter-field {
         display: grid;
         gap: 5px;
-        min-width: min(100%, 280px);
+        flex: 1 1 auto;
+        min-width: 0;
       }
 
-      .feedback-filter-field label {
+      .feedback-filter-field > span {
         color: #475569;
         font-size: 12px;
         font-weight: 800;
       }
 
-      .feedback-filter-field select {
+      .feedback-department-options {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+        gap: 6px;
         width: 100%;
-        min-height: 38px;
+        max-height: 126px;
+        overflow-y: auto;
         border: 1px solid #cbd5e1;
         border-radius: 7px;
+        background: #f8fafc;
+        padding: 7px;
+      }
+
+      .feedback-department-option {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        min-height: 34px;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
         background: #fff;
-        padding: 8px 10px;
+        padding: 6px 8px;
         color: #0f172a;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .feedback-department-option input {
+        flex: 0 0 auto;
+        width: 15px;
+        height: 15px;
+        margin: 0;
       }
 
       .feedback-filter-summary {
@@ -231,6 +256,11 @@
           min-width: 0;
         }
 
+        .feedback-department-options {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          max-height: 178px;
+        }
+
         .feedback-filter-actions {
           justify-content: space-between;
         }
@@ -300,10 +330,8 @@
 
         <section class="feedback-filter" aria-label="Bộ lọc danh sách phản hồi">
           <div class="feedback-filter-field">
-            <label for="feedbackDepartmentFilter">Lọc theo khoa phòng</label>
-            <select id="feedbackDepartmentFilter">
-              <option value="">Tất cả khoa phòng</option>
-            </select>
+            <span id="feedbackDepartmentFilterLabel">Lọc theo khoa phòng</span>
+            <div class="feedback-department-options" id="feedbackDepartmentFilter" role="group" aria-labelledby="feedbackDepartmentFilterLabel"></div>
           </div>
           <div class="feedback-filter-actions">
             <p class="feedback-filter-summary" id="feedbackFilterSummary"></p>
@@ -380,25 +408,28 @@
       }
 
       let allFeedbackRows = [];
-      let selectedDepartment = "";
+      const selectedDepartments = new Set();
 
       function rowsForSelectedDepartment() {
-        return selectedDepartment
-          ? allFeedbackRows.filter((row) => row.department === selectedDepartment)
+        return selectedDepartments.size
+          ? allFeedbackRows.filter((row) => selectedDepartments.has(row.department))
           : allFeedbackRows;
       }
 
       function renderDepartmentFilter(rows) {
-        const select = document.getElementById("feedbackDepartmentFilter");
+        const options = document.getElementById("feedbackDepartmentFilter");
         const departments = [...new Set(rows.map((row) => row.department).filter(Boolean))]
           .sort((left, right) => left.localeCompare(right, "vi"));
-        select.innerHTML = `
-          <option value="">Tất cả khoa phòng</option>
-          ${departments.map((department) => `
-            <option value="${escapeHtml(department)}">${escapeHtml(department)}</option>
-          `).join("")}
-        `;
-        select.value = selectedDepartment;
+        options.innerHTML = departments.map((department) => `
+          <label class="feedback-department-option">
+            <input
+              type="checkbox"
+              data-department-filter="${escapeHtml(department)}"
+              ${selectedDepartments.has(department) ? "checked" : ""}
+            />
+            <span>${escapeHtml(department)}</span>
+          </label>
+        `).join("");
       }
 
       function renderStats(rows) {
@@ -503,10 +534,10 @@
         renderStats(rows);
         renderList(rows);
         renderComments(rows);
-        document.getElementById("feedbackFilterSummary").textContent = selectedDepartment
-          ? `${rows.length}/${allFeedbackRows.length} phản hồi`
+        document.getElementById("feedbackFilterSummary").textContent = selectedDepartments.size
+          ? `${rows.length}/${allFeedbackRows.length} phản hồi - ${selectedDepartments.size} khoa`
           : `${rows.length} phản hồi`;
-        document.getElementById("feedbackClearFilter").disabled = !selectedDepartment;
+        document.getElementById("feedbackClearFilter").disabled = !selectedDepartments.size;
       }
 
       async function loadFeedback() {
@@ -542,13 +573,21 @@
         });
 
       document.getElementById("feedbackDepartmentFilter").addEventListener("change", (event) => {
-        selectedDepartment = event.target.value;
+        const checkbox = event.target.closest("[data-department-filter]");
+        if (!checkbox) return;
+        if (checkbox.checked) {
+          selectedDepartments.add(checkbox.dataset.departmentFilter);
+        } else {
+          selectedDepartments.delete(checkbox.dataset.departmentFilter);
+        }
         renderFilteredFeedback();
       });
 
       document.getElementById("feedbackClearFilter").addEventListener("click", () => {
-        selectedDepartment = "";
-        document.getElementById("feedbackDepartmentFilter").value = "";
+        selectedDepartments.clear();
+        document.querySelectorAll("[data-department-filter]").forEach((checkbox) => {
+          checkbox.checked = false;
+        });
         renderFilteredFeedback();
       });
     </script>
