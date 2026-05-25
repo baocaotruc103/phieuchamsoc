@@ -47,6 +47,10 @@
         padding: 16px;
       }
 
+      .feedback-main > * {
+        min-width: 0;
+      }
+
       .feedback-stat-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -75,7 +79,66 @@
         line-height: 1.15;
       }
 
+      .feedback-stat-detail {
+        display: grid;
+        gap: 3px;
+        margin-top: 8px;
+        padding-top: 7px;
+        border-top: 1px dashed #e2e8f0;
+        color: #64748b;
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 1.35;
+      }
+
+      .feedback-filter {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 12px;
+        border: 1px solid #dbe4ee;
+        border-radius: 8px;
+        background: #fff;
+        padding: 12px 14px;
+      }
+
+      .feedback-filter-field {
+        display: grid;
+        gap: 5px;
+        min-width: min(100%, 280px);
+      }
+
+      .feedback-filter-field label {
+        color: #475569;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .feedback-filter-field select {
+        width: 100%;
+        min-height: 38px;
+        border: 1px solid #cbd5e1;
+        border-radius: 7px;
+        background: #fff;
+        padding: 8px 10px;
+        color: #0f172a;
+      }
+
+      .feedback-filter-summary {
+        margin: 0;
+        color: #64748b;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .feedback-filter-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
       .feedback-table-wrap {
+        max-width: 100%;
         overflow-x: auto;
       }
 
@@ -135,6 +198,89 @@
 
         .feedback-main {
           padding: 10px;
+          gap: 10px;
+        }
+
+        .feedback-stat-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 8px;
+        }
+
+        .feedback-stat-card {
+          min-height: 76px;
+          padding: 10px;
+        }
+
+        .feedback-stat-card span {
+          font-size: 11px;
+          line-height: 1.25;
+        }
+
+        .feedback-stat-card strong {
+          margin-top: 5px;
+          font-size: 21px;
+        }
+
+        .feedback-filter {
+          align-items: stretch;
+          flex-direction: column;
+          padding: 10px;
+        }
+
+        .feedback-filter-field {
+          min-width: 0;
+        }
+
+        .feedback-filter-actions {
+          justify-content: space-between;
+        }
+
+        .feedback-table-wrap {
+          overflow: visible;
+        }
+
+        .feedback-table {
+          display: block;
+          min-width: 0;
+        }
+
+        .feedback-table thead {
+          display: none;
+        }
+
+        .feedback-table tbody {
+          display: grid;
+          gap: 10px;
+        }
+
+        .feedback-table tr {
+          display: grid;
+          gap: 0;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          background: #fff;
+          padding: 5px 10px;
+        }
+
+        .feedback-table td {
+          display: grid;
+          grid-template-columns: minmax(92px, 36%) minmax(0, 1fr);
+          gap: 10px;
+          border-bottom: 1px dashed #e2e8f0;
+          padding: 7px 0;
+          overflow-wrap: anywhere;
+        }
+
+        .feedback-table td:last-child {
+          border-bottom: 0;
+        }
+
+        .feedback-table td::before {
+          content: attr(data-label);
+          color: #64748b;
+          font-size: 11px;
+          font-weight: 900;
+          text-transform: uppercase;
         }
       }
     </style>
@@ -151,6 +297,19 @@
 
       <main class="feedback-main">
         <section class="feedback-stat-grid" id="feedbackStats"></section>
+
+        <section class="feedback-filter" aria-label="Bộ lọc danh sách phản hồi">
+          <div class="feedback-filter-field">
+            <label for="feedbackDepartmentFilter">Lọc theo khoa phòng</label>
+            <select id="feedbackDepartmentFilter">
+              <option value="">Tất cả khoa phòng</option>
+            </select>
+          </div>
+          <div class="feedback-filter-actions">
+            <p class="feedback-filter-summary" id="feedbackFilterSummary"></p>
+            <button class="btn" id="feedbackClearFilter" type="button" disabled>Bỏ lọc</button>
+          </div>
+        </section>
 
         <section class="panel">
           <div class="panel-header">
@@ -181,8 +340,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../supabase-config.js"></script>
     <script>
-      const ratingPositive = new Set(["Tốt", "Rất tốt", "Hài lòng", "Rất hài lòng", "Dễ sử dụng", "Rất dễ sử dụng", "Mong muốn", "Rất mong muốn", "Hiệu quả", "Rất hiệu quả"]);
-
       function escapeHtml(value) {
         return String(value ?? "")
           .replaceAll("&", "&amp;")
@@ -205,26 +362,65 @@
         return `${Math.round((count / total) * 100)}%`;
       }
 
-      function positivePercent(rows, field) {
+      function selectedPercent(rows, field, acceptedValues) {
         const answered = rows.filter((row) => row[field]);
-        const positive = answered.filter((row) => ratingPositive.has(row[field]));
-        return percent(positive.length, answered.length);
+        const selected = answered.filter((row) => acceptedValues.includes(row[field]));
+        return percent(selected.length, answered.length);
+      }
+
+      function emrStats(rows) {
+        const answered = rows.filter((row) => row.emr_apply_wish);
+        const normal = answered.filter((row) => row.emr_apply_wish === "Bình thường").length;
+        const wanted = answered.filter((row) => row.emr_apply_wish === "Mong muốn").length;
+        const highlyWanted = answered.filter((row) => row.emr_apply_wish === "Rất mong muốn").length;
+        return {
+          percent: percent(wanted + highlyWanted, answered.length),
+          detail: [`Bình thường: ${normal}`, `Mong muốn: ${wanted}`, `Rất mong muốn: ${highlyWanted}`],
+        };
+      }
+
+      let allFeedbackRows = [];
+      let selectedDepartment = "";
+
+      function rowsForSelectedDepartment() {
+        return selectedDepartment
+          ? allFeedbackRows.filter((row) => row.department === selectedDepartment)
+          : allFeedbackRows;
+      }
+
+      function renderDepartmentFilter(rows) {
+        const select = document.getElementById("feedbackDepartmentFilter");
+        const departments = [...new Set(rows.map((row) => row.department).filter(Boolean))]
+          .sort((left, right) => left.localeCompare(right, "vi"));
+        select.innerHTML = `
+          <option value="">Tất cả khoa phòng</option>
+          ${departments.map((department) => `
+            <option value="${escapeHtml(department)}">${escapeHtml(department)}</option>
+          `).join("")}
+        `;
+        select.value = selectedDepartment;
       }
 
       function renderStats(rows) {
         const departments = new Set(rows.map((row) => row.department).filter(Boolean));
+        const emr = emrStats(rows);
         const stats = [
-          ["Tổng phản hồi", rows.length],
-          ["Đơn vị/Khoa phòng", departments.size],
-          ["Trải nghiệm tốt", positivePercent(rows, "ui_easy")],
-          ["Hài lòng chung", positivePercent(rows, "satisfaction")],
-          ["Mẫu phiếu dễ dùng", positivePercent(rows, "current_care_form")],
-          ["Muốn áp dụng EMR", positivePercent(rows, "emr_apply_wish")],
+          { label: "Tổng phản hồi", value: rows.length },
+          { label: "Đơn vị/Khoa phòng", value: departments.size },
+          { label: "Trải nghiệm tốt", value: selectedPercent(rows, "ui_easy", ["Tốt", "Rất tốt"]) },
+          { label: "Hài lòng chung", value: selectedPercent(rows, "satisfaction", ["Hài lòng", "Rất hài lòng"]) },
+          { label: "Mẫu phiếu dễ dùng", value: selectedPercent(rows, "current_care_form", ["Dễ sử dụng", "Rất dễ sử dụng"]) },
+          { label: "Muốn áp dụng EMR", value: emr.percent, detail: emr.detail },
         ];
-        document.getElementById("feedbackStats").innerHTML = stats.map(([label, value]) => `
+        document.getElementById("feedbackStats").innerHTML = stats.map(({ label, value, detail }) => `
           <div class="feedback-stat-card">
             <span>${escapeHtml(label)}</span>
             <strong>${escapeHtml(value)}</strong>
+            ${detail ? `
+              <div class="feedback-stat-detail">
+                ${detail.map((line) => `<div>${escapeHtml(line)}</div>`).join("")}
+              </div>
+            ` : ""}
           </div>
         `).join("");
       }
@@ -252,14 +448,14 @@
               <tbody>
                 ${rows.map((row) => `
                   <tr>
-                    <td>${escapeHtml(formatDate(row.created_at))}</td>
-                    <td>${escapeHtml(row.full_name || "-")}</td>
-                    <td>${escapeHtml(row.department || "-")}</td>
-                    <td>${escapeHtml(row.ui_easy || "-")}<div class="feedback-muted">${escapeHtml(row.work_support || "")}</div></td>
-                    <td>${escapeHtml(row.satisfaction || "-")}</td>
-                    <td>${escapeHtml(row.overall || "-")}</td>
-                    <td>${escapeHtml(row.current_care_form || "-")}</td>
-                    <td>${escapeHtml(row.emr_apply_wish || "-")}</td>
+                    <td data-label="Thời gian">${escapeHtml(formatDate(row.created_at))}</td>
+                    <td data-label="Người gửi">${escapeHtml(row.full_name || "-")}</td>
+                    <td data-label="Đơn vị">${escapeHtml(row.department || "-")}</td>
+                    <td data-label="Trải nghiệm">${escapeHtml(row.ui_easy || "-")}<div class="feedback-muted">${escapeHtml(row.work_support || "")}</div></td>
+                    <td data-label="Hài lòng">${escapeHtml(row.satisfaction || "-")}</td>
+                    <td data-label="Tổng thể">${escapeHtml(row.overall || "-")}</td>
+                    <td data-label="Mẫu phiếu">${escapeHtml(row.current_care_form || "-")}</td>
+                    <td data-label="Áp dụng EMR">${escapeHtml(row.emr_apply_wish || "-")}</td>
                   </tr>
                 `).join("")}
               </tbody>
@@ -289,17 +485,28 @@
               <tbody>
                 ${commentRows.map((row) => `
                   <tr>
-                    <td>${escapeHtml(formatDate(row.created_at))}</td>
-                    <td>${escapeHtml(row.department || "-")}</td>
-                    <td>${escapeHtml(row.liked_most || "-")}</td>
-                    <td>${escapeHtml(row.need_improve || "-")}</td>
-                    <td>${escapeHtml(row.new_suggestion || "-")}</td>
+                    <td data-label="Thời gian">${escapeHtml(formatDate(row.created_at))}</td>
+                    <td data-label="Đơn vị">${escapeHtml(row.department || "-")}</td>
+                    <td data-label="Hài lòng nhất">${escapeHtml(row.liked_most || "-")}</td>
+                    <td data-label="Cần cải thiện">${escapeHtml(row.need_improve || "-")}</td>
+                    <td data-label="Đề xuất thêm">${escapeHtml(row.new_suggestion || "-")}</td>
                   </tr>
                 `).join("")}
               </tbody>
             </table>
           </div>
         `;
+      }
+
+      function renderFilteredFeedback() {
+        const rows = rowsForSelectedDepartment();
+        renderStats(rows);
+        renderList(rows);
+        renderComments(rows);
+        document.getElementById("feedbackFilterSummary").textContent = selectedDepartment
+          ? `${rows.length}/${allFeedbackRows.length} phản hồi`
+          : `${rows.length} phản hồi`;
+        document.getElementById("feedbackClearFilter").disabled = !selectedDepartment;
       }
 
       async function loadFeedback() {
@@ -322,9 +529,9 @@
 
       loadFeedback()
         .then((rows) => {
-          renderStats(rows);
-          renderList(rows);
-          renderComments(rows);
+          allFeedbackRows = rows;
+          renderDepartmentFilter(rows);
+          renderFilteredFeedback();
           document.getElementById("feedbackUpdated").textContent = `Cập nhật: ${formatDate(new Date().toISOString())}`;
         })
         .catch((error) => {
@@ -333,6 +540,17 @@
           document.getElementById("feedbackList").innerHTML = `<div class="feedback-empty">${escapeHtml(error.message || error)}</div>`;
           document.getElementById("feedbackComments").innerHTML = `<div class="feedback-empty">Chưa có dữ liệu.</div>`;
         });
+
+      document.getElementById("feedbackDepartmentFilter").addEventListener("change", (event) => {
+        selectedDepartment = event.target.value;
+        renderFilteredFeedback();
+      });
+
+      document.getElementById("feedbackClearFilter").addEventListener("click", () => {
+        selectedDepartment = "";
+        document.getElementById("feedbackDepartmentFilter").value = "";
+        renderFilteredFeedback();
+      });
     </script>
   </body>
 </html>
