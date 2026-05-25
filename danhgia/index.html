@@ -115,7 +115,41 @@
         font-weight: 800;
       }
 
+      .feedback-department-dropdown {
+        position: relative;
+      }
+
+      .feedback-department-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        width: 100%;
+        min-height: 38px;
+        border: 1px solid #cbd5e1;
+        border-radius: 7px;
+        background: #fff;
+        padding: 8px 10px;
+        color: #0f172a;
+        text-align: left;
+      }
+
+      .feedback-department-toggle::after {
+        content: "▾";
+        flex: 0 0 auto;
+        color: #64748b;
+      }
+
+      .feedback-department-dropdown.open .feedback-department-toggle {
+        border-color: #94a3b8;
+        box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.1);
+      }
+
       .feedback-department-options {
+        position: absolute;
+        top: calc(100% + 5px);
+        left: 0;
+        z-index: 30;
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
         gap: 6px;
@@ -126,6 +160,11 @@
         border-radius: 7px;
         background: #f8fafc;
         padding: 7px;
+        box-shadow: 0 10px 26px rgba(15, 23, 42, 0.14);
+      }
+
+      .feedback-department-options[hidden] {
+        display: none;
       }
 
       .feedback-department-option {
@@ -331,7 +370,10 @@
         <section class="feedback-filter" aria-label="Bộ lọc danh sách phản hồi">
           <div class="feedback-filter-field">
             <span id="feedbackDepartmentFilterLabel">Lọc theo khoa phòng</span>
-            <div class="feedback-department-options" id="feedbackDepartmentFilter" role="group" aria-labelledby="feedbackDepartmentFilterLabel"></div>
+            <div class="feedback-department-dropdown" id="feedbackDepartmentDropdown">
+              <button class="feedback-department-toggle" id="feedbackDepartmentToggle" type="button" aria-expanded="false" aria-controls="feedbackDepartmentFilter">Tất cả khoa phòng</button>
+              <div class="feedback-department-options" id="feedbackDepartmentFilter" role="group" aria-labelledby="feedbackDepartmentFilterLabel" hidden></div>
+            </div>
           </div>
           <div class="feedback-filter-actions">
             <p class="feedback-filter-summary" id="feedbackFilterSummary"></p>
@@ -409,6 +451,18 @@
 
       let allFeedbackRows = [];
       const selectedDepartments = new Set();
+
+      function departmentFilterText() {
+        if (!selectedDepartments.size) return "Tất cả khoa phòng";
+        if (selectedDepartments.size === 1) return [...selectedDepartments][0];
+        return `Đã chọn ${selectedDepartments.size} khoa`;
+      }
+
+      function setDepartmentDropdownOpen(open) {
+        document.getElementById("feedbackDepartmentDropdown").classList.toggle("open", open);
+        document.getElementById("feedbackDepartmentFilter").hidden = !open;
+        document.getElementById("feedbackDepartmentToggle").setAttribute("aria-expanded", String(open));
+      }
 
       function rowsForSelectedDepartment() {
         return selectedDepartments.size
@@ -537,6 +591,7 @@
         document.getElementById("feedbackFilterSummary").textContent = selectedDepartments.size
           ? `${rows.length}/${allFeedbackRows.length} phản hồi - ${selectedDepartments.size} khoa`
           : `${rows.length} phản hồi`;
+        document.getElementById("feedbackDepartmentToggle").textContent = departmentFilterText();
         document.getElementById("feedbackClearFilter").disabled = !selectedDepartments.size;
       }
 
@@ -583,12 +638,23 @@
         renderFilteredFeedback();
       });
 
+      document.getElementById("feedbackDepartmentToggle").addEventListener("click", () => {
+        const dropdown = document.getElementById("feedbackDepartmentDropdown");
+        setDepartmentDropdownOpen(!dropdown.classList.contains("open"));
+      });
+
       document.getElementById("feedbackClearFilter").addEventListener("click", () => {
         selectedDepartments.clear();
         document.querySelectorAll("[data-department-filter]").forEach((checkbox) => {
           checkbox.checked = false;
         });
         renderFilteredFeedback();
+      });
+
+      document.addEventListener("click", (event) => {
+        if (!event.target.closest("#feedbackDepartmentDropdown")) {
+          setDepartmentDropdownOpen(false);
+        }
       });
     </script>
   </body>
