@@ -1800,7 +1800,7 @@ function patientHomeAppBar() {
   return `
     <header class="app-bar patient-home-app-bar">
       <span></span>
-      <h1>Trải nghiệm Form điện tử</h1>
+      <h1>Phiên bản cập nhật 26/5/2026</h1>
       <button class="grid-icon" data-screen="patients" aria-label="Danh sách">
         <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
       </button>
@@ -1846,7 +1846,28 @@ const homeExperienceCards = [
     icon: "✓",
     note: "Gửi phản hồi sau khi hoàn tất trải nghiệm.",
   },
+  {
+    title: "Thông tin cập nhật",
+    action: "show-update-info",
+    icon: "26/5",
+    note: "Xem nội dung thay đổi trong phiên bản cập nhật ngày 26/5/2026.",
+  },
 ];
+
+function showUpdateInfo() {
+  alert([
+    "Thông tin cập nhật ngày 26/5/2026",
+    "",
+    "- Fix lỗi nhập vào ô textbox phải chọn lại mới nhập được tiếp",
+    "- Bổ sung các nội dung nhận định theo các cơ quan mà các khoa đã ý kiến bổ sung",
+    "- Bổ sung phần nhận định riêng cho khoa B10 (sản phụ khoa) ở dạng thu gọn cho tối ưu form tích chọn sản phụ khoa mới hiển thị form nhập thông tin",
+    "",
+    "Lưu ý nội dung chẩn đoán điều dưỡng và can thiệp là dữ liệu demo chưa đầy đủ theo các chuyên khoa, vì vậy để đầy đủ thì các khoa cần cung cấp cho phòng điều dưỡng nội dung chẩn đoán điều dưỡng của chuyên khoa mình",
+    "",
+    "Cấu trúc chẩn đoán điều dưỡng theo Nanda NIC NOC",
+    "Vấn đề/triệu chứng + Nguyên nhân (nếu có) >> Mục tiêu can thiệp >> Can thiệp điều dưỡng",
+  ].join("\n"));
+}
 
 function renderPatientListScreen() {
   return `
@@ -2583,6 +2604,83 @@ function detailHandoverMedicines(rows = []) {
   `;
 }
 
+function careSheetWordFilename(sheet = {}) {
+  const identifier = cleanLine(sheet.ma_phieu || `phieu-${sheet.id || currentVietnamDateInput()}`)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9_-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase();
+  return `phieu-cham-soc-${identifier || "dieu-duong"}.doc`;
+}
+
+function careSheetWordStyles() {
+  return `
+    @page { size: A4; margin: 16mm; }
+    body { margin: 0; color: #0f172a; font: 12pt "Times New Roman", serif; }
+    .report-page { width: 100%; }
+    .report-head { border-bottom: 3pt solid #047857; padding-bottom: 10pt; text-align: center; }
+    .report-head h1 { margin: 0; color: #065f46; font-size: 18pt; text-transform: uppercase; }
+    .report-head div { margin-top: 4pt; color: #475569; font-weight: bold; }
+    .report-patient-card, .report-section { margin-top: 12pt; border: 1pt solid #cbd5e1; padding: 10pt; }
+    .report-patient-card h2 { margin: 0 0 4pt; font-size: 15pt; text-transform: uppercase; }
+    .report-patient-card p { margin: 0; }
+    .report-section h2 { margin: 0 0 8pt; border-bottom: 1pt solid #cbd5e1; padding-bottom: 5pt; font-size: 12pt; text-transform: uppercase; }
+    .report-grid { display: table; width: 100%; }
+    .report-field { display: inline-block; width: 30%; min-width: 150pt; margin: 0 6pt 8pt 0; vertical-align: top; }
+    .report-field div { color: #475569; font-size: 9pt; font-weight: bold; text-transform: uppercase; }
+    .report-field span { display: block; min-height: 15pt; border: 1pt solid #cbd5e1; padding: 5pt; }
+    .report-assessment-table div, .report-care-plan-row { border-bottom: 1pt solid #e2e8f0; padding: 5pt 0; }
+    .report-assessment-table strong, .report-care-plan-row strong { display: block; }
+    .report-assessment-table em, .report-care-plan-row em { display: block; font-style: normal; }
+    .report-check { display: inline-block; margin: 4pt 12pt 4pt 0; }
+    .report-check i { font-style: normal; font-weight: bold; margin-right: 4pt; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1pt solid #334155; padding: 4pt; vertical-align: top; }
+    th { background: #f1f5f9; font-weight: bold; }
+    .gdsk-detail-preview { margin: 0; padding: 0; }
+    .gdsk-detail-document { font-size: 10pt; }
+    .gdsk-detail-top, .gdsk-detail-patient, .gdsk-detail-signatures { display: table; width: 100%; }
+    .gdsk-detail-top div, .gdsk-detail-signatures div { display: table-cell; width: 50%; }
+    .gdsk-detail-top div:last-child { text-align: right; }
+    .gdsk-detail-document h3 { text-align: center; font-size: 12pt; }
+    .gdsk-detail-section { margin-top: 8pt; }
+    .gdsk-detail-section h4 { margin: 0 0 4pt; }
+    .gdsk-detail-note { margin-top: 6pt; border: 1pt solid #cbd5e1; padding: 5pt; }
+    .gdsk-detail-signatures { margin-top: 8pt; text-align: center; }
+    .gdsk-detail-signatures em { display: block; margin-top: 22pt; font-style: normal; font-weight: bold; }
+    .report-signatures { margin-top: 20pt; text-align: right; }
+    .report-signatures span { display: block; margin-top: 26pt; }
+  `;
+}
+
+function exportCareSheetToWord() {
+  const sheet = currentCareSheetDetail();
+  const report = app.querySelector(".report-page");
+  if (!sheet || !report) {
+    alert("Không tìm thấy nội dung phiếu để xuất Word.");
+    return;
+  }
+  const documentHtml = `<!doctype html>
+    <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+        <meta charset="utf-8" />
+        <title>Phiếu theo dõi và chăm sóc</title>
+        <style>${careSheetWordStyles()}</style>
+      </head>
+      <body>${report.outerHTML}</body>
+    </html>`;
+  const blob = new Blob(["\ufeff", documentHtml], { type: "application/msword;charset=utf-8" });
+  const link = document.createElement("a");
+  const objectUrl = URL.createObjectURL(blob);
+  link.href = objectUrl;
+  link.download = careSheetWordFilename(sheet);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
+}
+
 function renderCareSheetDetailScreen() {
   const sheet = currentCareSheetDetail();
   const selected = patients[state.selectedPatientIndex] || patients[0];
@@ -2608,6 +2706,7 @@ function renderCareSheetDetailScreen() {
   const scaleRows = scaleDetailRows(sheet.thang_diem_json || {});
   const handoverItems = handoverDetailItems(handover);
   const medicines = handoverMedicineRows(handover);
+  const educationForms = healthEducationFormsFromChecklist(check, sheet);
 
   return `
     <div class="mobile-app care-detail-screen">
@@ -2615,6 +2714,7 @@ function renderCareSheetDetailScreen() {
       <div class="report-actions no-print">
         <button class="btn" data-screen="careEmpty">Quay lại</button>
         <button class="btn" data-action="edit-care-sheet" data-sheet-id="${h(sheet.id)}">Sửa phiếu</button>
+        <button class="btn" data-action="export-word">Xuất Word</button>
         <button class="btn primary" data-action="print">In báo cáo</button>
       </div>
       <main class="report-page">
@@ -2668,6 +2768,11 @@ function renderCareSheetDetailScreen() {
         ${detailSection("XI. Bàn giao", handoverItems.length || medicines.length
           ? `${detailCheckGroup("Việc cần tiếp tục theo dõi/thực hiện", handoverItems)}${detailHandoverMedicines(medicines)}`
           : `<div class="empty">Chưa có nội dung bàn giao.</div>`)}
+
+        ${detailSection("XII. Tư vấn - hướng dẫn - giáo dục sức khỏe", renderGdskDetailDocument(educationForms, {
+          patient: gdskPatientContext(selected),
+          sheet,
+        }), "report-health-education-section")}
 
         <footer class="report-signatures">
           <div><strong>Điều dưỡng ghi phiếu</strong><span>Ký, ghi rõ họ tên</span></div>
@@ -4505,6 +4610,7 @@ function renderGdskDetailDocument(forms, context = {}) {
         ${renderGdskDetailSection("I", "Tư vấn, hướng dẫn khi bắt đầu nhập viện", forms.admission)}
         ${renderGdskDetailSection("II", "Tư vấn, hướng dẫn trong khi điều trị", forms.treatment)}
         ${renderGdskDetailSection("III", "Tư vấn, hướng dẫn trước khi ra viện", forms.discharge)}
+        ${cleanLine(forms.summary?.note) ? `<div class="gdsk-detail-note"><strong>Ghi chú tổng hợp:</strong> ${h(forms.summary.note)}</div>` : ""}
       </div>
     </div>
   `;
@@ -4544,6 +4650,7 @@ function renderGdskDetailSection(prefix, title, form = {}) {
         </tbody>
       </table>
       <div class="gdsk-detail-date">Thời điểm tư vấn: <strong>${h(formatGdskDate(form.date))}</strong></div>
+      ${cleanLine(form.note) ? `<div class="gdsk-detail-note"><strong>Ghi chú:</strong> ${h(form.note)}</div>` : ""}
       <div class="gdsk-detail-signatures">
         <div>
           <strong>Người thực hiện</strong>
@@ -5673,6 +5780,11 @@ app.addEventListener("click", (event) => {
     return;
   }
 
+  if (target.dataset.action === "show-update-info") {
+    showUpdateInfo();
+    return;
+  }
+
   if (target.dataset.action === "start-full-care-test") {
     startHomeCareTest("patient");
     return;
@@ -6145,6 +6257,12 @@ app.addEventListener("click", (event) => {
 
   if (target.dataset.action === "print") {
     window.print();
+    return;
+  }
+
+  if (target.dataset.action === "export-word") {
+    exportCareSheetToWord();
+    return;
   }
 
   if (target.dataset.healthEducationStage) {
@@ -6889,6 +7007,7 @@ async function init() {
       if (index >= 0) state.selectedPatientIndex = index;
     }
     resetForCondition();
+    setTimeout(showUpdateInfo, 0);
   } catch (error) {
     app.innerHTML = `
       <div class="error">
