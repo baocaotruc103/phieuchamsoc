@@ -1861,6 +1861,7 @@ function showUpdateInfo() {
     "- Fix lỗi nhập vào ô textbox phải chọn lại mới nhập được tiếp",
     "- Bổ sung các nội dung nhận định theo các cơ quan mà các khoa đã ý kiến bổ sung",
     "- Bổ sung phần nhận định riêng cho khoa B10 (sản phụ khoa) ở dạng thu gọn cho tối ưu form tích chọn sản phụ khoa mới hiển thị form nhập thông tin",
+    "- Bổ sung bàn giao chi tiết về thuốc khi chọn bàn giao thuốc",
     "",
     "Lưu ý nội dung chẩn đoán điều dưỡng và can thiệp là dữ liệu demo chưa đầy đủ theo các chuyên khoa, vì vậy để đầy đủ thì các khoa cần cung cấp cho phòng điều dưỡng nội dung chẩn đoán điều dưỡng của chuyên khoa mình",
     "",
