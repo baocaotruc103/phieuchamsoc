@@ -112,6 +112,27 @@ function createDefaultHealthEducationForms() {
   };
 }
 
+function createHandoverMedicineRow() {
+  return {
+    name: "",
+    strength: "",
+    dose: "",
+    route: "",
+    time: "",
+    order: "",
+  };
+}
+
+function normalizeHandoverMedicineRow(row = {}) {
+  const { orderTime, note, ...current } = row;
+  return {
+    ...createHandoverMedicineRow(),
+    ...current,
+    time: row.time || row.orderTime || "",
+    order: row.order || row.note || "",
+  };
+}
+
 const state = {
   raw: null,
   data: null,
@@ -167,8 +188,8 @@ const state = {
     fluidOut: "",
     fluidBalance: "",
     bodyType: "",
-    consciousness: "",
-    mucosa: "",
+    consciousness: [],
+    mucosa: [],
     edema: "",
     systemicNote: "",
     breathingMode: "",
@@ -179,7 +200,7 @@ const state = {
     peep: "",
     vt: "",
     respiratoryRate: "",
-    coughStatus: "",
+    coughStatus: [],
     spo2: "",
     circulationStable: false,
     circulationFastPulse: false,
@@ -199,16 +220,25 @@ const state = {
     circulationOtherChecked: false,
     circulationOther: "",
     abdomen: "",
-    stool: "",
+    painLocation: [],
+    painLocationOther: "",
+    painCharacter: [],
+    painCharacterOther: "",
+    nauseaVomiting: [],
+    nauseaVomitingOther: "",
+    flatus: [],
+    flatusOther: "",
+    stool: [],
+    stoolOther: "",
     urinary: [],
     urineAmount: "",
-    nutritionRoute: "",
+    nutritionRoute: [],
     nutritionRegimen: [],
     nutritionRegimenOther: "",
     pathologicalDiet: false,
     pathologicalDietTypes: [],
     pathologicalDietOther: "",
-    neuroConsciousness: "",
+    neuroConsciousness: [],
     neuroConsciousnessOther: "",
     neuroOrientation: "",
     neuroOrientationOther: "",
@@ -239,7 +269,10 @@ const state = {
     painAssessment: false,
     pressureUlcerRiskAssessment: false,
     glasgowAssessment: false,
+    obgynEnabled: false,
+    obgynMode: "",
     handoverMedicineHalf: false,
+    handoverMedicines: [],
     handoverLab: false,
     handoverWaitLab: false,
     handoverFilm: false,
@@ -266,6 +299,7 @@ const state = {
   interventionRows: [],
   interventionDraft: { codeQuery: "", contentQuery: "", selected: [] },
   assessmentTemplate: null,
+  obgynTemplate: null,
   scaleData: [],
   scaleScores: {},
   scaleResults: {},
@@ -281,6 +315,8 @@ const state = {
   activeInterventionSuggest: null,
   healthEducationStage: "admission",
   activeHealthEducationStage: null,
+  handoverMedicineModalOpen: false,
+  handoverMedicineDraft: createHandoverMedicineRow(),
 };
 
 const initialAssessmentChecklist = JSON.parse(JSON.stringify(state.assessmentChecklist));
@@ -290,6 +326,26 @@ function createDefaultAssessmentChecklist() {
     ...JSON.parse(JSON.stringify(initialAssessmentChecklist)),
     evalTime: currentVietnamDateTimeInput(),
   };
+}
+
+function normalizeHandoverMedicines(checklist) {
+  const rows = Array.isArray(checklist.handoverMedicines) ? checklist.handoverMedicines : [];
+  checklist.handoverMedicines = rows.map((row) => normalizeHandoverMedicineRow(row || {}));
+  return checklist;
+}
+
+function normalizeMultiChecklistFields(checklist) {
+  ["consciousness", "mucosa", "coughStatus", "nutritionRoute", "neuroConsciousness"].forEach((key) => {
+    const value = checklist[key];
+    checklist[key] = Array.isArray(value) ? value : cleanLine(value) ? [value] : [];
+  });
+  const focalSigns = Array.isArray(checklist.neuroFocalSigns) ? [...checklist.neuroFocalSigns] : [];
+  if (cleanLine(checklist.neuroFocalSignsStatus) && !focalSigns.includes(checklist.neuroFocalSignsStatus)) {
+    focalSigns.unshift(checklist.neuroFocalSignsStatus);
+  }
+  checklist.neuroFocalSigns = focalSigns;
+  checklist.neuroFocalSignsStatus = "";
+  return checklist;
 }
 
 function latestPreviousChecklist() {
@@ -1006,7 +1062,7 @@ function requestDiagnosisCatalogSearch(query, mode = "diagnosis") {
     .finally(() => {
       state.diagnosisCatalogLoading = false;
       state.diagnosisCatalogPromise = null;
-      render();
+      render(activeCareInputSelector());
     });
 
   return state.diagnosisCatalogPromise;
@@ -1057,7 +1113,7 @@ function ensureDiagnosisCatalogLoaded({ renderOnComplete = true } = {}) {
     .finally(() => {
       state.diagnosisCatalogLoading = false;
       state.diagnosisCatalogPromise = null;
-      if (renderOnComplete) render();
+      if (renderOnComplete) render(activeCareInputSelector());
     });
 
   return state.diagnosisCatalogPromise;
@@ -1462,6 +1518,8 @@ function resetCareFormState({ resetChecklist = false } = {}) {
   state.activeGoalSuggest = null;
   state.activeInterventionSuggest = null;
   state.activeCareFormTab = "patient";
+  state.handoverMedicineModalOpen = false;
+  state.handoverMedicineDraft = createHandoverMedicineRow();
 }
 
 function resetForCondition(options = {}) {
@@ -1485,6 +1543,17 @@ function hydrateCareFormFromSheet(sheet) {
     ...checklist,
     ...handover,
   };
+  normalizeMultiChecklistFields(state.assessmentChecklist);
+  normalizeHandoverMedicines(state.assessmentChecklist);
+  if (!Array.isArray(state.assessmentChecklist.stool) && state.assessmentChecklist.stool) {
+    const legacyStoolValues = {
+      "Bình thường": "Bình thường",
+      "Lỏng": "Phân lỏng",
+      "Táo": "Táo bón",
+      "Không đại tiện": "Chưa đại tiện",
+    };
+    state.assessmentChecklist.stool = [legacyStoolValues[state.assessmentChecklist.stool] || state.assessmentChecklist.stool];
+  }
   state.assessmentChecklist.fluidBalance = calculateFluidBalance(
     state.assessmentChecklist.fluidIn,
     state.assessmentChecklist.fluidOut,
@@ -1498,6 +1567,8 @@ function hydrateCareFormFromSheet(sheet) {
   state.activeCauseSuggest = null;
   state.activeGoalSuggest = null;
   state.activeInterventionSuggest = null;
+  state.handoverMedicineModalOpen = false;
+  state.handoverMedicineDraft = createHandoverMedicineRow();
   state.diagnosisSavedRows = diagnoses.length
     ? diagnoses.map((item, index) => {
         const goals = Array.isArray(item.goals)
@@ -1661,6 +1732,38 @@ function fluidBalanceFromChecklist(check) {
 function inputNextAttrs(type = "text") {
   const inputMode = type === "number" ? ' inputmode="decimal"' : "";
   return `enterkeyhint="next" autocomplete="off" autocapitalize="sentences"${inputMode}`;
+}
+
+function activeCareInputSelector() {
+  const active = document.activeElement;
+  if (!active || !app.contains(active) || !active.closest(".form-mode")) return "";
+  const attributes = [
+    "data-input",
+    "data-patient",
+    "data-assessment-edit",
+    "data-gdsk-note",
+    "data-gdsk-meta",
+    "data-checklist",
+    "data-dx-query",
+    "data-dx-cause-query",
+    "data-dx-goal-query",
+    "data-diseased-organ-query",
+    "data-dx-picker-query",
+    "data-goal-query",
+    "data-iv-code-query",
+    "data-iv-content-query",
+    "data-handover-medicine-draft",
+    "data-dx-field",
+    "data-iv-field",
+  ];
+  const attribute = attributes.find((name) => active.hasAttribute(name));
+  if (!attribute) return "";
+  const value = active.getAttribute(attribute);
+  if (!value) return `[${attribute}]`;
+  const escapedValue = typeof CSS !== "undefined" && typeof CSS.escape === "function"
+    ? CSS.escape(value)
+    : value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  return `[${attribute}="${escapedValue}"]`;
 }
 
 function focusNextCareInput(current) {
@@ -1967,17 +2070,14 @@ function renderCareSheetListBody() {
     <div class="care-sheet-list">
       ${state.careSheets.map((sheet) => `
         <article class="care-sheet-row">
-          <div>
+          <div class="care-sheet-code">
+            <span class="care-sheet-code-label">Mã phiếu</span>
             <strong>${h(sheet.ma_phieu || `Phiếu #${sheet.id}`)}</strong>
-            <span>Cấp chăm sóc: ${h(sheet.cap_cham_soc || "-")}</span>
+            <span class="care-sheet-level">Cấp chăm sóc: ${h(sheet.cap_cham_soc || "-")}</span>
           </div>
-          <div>
+          <div class="care-sheet-evaluation-time">
             <span>Thời gian đánh giá</span>
             <strong>${h(formatDateTime(sheet.thoi_gian_danh_gia || sheet.created_at))}</strong>
-          </div>
-          <div>
-            <span>Người đánh giá</span>
-            <strong>${h(sheet.nguoi_danh_gia || "-")}</strong>
           </div>
           <div class="care-sheet-row-actions">
             <button class="btn" data-action="edit-care-sheet" data-sheet-id="${h(sheet.id)}">Sửa</button>
@@ -2400,7 +2500,7 @@ function detailAssessmentItems(sections = []) {
       !/^A\.\s*Thông tin người bệnh/i.test(item) &&
       !/^B\.\s*Theo dõi dịch/i.test(item) &&
       !/^N\.\s*Thang điểm đánh giá/i.test(item) &&
-      !/^O\.\s*Bàn giao/i.test(item)
+      !/^P\.\s*Bàn giao/i.test(item)
     )
     .map((item, index) => item.replace(/^[A-Z]\.\s*/, `${index + 1}. `));
 }
@@ -2434,7 +2534,7 @@ function scaleDetailRows(results = {}) {
 
 function handoverDetailItems(handover = {}) {
   const labels = {
-    handoverMedicineHalf: "Thuốc còn 1/2",
+    handoverMedicineHalf: "Thuốc",
     handoverLab: "Lấy xét nghiệm",
     handoverWaitLab: "Chờ kết quả xét nghiệm",
     handoverFilm: "Lấy phim",
@@ -2447,8 +2547,40 @@ function handoverDetailItems(handover = {}) {
     handoverOther: "Khác",
   };
   return Object.entries(handover)
+    .filter(([key]) => key !== "handoverMedicines")
     .filter(([, value]) => value === true || (typeof value === "string" && value.trim()))
     .map(([key, value]) => `${labels[key] || key}: ${value === true ? "Có" : value}`);
+}
+
+function handoverMedicineRows(handover = {}) {
+  return (Array.isArray(handover.handoverMedicines) ? handover.handoverMedicines : [])
+    .map((row) => normalizeHandoverMedicineRow(row || {}))
+    .filter((row) => Object.values(row).some((value) => cleanLine(value)));
+}
+
+function detailHandoverMedicines(rows = []) {
+  if (!rows.length) return "";
+  return `
+    <div class="report-medicine-table">
+      <strong>Thuốc bàn giao</strong>
+      <div class="report-medicine-scroll">
+        <table>
+          <thead><tr><th>Tên thuốc/Hàm lượng</th><th>Liều dùng</th><th>Đường dùng</th><th>Thời gian</th><th>Y lệnh</th></tr></thead>
+          <tbody>
+            ${rows.map((row) => `
+              <tr>
+                <td>${h([row.name, row.strength].filter(Boolean).join(" / ") || "-")}</td>
+                <td>${h(row.dose || "-")}</td>
+                <td>${h(row.route || "-")}</td>
+                <td>${h(row.time || "-")}</td>
+                <td>${h(row.order || "-")}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
 }
 
 function renderCareSheetDetailScreen() {
@@ -2475,6 +2607,7 @@ function renderCareSheetDetailScreen() {
   const assessmentItems = detailAssessmentItems(assessment.sections || []);
   const scaleRows = scaleDetailRows(sheet.thang_diem_json || {});
   const handoverItems = handoverDetailItems(handover);
+  const medicines = handoverMedicineRows(handover);
 
   return `
     <div class="mobile-app care-detail-screen">
@@ -2532,7 +2665,9 @@ function renderCareSheetDetailScreen() {
 
         ${detailSection("X. Chẩn đoán điều dưỡng - mục tiêu - can thiệp", detailDiagnosisGoalsInterventions(diagnoses, interventions), "report-care-plan-section")}
 
-        ${detailSection("XI. Bàn giao", handoverItems.length ? detailCheckGroup("Việc cần tiếp tục theo dõi/thực hiện", handoverItems) : `<div class="empty">Chưa có nội dung bàn giao.</div>`)}
+        ${detailSection("XI. Bàn giao", handoverItems.length || medicines.length
+          ? `${detailCheckGroup("Việc cần tiếp tục theo dõi/thực hiện", handoverItems)}${detailHandoverMedicines(medicines)}`
+          : `<div class="empty">Chưa có nội dung bàn giao.</div>`)}
 
         <footer class="report-signatures">
           <div><strong>Điều dưỡng ghi phiếu</strong><span>Ký, ghi rõ họ tên</span></div>
@@ -2605,6 +2740,7 @@ function render(focusSelector = "") {
     ${state.activeScale ? renderScaleModal() : ""}
     ${state.activeFallRiskScalePicker ? renderFallRiskScalePickerModal() : ""}
     ${state.activeHealthEducationStage ? renderHealthEducationModal() : ""}
+    ${state.handoverMedicineModalOpen ? renderHandoverMedicineModal() : ""}
   `;
 
   if (focusSelector) {
@@ -2836,8 +2972,8 @@ function renderAssessmentPanel(assessments) {
           <h3>Toàn thân</h3>
           <div class="assessment-form compact-form">
             ${radioGroup("bodyType", "Thể trạng", ["Gầy", "Trung bình", "Béo"], check.bodyType)}
-            ${radioGroup("consciousness", "Ý thức", ["Tỉnh", "Lơ mơ", "Hôn mê", "Kích thích", "An thần"], check.consciousness)}
-            ${radioGroup("mucosa", "Da niêm mạc", ["Hồng", "Nhợt"], check.mucosa)}
+            ${multiCheckGroup("consciousness", "Ý thức", ["Tỉnh", "Lơ mơ", "Hôn mê", "Kích thích", "An thần"], check.consciousness)}
+            ${multiCheckGroup("mucosa", "Da niêm mạc", ["Hồng", "Nhợt", "Vàng da", "Ngứa ngoài da"], check.mucosa)}
             ${radioGroup("edema", "Phù", ["Có", "Không"], check.edema)}
             ${checkArea("systemicNote", "Khác", check.systemicNote)}
           </div>
@@ -2850,7 +2986,7 @@ function renderAssessmentPanel(assessments) {
             ${checkField("respiratoryRate", "Nhịp thở (lần/phút)", check.respiratoryRate, "text", "respiratory-rate-field")}
             ${checkArea("respiratoryNote", "Khác", check.respiratoryNote, "respiratory-note-field")}
             ${renderRespiratoryDetails(check)}
-            ${radioGroup("coughStatus", "Ho", ["Không ho", "Ho khan", "Ho có đờm", "Ho yếu / không hiệu quả", "Không đánh giá được"], check.coughStatus)}
+            ${multiCheckGroup("coughStatus", "Ho", ["Không ho", "Ho khan", "Ho có đờm", "Ho từng cơn", "Ho thường xuyên", "Ho có máu", "Ho yếu / không hiệu quả", "Không đánh giá được"], check.coughStatus)}
           </div>
         </div>
 
@@ -2870,29 +3006,38 @@ function renderAssessmentPanel(assessments) {
         <div class="assessment-section-card">
           <h3>Thần kinh cảm giác</h3>
           <div class="assessment-form compact-form">
-            ${radioGroup("neuroConsciousness", "Ý thức", ["Bình thường", "Lơ mơ", "Ngủ gà", "Kích thích", "Hôn mê", "Khác"], check.neuroConsciousness)}
-            ${check.neuroConsciousness === "Khác" ? checkField("neuroConsciousnessOther", "Ý thức khác", check.neuroConsciousnessOther) : ""}
+            ${multiCheckGroup("neuroConsciousness", "Ý thức", ["Bình thường", "Lơ mơ", "Ngủ gà", "Kích thích", "Hôn mê", "Khác"], check.neuroConsciousness)}
+            ${Array.isArray(check.neuroConsciousness) && check.neuroConsciousness.includes("Khác") ? checkField("neuroConsciousnessOther", "Ý thức khác", check.neuroConsciousnessOther) : ""}
             ${radioGroup("neuroOrientation", "Định hướng", ["Bình thường", "Rối loạn định hướng thời gian", "Rối loạn định hướng không gian", "Rối loạn định hướng bản thân", "Khác"], check.neuroOrientation)}
             ${check.neuroOrientation === "Khác" ? checkField("neuroOrientationOther", "Định hướng khác", check.neuroOrientationOther) : ""}
             ${normalOrMultiCheckGroup("neuroBehaviorStatus", "neuroBehavior", "Tri giác - hành vi", ["Kích thích", "Vật vã", "Lo âu", "Không hợp tác", "Rối loạn hành vi", "Ảo giác", "Lú lẫn", "Khác"], check.neuroBehaviorStatus, check.neuroBehavior)}
             ${Array.isArray(check.neuroBehavior) && check.neuroBehavior.includes("Khác") ? checkField("neuroBehaviorOther", "Tri giác - hành vi khác", check.neuroBehaviorOther) : ""}
-            ${normalOrMultiCheckGroup("neuroFocalSignsStatus", "neuroFocalSigns", "Dấu hiệu thần kinh khu trú", ["Méo miệng", "Nói khó", "Nuốt khó", "Liệt dây thần kinh sọ", "Giảm phản xạ", "Tăng phản xạ gân xương", "Co giật", "Đồng tử bất thường", "Khác"], check.neuroFocalSignsStatus, check.neuroFocalSigns)}
+            ${multiCheckGroup("neuroFocalSigns", "Dấu hiệu thần kinh khu trú", ["Bình thường", "Méo miệng", "Nói khó", "Nuốt khó", "Liệt dây thần kinh sọ", "Giảm phản xạ", "Tăng phản xạ gân xương", "Co giật", "Đồng tử bất thường", "Khác"], check.neuroFocalSigns)}
             ${Array.isArray(check.neuroFocalSigns) && check.neuroFocalSigns.includes("Khác") ? checkField("neuroFocalSignsOther", "Dấu hiệu thần kinh khu trú khác", check.neuroFocalSignsOther) : ""}
           </div>
         </div>
 
         <div class="assessment-section-card">
           <h3>Tiêu hóa</h3>
-          <div class="assessment-form compact-form">
-            ${radioGroup("abdomen", "Bụng", ["Mềm", "Chướng", "Đau", "Có dẫn lưu"], check.abdomen)}
-            ${radioGroup("stool", "Đại tiện", ["Bình thường", "Lỏng", "Táo", "Không đại tiện"], check.stool)}
+          <div class="assessment-form compact-form digestive-form">
+            ${radioGroup("abdomen", "Bụng", ["Mềm", "Chướng", "Có dẫn lưu"], check.abdomen)}
+            ${multiCheckGroup("painLocation", "Vị trí đau", ["Không đau", "Thượng vị", "Quanh rốn", "Hạ vị", "Hố chậu phải", "Hố chậu trái", "Hạ sườn phải", "Hạ sườn trái", "Mạng sườn phải", "Mạng sườn trái", "Đau toàn bụng", "Đau vị trí vết mổ", "Khác"], check.painLocation)}
+            ${Array.isArray(check.painLocation) && check.painLocation.includes("Khác") ? checkField("painLocationOther", "Vị trí đau khác", check.painLocationOther) : ""}
+            ${multiCheckGroup("painCharacter", "Tính chất đau", ["Âm ỉ", "Dữ dội", "Quặn từng cơn", "Đau liên tục", "Đau tăng khi ho/vận động", "Đau sau ăn", "Đau khi ấn", "Phản ứng thành bụng", "Đau lan ra sau lưng", "Đau lan lên vai phải", "Khác"], check.painCharacter)}
+            ${Array.isArray(check.painCharacter) && check.painCharacter.includes("Khác") ? checkField("painCharacterOther", "Tính chất đau khác", check.painCharacterOther) : ""}
+            ${multiCheckGroup("nauseaVomiting", "Nôn/Buồn nôn", ["Không", "Buồn nôn", "Nôn khan", "Nôn ra thức ăn", "Nôn dịch vàng/xanh", "Nôn máu", "Nôn nhiều lần", "Khác"], check.nauseaVomiting)}
+            ${Array.isArray(check.nauseaVomiting) && check.nauseaVomiting.includes("Khác") ? checkField("nauseaVomitingOther", "Nôn/Buồn nôn khác", check.nauseaVomitingOther) : ""}
+            ${multiCheckGroup("flatus", "Trung tiện", ["Có", "Chưa", "Bí trung tiện", "Trung tiện ít", "Trung tiện nhiều", "Khác"], check.flatus)}
+            ${Array.isArray(check.flatus) && check.flatus.includes("Khác") ? checkField("flatusOther", "Trung tiện khác", check.flatusOther) : ""}
+            ${multiCheckGroup("stool", "Đại tiện", ["Bình thường", "Chưa đại tiện", "Táo bón", "Tiêu chảy", "Phân lỏng", "Phân đen", "Phân máu", "Khác"], check.stool)}
+            ${Array.isArray(check.stool) && check.stool.includes("Khác") ? checkField("stoolOther", "Đại tiện khác", check.stoolOther) : ""}
           </div>
         </div>
 
         <div class="assessment-section-card">
           <h3>Bài tiết</h3>
           <div class="assessment-form compact-form">
-            ${multiCheckGroup("urinary", "Bài tiết nước tiểu", ["Tự đi tiểu", "Tiểu qua sonde", "Thiểu niệu", "Vô niệu"], check.urinary)}
+            ${multiCheckGroup("urinary", "Bài tiết nước tiểu", ["Tự đi tiểu", "Tiểu qua sonde", "Thiểu niệu", "Đa niệu", "Vô niệu"], check.urinary)}
             ${checkField("urineAmount", "Số lượng nước tiểu (ml)", check.urineAmount)}
           </div>
         </div>
@@ -2900,7 +3045,7 @@ function renderAssessmentPanel(assessments) {
         <div class="assessment-section-card">
           <h3>Dinh dưỡng</h3>
           <div class="assessment-form compact-form">
-            ${radioGroup("nutritionRoute", "Đường nuôi dưỡng", ["Đường miệng", "Sonde dạ dày", "Sonde hỗng tràng", "Tĩnh mạch", "Kết hợp", "Nhịn ăn"], check.nutritionRoute)}
+            ${multiCheckGroup("nutritionRoute", "Đường nuôi dưỡng", ["Đường miệng", "Sonde dạ dày", "Sonde hỗng tràng", "Tĩnh mạch", "Kết hợp", "Nhịn ăn"], check.nutritionRoute)}
             ${multiCheckGroup("nutritionRegimen", "Chế độ dinh dưỡng", ["Cơm", "Cháo", "Soup", "Sữa", "Khác"], check.nutritionRegimen)}
             ${Array.isArray(check.nutritionRegimen) && check.nutritionRegimen.includes("Khác") ? checkField("nutritionRegimenOther", "Chế độ dinh dưỡng khác", check.nutritionRegimenOther) : ""}
             ${checkBool("pathologicalDiet", "Chế độ bệnh lý", check.pathologicalDiet)}
@@ -2937,6 +3082,8 @@ function renderAssessmentPanel(assessments) {
           </div>
         </div>
 
+        ${renderObgynAssessmentPanel()}
+
         <div class="disease-checklist" style="display: none;">
           <div class="disease-checklist-head">
             <strong>Gợi ý nhận định theo mặt bệnh</strong>
@@ -2966,6 +3113,94 @@ function renderAssessmentPanel(assessments) {
       </div>
     </section>
   `;
+}
+
+function obgynFieldKey(id) {
+  return `obgyn_${id}`;
+}
+
+function selectedObgynSections() {
+  const sections = state.obgynTemplate?.sections || [];
+  if (state.assessmentChecklist.obgynMode === "obstetric") {
+    return sections.filter((section) => ["truoc_sinh", "trong_va_sau_khi_sinh"].includes(section.id));
+  }
+  if (state.assessmentChecklist.obgynMode === "gynecology") {
+    return sections.filter((section) => section.id === "nguoi_benh_phu_khoa");
+  }
+  return [];
+}
+
+function clearObgynFieldValues(fields = []) {
+  fields.forEach((fieldDef) => {
+    if (fieldDef.type === "group" || fieldDef.type === "object") {
+      clearObgynFieldValues(fieldDef.fields || []);
+      return;
+    }
+    delete state.assessmentChecklist[obgynFieldKey(fieldDef.id)];
+  });
+}
+
+function clearHiddenObgynValues() {
+  const visibleIds = new Set(selectedObgynSections().map((section) => section.id));
+  (state.obgynTemplate?.sections || [])
+    .filter((section) => !visibleIds.has(section.id))
+    .forEach((section) => clearObgynFieldValues(section.fields || []));
+}
+
+function obgynSectionTitle(title = "") {
+  return title.replace(/^[IVXLCDM]+\.\s*/i, "");
+}
+
+function renderObgynAssessmentPanel() {
+  const check = state.assessmentChecklist;
+  const enabled = Boolean(check.obgynEnabled);
+  return `
+    <div class="assessment-section-card obgyn-assessment-card">
+      <h3>Sản phụ khoa</h3>
+      <div class="obgyn-toggle">${checkBool("obgynEnabled", "Nhận định sản phụ khoa", enabled)}</div>
+      ${enabled ? `
+        <div class="obgyn-mode-buttons" aria-label="Loại nhận định sản phụ khoa">
+          <button type="button" class="btn obgyn-mode-btn ${check.obgynMode === "obstetric" ? "active" : ""}" data-obgyn-mode="obstetric">Sản khoa</button>
+          <button type="button" class="btn obgyn-mode-btn ${check.obgynMode === "gynecology" ? "active" : ""}" data-obgyn-mode="gynecology">Phụ khoa</button>
+        </div>
+        ${check.obgynMode ? renderSelectedObgynSections() : `<div class="section-hint">Chọn Sản khoa hoặc Phụ khoa để nhập nhận định.</div>`}
+      ` : ""}
+    </div>
+  `;
+}
+
+function renderSelectedObgynSections() {
+  if (!state.obgynTemplate) return `<div class="section-hint">Chưa tải được dữ liệu nhận định sản phụ khoa.</div>`;
+  return `
+    <div class="obgyn-subsections">
+      ${selectedObgynSections().map((section) => `
+        <div class="obgyn-subsection">
+          <h4>${h(obgynSectionTitle(section.title))}</h4>
+          <div class="assessment-form compact-form obgyn-form">
+            ${(section.fields || []).map((field) => renderObgynField(field)).join("")}
+          </div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+function renderObgynField(fieldDef) {
+  const key = obgynFieldKey(fieldDef.id);
+  if (fieldDef.type === "group" || fieldDef.type === "object") {
+    return `
+      <div class="assessment-full obgyn-field-group">
+        <h5>${h(fieldDef.label)}</h5>
+        <div class="assessment-form compact-form obgyn-form">
+          ${(fieldDef.fields || []).map((field) => renderObgynField(field)).join("")}
+        </div>
+      </div>
+    `;
+  }
+  if (fieldDef.type === "checkbox") {
+    return multiCheckGroup(key, fieldDef.label, fieldDef.options || [], state.assessmentChecklist[key] || []);
+  }
+  return checkField(key, fieldDef.label, state.assessmentChecklist[key] || "", fieldDef.type || "text");
 }
 
 function renderDiseasedOrganDropdown() {
@@ -4398,6 +4633,80 @@ function gdskMetaField(stageKey, field, label, value, type = "text") {
   `;
 }
 
+function renderHandoverMedicineTable() {
+  const rows = handoverMedicineRows(state.assessmentChecklist);
+  return `
+    <div class="handover-medicine">
+      <div class="handover-medicine-header">
+        <strong>Nội dung bàn giao thuốc</strong>
+      </div>
+      ${rows.length ? `
+        <div class="handover-medicine-table">
+          <table class="handover-medicine-data">
+            <thead>
+              <tr><th>Tên thuốc/Hàm lượng</th><th>Liều dùng</th><th>Đường dùng</th><th>Thời gian</th><th>Y lệnh</th><th></th></tr>
+            </thead>
+            <tbody>
+              ${rows.map((row, index) => `
+                <tr>
+                  <td data-label="Tên thuốc/Hàm lượng">${h([row.name, row.strength].filter(Boolean).join(" / ") || "-")}</td>
+                  <td data-label="Liều dùng">${h(row.dose || "-")}</td>
+                  <td data-label="Đường dùng">${h(row.route || "-")}</td>
+                  <td data-label="Thời gian">${h(row.time || "-")}</td>
+                  <td data-label="Y lệnh">${h(row.order || "-")}</td>
+                  <td class="handover-medicine-action"><button type="button" class="remove-row-btn" data-action="remove-handover-medicine" data-index="${index}">Xóa</button></td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      ` : `<div class="handover-medicine-empty">Chưa có thuốc bàn giao.</div>`}
+      <div class="handover-medicine-footer">
+        <button type="button" class="btn primary" data-action="add-handover-medicine">Thêm thuốc bàn giao</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderHandoverMedicineModal() {
+  const draft = normalizeHandoverMedicineRow(state.handoverMedicineDraft);
+  return `
+    <div class="scale-modal-overlay" data-action="close-handover-medicine-overlay">
+      <div class="scale-modal handover-medicine-modal" role="dialog" aria-modal="true" aria-labelledby="handover-medicine-modal-title">
+        <div class="scale-modal-header">
+          <h2 id="handover-medicine-modal-title">Thêm thuốc bàn giao</h2>
+          <button type="button" class="scale-modal-close" data-action="close-handover-medicine">&times;</button>
+        </div>
+        <div class="scale-modal-body">
+          <div class="handover-medicine-form">
+            ${handoverMedicineDraftField("name", "Tên thuốc", draft.name)}
+            ${handoverMedicineDraftField("strength", "Hàm lượng", draft.strength)}
+            ${handoverMedicineDraftField("dose", "Liều dùng", draft.dose)}
+            ${handoverMedicineDraftField("route", "Đường dùng", draft.route)}
+            ${handoverMedicineDraftField("time", "Thời gian", draft.time, "datetime-local")}
+            ${handoverMedicineDraftField("order", "Y lệnh", draft.order)}
+          </div>
+        </div>
+        <div class="scale-modal-footer handover-medicine-modal-footer">
+          <div class="scale-modal-actions">
+            <button type="button" class="btn ghost" data-action="close-handover-medicine">Hủy</button>
+            <button type="button" class="btn primary" data-action="save-handover-medicine">Lưu</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function handoverMedicineDraftField(key, label, value, type = "text") {
+  return `
+    <label class="assessment-field">
+      <span>${h(label)}</span>
+      <input type="${type}" value="${h(value || "")}" data-handover-medicine-draft="${h(key)}" ${inputNextAttrs(type)} />
+    </label>
+  `;
+}
+
 function renderHandoverPanel() {
   const check = state.assessmentChecklist;
   return `
@@ -4410,7 +4719,7 @@ function renderHandoverPanel() {
       </div>
       <div class="panel-body">
         <div class="handover-grid">
-          ${checkBool("handoverMedicineHalf", "Thuốc còn 1/2", check.handoverMedicineHalf)}
+          ${checkBool("handoverMedicineHalf", "Thuốc", check.handoverMedicineHalf)}
           ${checkBool("handoverLab", "Lấy xét nghiệm", check.handoverLab)}
           ${checkBool("handoverFilm", "Lấy phim", check.handoverFilm)}
           ${checkBool("handoverWaitLab", "Chờ kết quả xét nghiệm", check.handoverWaitLab)}
@@ -4421,6 +4730,7 @@ function renderHandoverPanel() {
           ${checkBool("handoverUrine", "Theo dõi nước tiểu", check.handoverUrine)}
           ${checkBool("handoverTube", "Chăm sóc sonde", check.handoverTube)}
         </div>
+        ${check.handoverMedicineHalf ? renderHandoverMedicineTable() : ""}
         ${checkArea("handoverOther", "Khác", check.handoverOther)}
       </div>
     </section>
@@ -4509,6 +4819,7 @@ function handoverPayload() {
   const check = state.assessmentChecklist;
   return {
     handoverMedicineHalf: check.handoverMedicineHalf,
+    handoverMedicines: check.handoverMedicineHalf ? handoverMedicineRows(check) : [],
     handoverLab: check.handoverLab,
     handoverWaitLab: check.handoverWaitLab,
     handoverFilm: check.handoverFilm,
@@ -4570,7 +4881,16 @@ function hasAssessmentTabContent() {
     "neuroFocalSigns",
     "neuroFocalSignsOther",
     "abdomen",
+    "painLocation",
+    "painLocationOther",
+    "painCharacter",
+    "painCharacterOther",
+    "nauseaVomiting",
+    "nauseaVomitingOther",
+    "flatus",
+    "flatusOther",
     "stool",
+    "stoolOther",
     "urinary",
     "urineAmount",
     "nutritionRoute",
@@ -4591,6 +4911,7 @@ function hasAssessmentTabContent() {
     "painAssessment",
     "pressureUlcerRiskAssessment",
     "glasgowAssessment",
+    "obgynEnabled",
   ];
   if (state.careLevel === "1") {
     assessmentFields.push("fluidIn", "fluidOut", "fluidBalance");
@@ -4941,7 +5262,16 @@ function assessmentChecklistSummary() {
     spo2: "SpO2",
     vasopressorOther: "Vận mạch khác",
     abdomen: "Bụng",
+    painLocation: "Vị trí đau",
+    painLocationOther: "Vị trí đau khác",
+    painCharacter: "Tính chất đau",
+    painCharacterOther: "Tính chất đau khác",
+    nauseaVomiting: "Nôn/Buồn nôn",
+    nauseaVomitingOther: "Nôn/Buồn nôn khác",
+    flatus: "Trung tiện",
+    flatusOther: "Trung tiện khác",
     stool: "Đại tiện",
+    stoolOther: "Đại tiện khác",
     urinary: "Tiểu tiện",
     urineAmount: "Số lượng nước tiểu",
     nutritionType: "Dinh dưỡng",
@@ -4982,7 +5312,7 @@ function assessmentChecklistSummary() {
     handoverOther: "Bàn giao khác",
   };
   const booleanLabels = {
-    handoverMedicineHalf: "Bàn giao: Thuốc còn 1/2",
+    handoverMedicineHalf: "Bàn giao: Thuốc",
     handoverLab: "Bàn giao: Lấy xét nghiệm",
     handoverFilm: "Bàn giao: Lấy phim",
     handoverWaitLab: "Bàn giao: Chờ kết quả xét nghiệm",
@@ -5010,8 +5340,10 @@ function assessmentChecklistSummary() {
     glasgowAssessment: "Thang điểm đánh giá: Glasgow",
   };
   return Object.entries(state.assessmentChecklist)
-    .filter(([, value]) =>
-      typeof value === "boolean" ? value : Array.isArray(value) ? value.length : cleanLine(value),
+    .filter(([key, value]) =>
+      !key.startsWith("obgyn") &&
+      key !== "handoverMedicines" &&
+      (typeof value === "boolean" ? value : Array.isArray(value) ? value.length : cleanLine(value)),
     )
     .map(([key, value]) => {
       if (typeof value === "boolean") {
@@ -5037,15 +5369,16 @@ function buildAssessmentSectionsForSheet() {
     "D. Toàn thân": ["bodyType", "consciousness", "mucosa", "edema", "systemicNote"],
     "E. Hô hấp": ["breathingMode", "respiratoryRate", "respiratoryNote", "oxygenFlow", "ventilationAirway", "ventilatorMode", "fio2", "peep", "vt", "coughStatus"],
     "F. Tuần hoàn": ["circulationSymptoms", "peripheralPerfusion", "heartRhythm", "heartRateStatus", "heartSounds", "circulationOther"],
-    "G. Thần kinh cảm giác": ["neuroConsciousness", "neuroConsciousnessOther", "neuroOrientation", "neuroOrientationOther", "neuroBehaviorStatus", "neuroBehavior", "neuroBehaviorOther", "neuroFocalSignsStatus", "neuroFocalSigns", "neuroFocalSignsOther"],
-    "H. Tiêu hóa": ["abdomen", "stool"],
+    "G. Thần kinh cảm giác": ["neuroConsciousness", "neuroConsciousnessOther", "neuroOrientation", "neuroOrientationOther", "neuroBehaviorStatus", "neuroBehavior", "neuroBehaviorOther", "neuroFocalSigns", "neuroFocalSignsOther"],
+    "H. Tiêu hóa": ["abdomen", "painLocation", "painLocationOther", "painCharacter", "painCharacterOther", "nauseaVomiting", "nauseaVomitingOther", "flatus", "flatusOther", "stool", "stoolOther"],
     "I. Bài tiết": ["urinary", "urineAmount"],
     "J. Dinh dưỡng": ["nutritionRoute", "nutritionRegimen", "nutritionRegimenOther", "pathologicalDiet", "pathologicalDietTypes", "pathologicalDietOther"],
     "K. Vận động/Phục hồi chức năng": ["mobilityAbility", "mobilityAbilityOther", "muscleStrength", "muscleStrengthOther", "movementStatus", "movementStatusOther"],
     "L. Tư vấn, giáo dục sức khỏe": ["treatmentEducation", "careEducation", "preventionEducation"],
     "M. Cơ quan bị bệnh": ["diseasedOrgan"],
     "N. Thang điểm đánh giá": ["fallRiskAssessment", "vteRiskAssessment", "painAssessment", "pressureUlcerRiskAssessment", "glasgowAssessment"],
-    "O. Bàn giao": ["handoverMedicineHalf", "handoverLab", "handoverWaitLab", "handoverFilm", "handoverWaitFilm", "handoverDressing", "handoverDrain", "handoverVitals", "handoverUrine", "handoverTube", "handoverOther"]
+    "O. Sản phụ khoa": [],
+    "P. Bàn giao": ["handoverMedicineHalf", "handoverLab", "handoverWaitLab", "handoverFilm", "handoverWaitFilm", "handoverDressing", "handoverDrain", "handoverVitals", "handoverUrine", "handoverTube", "handoverOther"]
   };
   
   const labels = {
@@ -5056,11 +5389,11 @@ function buildAssessmentSectionsForSheet() {
     breathingMode: "Hô hấp", respiratoryRate: "Nhịp thở", respiratoryNote: "Khác", oxygenFlow: "Lưu lượng oxy", ventilationAirway: "Đường thở", ventilatorMode: "Mode thở máy", fio2: "FiO2", peep: "PEEP", vt: "VT", coughStatus: "Ho",
     circulationStable: "Ổn định", circulationFastPulse: "Mạch nhanh", circulationHypotension: "Hạ huyết áp", circulationShock: "Sốc", circulationVasopressor: "Có vận mạch", vasopressorNoradrenaline: "Noradrenaline", vasopressorAdrenaline: "Adrenaline", vasopressorDobutamine: "Dobutamine", vasopressorVasopressin: "Vasopressin", vasopressorOther: "Khác", circulationNote: "Khác", circulationSymptoms: "Triệu chứng cơ năng", peripheralPerfusion: "Tưới máu ngoại vi", heartRhythm: "Nhịp tim", heartRateStatus: "Mạch", heartSounds: "Tiếng tim", circulationOther: "Khác",
     neuroSensory: "Thần kinh cảm giác", neuroConsciousness: "Ý thức", neuroConsciousnessOther: "Ý thức khác", neuroOrientation: "Định hướng", neuroOrientationOther: "Định hướng khác", neuroBehaviorStatus: "Tri giác - hành vi", neuroBehavior: "Tri giác - hành vi", neuroBehaviorOther: "Tri giác - hành vi khác", neuroFocalSignsStatus: "Dấu hiệu thần kinh khu trú", neuroFocalSigns: "Dấu hiệu thần kinh khu trú", neuroFocalSignsOther: "Dấu hiệu thần kinh khu trú khác",
-    abdomen: "Bụng", stool: "Đại tiện",
+    abdomen: "Bụng", painLocation: "Vị trí đau", painLocationOther: "Vị trí đau khác", painCharacter: "Tính chất đau", painCharacterOther: "Tính chất đau khác", nauseaVomiting: "Nôn/Buồn nôn", nauseaVomitingOther: "Nôn/Buồn nôn khác", flatus: "Trung tiện", flatusOther: "Trung tiện khác", stool: "Đại tiện", stoolOther: "Đại tiện khác",
     urinary: "Bài tiết nước tiểu", urineAmount: "Số lượng nước tiểu",
     nutritionType: "Loại", menu: "Thực đơn", nutritionRoute: "Đường nuôi dưỡng", nutritionRegimen: "Chế độ dinh dưỡng", nutritionRegimenOther: "Chế độ dinh dưỡng khác", pathologicalDiet: "Chế độ bệnh lý", pathologicalDietTypes: "Loại chế độ bệnh lý", pathologicalDietOther: "Chế độ bệnh lý khác",
     mobilityAbility: "Khả năng vận động", mobilityAbilityOther: "Khả năng vận động khác", muscleStrength: "Tình trạng cơ lực", muscleStrengthOther: "Tình trạng cơ lực khác", movementStatus: "Tình trạng vận động", movementStatusOther: "Tình trạng vận động khác", mobilityRehab: "Vận động/PHCN", treatmentEducation: "Hướng dẫn điều trị", careEducation: "Hướng dẫn chăm sóc", preventionEducation: "Giáo dục phòng bệnh", healthEducation: "Giáo dục sức khỏe",
-    handoverMedicineHalf: "Thuốc còn 1/2", handoverLab: "Lấy xét nghiệm", handoverWaitLab: "Chờ xét nghiệm", handoverFilm: "Lấy phim", handoverWaitFilm: "Chờ phim", handoverDressing: "Thay băng", handoverDrain: "Theo dõi dẫn lưu", handoverVitals: "Theo dõi DHST", handoverUrine: "Theo dõi nước tiểu", handoverTube: "Chăm sóc sonde", handoverOther: "Khác",
+    handoverMedicineHalf: "Thuốc", handoverLab: "Lấy xét nghiệm", handoverWaitLab: "Chờ xét nghiệm", handoverFilm: "Lấy phim", handoverWaitFilm: "Chờ phim", handoverDressing: "Thay băng", handoverDrain: "Theo dõi dẫn lưu", handoverVitals: "Theo dõi DHST", handoverUrine: "Theo dõi nước tiểu", handoverTube: "Chăm sóc sonde", handoverOther: "Khác",
     diseasedOrgan: "Cơ quan bị bệnh",
     fallRiskAssessment: "Đánh giá nguy cơ té ngã",
     vteRiskAssessment: "Đánh giá nguy cơ viêm tĩnh mạch",
@@ -5070,7 +5403,7 @@ function buildAssessmentSectionsForSheet() {
   };
   
   for (const [section, fields] of Object.entries(sectionGroups)) {
-    const items = [];
+    const items = section === "O. Sản phụ khoa" ? buildObgynAssessmentItems() : [];
     for (const field of fields) {
       const value = check[field];
       if (value === undefined || value === null || value === "" || (Array.isArray(value) && value.length === 0) || (typeof value === "boolean" && !value)) continue;
@@ -5096,6 +5429,28 @@ function buildAssessmentSectionsForSheet() {
   }
   
   return sections;
+}
+
+function buildObgynAssessmentItems() {
+  const check = state.assessmentChecklist;
+  if (!check.obgynEnabled || !check.obgynMode || !state.obgynTemplate) return [];
+  const typeLabel = check.obgynMode === "obstetric" ? "Sản khoa" : "Phụ khoa";
+  return [
+    `Loại: ${typeLabel}`,
+    ...selectedObgynSections().flatMap((section) => buildObgynFieldItems(section.fields || [], obgynSectionTitle(section.title))),
+  ];
+}
+
+function buildObgynFieldItems(fields, prefix = "") {
+  return fields.flatMap((fieldDef) => {
+    const label = prefix ? `${prefix} - ${fieldDef.label}` : fieldDef.label;
+    if (fieldDef.type === "group" || fieldDef.type === "object") {
+      return buildObgynFieldItems(fieldDef.fields || [], label);
+    }
+    const value = state.assessmentChecklist[obgynFieldKey(fieldDef.id)];
+    if (value === undefined || value === null || value === "" || (Array.isArray(value) && value.length === 0)) return [];
+    return [`${label}: ${Array.isArray(value) ? value.join(", ") : value}`];
+  });
 }
 
 function buildTemplateAssessmentSectionsForSheet(fields, prefix = "") {
@@ -5236,6 +5591,13 @@ app.addEventListener("click", (event) => {
 
   if (event.target.dataset.action === "close-diagnosis-picker-overlay") {
     state.diagnosisPicker = null;
+    render();
+    return;
+  }
+
+  if (event.target.dataset.action === "close-handover-medicine-overlay") {
+    state.handoverMedicineModalOpen = false;
+    state.handoverMedicineDraft = createHandoverMedicineRow();
     render();
     return;
   }
@@ -5488,6 +5850,46 @@ app.addEventListener("click", (event) => {
 
   if (target.dataset.careFormTab) {
     state.activeCareFormTab = target.dataset.careFormTab;
+    render();
+    return;
+  }
+
+  if (target.dataset.obgynMode) {
+    state.assessmentChecklist.obgynMode = target.dataset.obgynMode;
+    clearHiddenObgynValues();
+    render();
+    return;
+  }
+
+  if (target.dataset.action === "add-handover-medicine") {
+    state.handoverMedicineDraft = createHandoverMedicineRow();
+    state.handoverMedicineModalOpen = true;
+    render();
+    return;
+  }
+
+  if (target.dataset.action === "close-handover-medicine") {
+    state.handoverMedicineModalOpen = false;
+    state.handoverMedicineDraft = createHandoverMedicineRow();
+    render();
+    return;
+  }
+
+  if (target.dataset.action === "save-handover-medicine") {
+    const row = normalizeHandoverMedicineRow(state.handoverMedicineDraft);
+    if (!cleanLine(row.name)) {
+      alert("Vui lòng nhập tên thuốc bàn giao.");
+      return;
+    }
+    state.assessmentChecklist.handoverMedicines.push(row);
+    state.handoverMedicineModalOpen = false;
+    state.handoverMedicineDraft = createHandoverMedicineRow();
+    render();
+    return;
+  }
+
+  if (target.dataset.action === "remove-handover-medicine") {
+    state.assessmentChecklist.handoverMedicines.splice(Number(target.dataset.index), 1);
     render();
     return;
   }
@@ -6045,6 +6447,12 @@ app.addEventListener("input", (event) => {
     return;
   }
 
+  if (target.dataset.handoverMedicineDraft) {
+    const key = target.dataset.handoverMedicineDraft;
+    if (Object.hasOwn(createHandoverMedicineRow(), key)) state.handoverMedicineDraft[key] = target.value;
+    return;
+  }
+
   if (target.dataset.checklist) {
     state.assessmentChecklist[target.dataset.checklist] = target.value;
     if (target.dataset.checklist === "weight" || target.dataset.checklist === "height") {
@@ -6128,6 +6536,15 @@ app.addEventListener("change", (event) => {
       state.assessmentChecklist.pathologicalDietTypes = [];
       state.assessmentChecklist.pathologicalDietOther = "";
     }
+    if (target.dataset.checklistBool === "obgynEnabled" && !target.checked) {
+      state.assessmentChecklist.obgynMode = "";
+      (state.obgynTemplate?.sections || []).forEach((section) => clearObgynFieldValues(section.fields || []));
+    }
+    if (target.dataset.checklistBool === "handoverMedicineHalf" && !target.checked) {
+      state.assessmentChecklist.handoverMedicines = [];
+      state.handoverMedicineModalOpen = false;
+      state.handoverMedicineDraft = createHandoverMedicineRow();
+    }
     render();
     return;
   }
@@ -6168,7 +6585,6 @@ app.addEventListener("change", (event) => {
     const forms = ensureHealthEducationForms();
     const item = forms[stageKey]?.items?.[Number(indexText)];
     if (item && (field === "need" || field === "result")) item[field] = target.value;
-    render();
     return;
   }
 
@@ -6313,18 +6729,27 @@ app.addEventListener("change", (event) => {
       const index = values.indexOf(target.value);
       if (index >= 0) values.splice(index, 1);
     }
+    if (target.checked && key === "neuroFocalSigns") {
+      if (target.value === "Bình thường") {
+        values.splice(0, values.length, "Bình thường");
+        state.assessmentChecklist.neuroFocalSignsOther = "";
+      } else {
+        const normalIndex = values.indexOf("Bình thường");
+        if (normalIndex >= 0) values.splice(normalIndex, 1);
+      }
+    }
     state.assessmentChecklist[key] = values;
     if (target.checked && key === "neuroBehavior") {
       state.assessmentChecklist.neuroBehaviorStatus = "";
-    }
-    if (target.checked && key === "neuroFocalSigns") {
-      state.assessmentChecklist.neuroFocalSignsStatus = "";
     }
     if (key === "neuroBehavior" && !values.includes("Khác")) {
       state.assessmentChecklist.neuroBehaviorOther = "";
     }
     if (key === "neuroFocalSigns" && !values.includes("Khác")) {
       state.assessmentChecklist.neuroFocalSignsOther = "";
+    }
+    if (key === "neuroConsciousness" && !values.includes("Khác")) {
+      state.assessmentChecklist.neuroConsciousnessOther = "";
     }
     if (key === "nutritionRegimen" && !values.includes("Khác")) {
       state.assessmentChecklist.nutritionRegimenOther = "";
@@ -6340,6 +6765,21 @@ app.addEventListener("change", (event) => {
     }
     if (key === "movementStatus" && !values.includes("Khác")) {
       state.assessmentChecklist.movementStatusOther = "";
+    }
+    if (key === "painLocation" && !values.includes("Khác")) {
+      state.assessmentChecklist.painLocationOther = "";
+    }
+    if (key === "painCharacter" && !values.includes("Khác")) {
+      state.assessmentChecklist.painCharacterOther = "";
+    }
+    if (key === "nauseaVomiting" && !values.includes("Khác")) {
+      state.assessmentChecklist.nauseaVomitingOther = "";
+    }
+    if (key === "flatus" && !values.includes("Khác")) {
+      state.assessmentChecklist.flatusOther = "";
+    }
+    if (key === "stool" && !values.includes("Khác")) {
+      state.assessmentChecklist.stoolOther = "";
     }
     render();
     return;
@@ -6416,11 +6856,12 @@ app.addEventListener("change", (event) => {
 
 async function init() {
   try {
-    const [response, scaleResponse, assessmentResponse, interventionCodeResponse] = await Promise.all([
+    const [response, scaleResponse, assessmentResponse, interventionCodeResponse, obgynResponse] = await Promise.all([
       fetch("./cd_deu_duong.json"),
       fetch("./thangdiem.json"),
       fetch("./nhan_dinh.json"),
       fetch("./ma_can_thiep.json"),
+      fetch("./sankhoa.json"),
     ]);
     if (!response.ok) throw new Error(`Khong tai duoc cd_deu_duong.json (${response.status})`);
     state.raw = await response.json();
@@ -6433,6 +6874,9 @@ async function init() {
     }
     if (interventionCodeResponse.ok) {
       state.interventionCatalog = deepFix(await interventionCodeResponse.json());
+    }
+    if (obgynResponse.ok) {
+      state.obgynTemplate = deepFix(await obgynResponse.json());
     }
     state.categoryId = state.data.categories[0].id;
     state.departmentId = state.data.categories[0].khoa[0].id;
