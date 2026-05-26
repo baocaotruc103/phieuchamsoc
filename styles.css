@@ -1492,6 +1492,10 @@ button {
   font-weight: 700;
 }
 
+.care-sheet-code-label {
+  display: none;
+}
+
 .care-sheet-row strong {
   min-width: 0;
   color: #0f172a;
@@ -2408,6 +2412,26 @@ button {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .care-sheet-code-label {
+    display: block;
+  }
+
+  .care-sheet-code,
+  .care-sheet-evaluation-time {
+    grid-template-columns: max-content minmax(0, 1fr);
+    align-items: baseline;
+    column-gap: 6px;
+  }
+
+  .care-sheet-code-label::after,
+  .care-sheet-evaluation-time span::after {
+    content: ":";
+  }
+
+  .care-sheet-level {
+    display: none;
+  }
+
   .goal-evaluation-head {
     display: none;
   }
@@ -3288,6 +3312,21 @@ button {
   grid-column: 1 / -1;
 }
 
+.digestive-form {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+
+.digestive-form .assessment-radio,
+.digestive-form .assessment-field {
+  grid-column: 1 / -1;
+}
+
+.digestive-form .assessment-radio > div {
+  align-items: flex-start;
+  gap: 8px 16px;
+}
+
 .vital-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
@@ -3332,13 +3371,74 @@ button {
 }
 
 .mobility-rehab-form {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+
+.mobility-rehab-form .assessment-radio,
+.mobility-rehab-form .assessment-field {
+  grid-column: 1 / -1;
 }
 
 .mobility-rehab-form .assessment-radio > div {
-  align-items: stretch;
-  flex-direction: column;
+  align-items: flex-start;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.obgyn-toggle .handover-check {
+  margin: 0;
+  min-height: 42px;
+}
+
+.obgyn-mode-buttons {
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
+  margin: 12px 0;
+}
+
+.obgyn-mode-btn {
+  flex: 1 1 160px;
+}
+
+.obgyn-mode-btn.active {
+  border-color: #2563eb;
+  background: #2563eb;
+  color: #fff;
+}
+
+.obgyn-subsections {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.obgyn-subsection {
+  border: 1px solid #dbe4ee;
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 12px;
+}
+
+.obgyn-subsection h4,
+.obgyn-field-group h5 {
+  margin: 0 0 10px;
+  color: #0f172a;
+  font-size: 13px;
+}
+
+.obgyn-form {
+  gap: 12px;
+  border: 0;
+}
+
+.obgyn-field-group {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  padding: 10px;
 }
 
 .assessment-template-group {
@@ -3770,6 +3870,109 @@ button {
   overflow-wrap: anywhere;
 }
 
+.handover-medicine {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 12px;
+  border: 1px solid #dbe4ee;
+  border-radius: 10px;
+  background: #f8fafc;
+  padding: 12px;
+}
+
+.handover-medicine-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.handover-medicine-table {
+  display: grid;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+.handover-medicine-data {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  color: #0f172a;
+  font-size: 13px;
+}
+
+.handover-medicine-data th,
+.handover-medicine-data td {
+  border: 1px solid #dbe4ee;
+  padding: 9px 10px;
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.handover-medicine-data th {
+  background: #eef4fa;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.handover-medicine-action {
+  width: 62px;
+}
+
+.handover-medicine-empty {
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #475569;
+  padding: 14px;
+  text-align: center;
+}
+
+.handover-medicine-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.handover-medicine-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.handover-medicine-modal-footer {
+  justify-content: flex-end;
+}
+
+.report-medicine-table {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.report-medicine-scroll {
+  overflow-x: auto;
+}
+
+.report-medicine-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.report-medicine-table th,
+.report-medicine-table td {
+  border: 1px solid #cbd5e1;
+  padding: 6px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.report-medicine-table th {
+  background: #f1f5f9;
+}
+
 .condition-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3866,7 +4069,7 @@ button {
   }
 
   .mobility-rehab-form {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .respiratory-form .assessment-radio > div {
@@ -4055,6 +4258,94 @@ button {
 
   .assessment-section-card {
     padding: 10px;
+  }
+
+  .obgyn-subsection {
+    padding: 10px;
+  }
+
+  .handover-medicine {
+    gap: 12px;
+    padding: 10px;
+  }
+
+  .handover-medicine-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .handover-medicine-table {
+    overflow: visible;
+  }
+
+  .handover-medicine-data {
+    min-width: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .handover-medicine-data thead {
+    display: none;
+  }
+
+  .handover-medicine-data tbody {
+    display: grid;
+    gap: 10px;
+  }
+
+  .handover-medicine-data tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 12px;
+    border: 1px solid #dbe4ee;
+    border-radius: 12px;
+    background: #fff;
+    padding: 12px;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+  }
+
+  .handover-medicine-data td {
+    display: grid;
+    gap: 4px;
+    border: 0;
+    padding: 0;
+    font-size: 13px;
+  }
+
+  .handover-medicine-data td[data-label]::before {
+    content: attr(data-label);
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .handover-medicine-data td:first-child,
+  .handover-medicine-data td:nth-child(5),
+  .handover-medicine-action {
+    grid-column: 1 / -1;
+  }
+
+  .handover-medicine-data td:first-child {
+    border-bottom: 1px solid #e2e8f0;
+    color: #0f3b68;
+    padding-bottom: 10px;
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .handover-medicine-action {
+    margin-top: 2px;
+    width: auto;
+  }
+
+  .handover-medicine-action .remove-row-btn,
+  .handover-medicine-footer .btn {
+    width: 100%;
+  }
+
+  .handover-medicine-form {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .diagnosis-item,

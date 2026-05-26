@@ -1,0 +1,340 @@
+{
+  "title": "NHẬN ĐỊNH SẢN PHỤ KHOA",
+  "sections": [
+    {
+      "id": "truoc_sinh",
+      "title": "I. TRƯỚC SINH",
+      "fields": [
+        {
+          "id": "para_so_lan_sinh",
+          "label": "Para/Số lần sinh",
+          "type": "group",
+          "fields": [
+            {
+              "id": "para",
+              "label": "Para",
+              "type": "text",
+              "placeholder": "Ví dụ: 1001"
+            },
+            {
+              "id": "so_lan_sinh",
+              "label": "Số lần sinh",
+              "type": "checkbox",
+              "options": ["Con so", "Con rạ"]
+            }
+          ]
+        },
+        {
+          "id": "tuoi_thai",
+          "label": "Tuổi thai",
+          "type": "checkbox",
+          "options": ["< 37 tuần", "38 tuần", "39 tuần", "40 tuần", "> 40 tuần"]
+        },
+        {
+          "id": "dau_bung_con_co",
+          "label": "Đau bụng/cơn co",
+          "type": "checkbox",
+          "options": ["Không đau", "Âm ỉ", "Từng cơn", "Cơn co tăng dần", "Khác"]
+        },
+        {
+          "id": "ra_huyet_am_dao",
+          "label": "Ra huyết âm đạo",
+          "type": "checkbox",
+          "options": ["Không", "Hồng", "Đỏ tươi", "Máu cục", "Khác"]
+        },
+        {
+          "id": "oi",
+          "label": "Ối",
+          "type": "checkbox",
+          "options": ["Chưa vỡ ối", "Vỡ ối", "Dẹt", "Phồng", "Quả lê"]
+        },
+        {
+          "id": "so_luong_nuoc_oi",
+          "label": "Số lượng nước ối",
+          "type": "checkbox",
+          "options": ["Bình thường", "Ít", "Nhiều"]
+        },
+        {
+          "id": "mau_sac_nuoc_oi",
+          "label": "Màu sắc nước ối",
+          "type": "checkbox",
+          "options": ["Trong", "Vàng", "Xanh", "Bẩn", "Có lẫn máu"]
+        },
+        {
+          "id": "tu_cung",
+          "label": "Tử cung",
+          "type": "checkbox",
+          "options": ["Hình trứng", "Bè ngang", "Khác"]
+        },
+        {
+          "id": "ngoi_thai",
+          "label": "Ngôi thai",
+          "type": "checkbox",
+          "options": ["Ngôi đầu", "Ngôi mông", "Ngôi ngang", "Khác"]
+        },
+        {
+          "id": "kieu_the",
+          "label": "Kiểu thế",
+          "type": "checkbox",
+          "options": ["Trước", "Sau", "Khác"]
+        },
+        {
+          "id": "the_thai",
+          "label": "Thế thai",
+          "type": "checkbox",
+          "options": ["Trái", "Phải"]
+        },
+        {
+          "id": "do_lot",
+          "label": "Độ lọt",
+          "type": "checkbox",
+          "options": ["Cao", "Chúc", "Chặt", "Lọt"]
+        },
+        {
+          "id": "con_co_tu_cung",
+          "label": "Cơn co tử cung",
+          "type": "group",
+          "fields": [
+            {
+              "id": "co_con_co_tu_cung",
+              "label": "Có cơn co tử cung",
+              "type": "checkbox",
+              "options": ["Không", "Có"]
+            },
+            {
+              "id": "tan_so_con_co",
+              "label": "Tần số",
+              "type": "text",
+              "placeholder": "........ cơn/10 phút"
+            }
+          ]
+        },
+        {
+          "id": "dau_hieu_doa_vo_tu_cung",
+          "label": "Dấu hiệu doạ vỡ tử cung",
+          "type": "checkbox",
+          "options": ["Không", "Có"]
+        },
+        {
+          "id": "tim_thai",
+          "label": "Tim thai",
+          "type": "group",
+          "fields": [
+            {
+              "id": "tinh_trang_tim_thai",
+              "label": "Tình trạng tim thai",
+              "type": "checkbox",
+              "options": ["Bình thường", "Nhanh", "Chậm", "Không đều"]
+            },
+            {
+              "id": "tan_so_tim_thai",
+              "label": "Tần số tim thai",
+              "type": "text",
+              "placeholder": "........ lần/phút"
+            }
+          ]
+        },
+        {
+          "id": "co_tu_cung",
+          "label": "Cổ tử cung",
+          "type": "group",
+          "fields": [
+            {
+              "id": "mo_co_tu_cung",
+              "label": "Mở",
+              "type": "text",
+              "placeholder": "........ cm"
+            },
+            {
+              "id": "xoa_co_tu_cung",
+              "label": "Xoá",
+              "type": "text",
+              "placeholder": "........ %"
+            }
+          ]
+        },
+        {
+          "id": "vi_tri_co_tu_cung",
+          "label": "Vị trí cổ tử cung",
+          "type": "checkbox",
+          "options": ["Trung gian", "Ngả trước", "Ngả sau"]
+        },
+        {
+          "id": "mat_do_co_tu_cung",
+          "label": "Mật độ cổ tử cung",
+          "type": "checkbox",
+          "options": ["Mềm", "Trung bình", "Rắn"]
+        },
+        {
+          "id": "am_ho",
+          "label": "Âm hộ",
+          "type": "checkbox",
+          "options": ["Bình thường", "Viêm đỏ", "Sưng tấy"]
+        },
+        {
+          "id": "am_dao",
+          "label": "Âm đạo",
+          "type": "checkbox",
+          "options": ["Bình thường", "Viêm đỏ", "Sưng tấy"]
+        },
+        {
+          "id": "tang_sinh_mon_truoc_sinh",
+          "label": "Tầng sinh môn",
+          "type": "checkbox",
+          "options": ["Bình thường", "Viêm đỏ", "Sưng tấy"]
+        },
+        {
+          "id": "khung_chau",
+          "label": "Khung chậu",
+          "type": "checkbox",
+          "options": ["Không sờ thấy mỏm nhô", "Sờ thấy mỏm nhô"]
+        },
+        {
+          "id": "seo_mo_cu",
+          "label": "Sẹo mổ cũ",
+          "type": "checkbox",
+          "options": [
+            "Không có",
+            "Sẹo dọc",
+            "Sẹo ngang",
+            "Sẹo đường trắng giữa dưới rốn",
+            "Sẹo đường Pfannenstiel"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trong_va_sau_khi_sinh",
+      "title": "II. TRONG VÀ SAU KHI SINH",
+      "fields": [
+        {
+          "id": "toan_trang",
+          "label": "Toàn trạng",
+          "type": "checkbox",
+          "options": ["Tốt", "Trung bình", "Kém"]
+        },
+        {
+          "id": "san_dich",
+          "label": "Sản dịch",
+          "type": "checkbox",
+          "options": ["Ít", "Vừa", "Nhiều", "Có sữa non", "Chưa có sữa non"]
+        },
+        {
+          "id": "tu_cung_co_hoi_tu_cung",
+          "label": "Tử cung/co hồi tử cung",
+          "type": "checkbox",
+          "options": ["Co hồi tốt", "Co hồi kém", "Tử cung mềm", "Tử cung gò chắc"]
+        },
+        {
+          "id": "tang_sinh_mon_sau_sinh",
+          "label": "Tầng sinh môn",
+          "type": "checkbox",
+          "options": ["Cắt", "Rách", "Khô, liền tốt", "Sưng đỏ", "Đau", "Chảy máu", "Khác"]
+        },
+        {
+          "id": "be",
+          "label": "Bé",
+          "type": "group",
+          "fields": [
+            {
+              "id": "truong_luc_co",
+              "label": "Trương lực cơ",
+              "type": "checkbox",
+              "options": ["Tốt", "Kém"]
+            },
+            {
+              "id": "khoc",
+              "label": "Khóc",
+              "type": "checkbox",
+              "options": ["Có", "Không"]
+            },
+            {
+              "id": "nhip_tim_be",
+              "label": "Nhịp tim",
+              "type": "checkbox",
+              "options": ["Bình thường", "Nhanh", "Chậm"]
+            },
+            {
+              "id": "nhip_tho_be",
+              "label": "Nhịp thở",
+              "type": "checkbox",
+              "options": ["Bình thường", "Nhanh", "Chậm", "Khó thở"]
+            },
+            {
+              "id": "mau_da_be",
+              "label": "Màu da",
+              "type": "checkbox",
+              "options": ["Hồng hào", "Tím đầu chi", "Tím toàn thân", "Vàng da", "Viêm da"]
+            },
+            {
+              "id": "phan_xa_be",
+              "label": "Phản xạ",
+              "type": "checkbox",
+              "options": ["Bình thường", "Bất thường"]
+            },
+            {
+              "id": "an_be",
+              "label": "Ăn",
+              "type": "checkbox",
+              "options": ["Bú mẹ tốt", "Bú kém", "Chưa bú"]
+            },
+            {
+              "id": "dai_tieu_tien_be",
+              "label": "Đại tiểu tiện",
+              "type": "checkbox",
+              "options": ["Bình thường", "Chưa đại tiện", "Chưa tiểu tiện", "Khác"]
+            },
+            {
+              "id": "tam_be",
+              "label": "Tắm bé",
+              "type": "checkbox",
+              "options": ["Có", "Không"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "nguoi_benh_phu_khoa",
+      "title": "III. NGƯỜI BỆNH PHỤ KHOA",
+      "fields": [
+        {
+          "id": "cham_kinh",
+          "label": "Chậm kinh",
+          "type": "checkbox",
+          "options": ["Có", "Không"]
+        },
+        {
+          "id": "rong_kinh",
+          "label": "Rong kinh",
+          "type": "checkbox",
+          "options": ["Có", "Không"]
+        },
+        {
+          "id": "cuong_kinh",
+          "label": "Cường kinh",
+          "type": "checkbox",
+          "options": ["Có", "Không"]
+        },
+        {
+          "id": "dai_tieu_tien_phu_khoa",
+          "label": "Đại tiểu tiện",
+          "type": "checkbox",
+          "options": ["Bình thường", "Không bình thường"]
+        },
+        {
+          "id": "dau_phu_khoa",
+          "label": "Đau",
+          "type": "checkbox",
+          "options": ["Không đau", "Đau âm ỉ", "Đau từng cơn", "Đau vùng hạ vị", "Đau khi ấn", "Khác"]
+        },
+        {
+          "id": "test_hcg",
+          "label": "Test HCG",
+          "type": "checkbox",
+          "options": ["Âm tính", "Dương tính", "Chưa làm"]
+        }
+      ]
+    }
+  ]
+}
