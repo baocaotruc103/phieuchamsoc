@@ -1,6 +1,29 @@
 const app = document.querySelector("#app");
 let supabaseClient = null;
 const VIETNAM_TIME_ZONE = "Asia/Ho_Chi_Minh";
+const NANDA_LAST_DEPARTMENT_STORAGE_KEY = "nanda:lastDepartment";
+
+function readStoredNandaDepartment() {
+  try {
+    return cleanLine(window.localStorage?.getItem(NANDA_LAST_DEPARTMENT_STORAGE_KEY) || "");
+  } catch {
+    return "";
+  }
+}
+
+function writeStoredNandaDepartment(value) {
+  const department = cleanLine(value);
+  try {
+    if (department) {
+      window.localStorage?.setItem(NANDA_LAST_DEPARTMENT_STORAGE_KEY, department);
+    } else {
+      window.localStorage?.removeItem(NANDA_LAST_DEPARTMENT_STORAGE_KEY);
+    }
+  } catch {
+    // Local storage can be unavailable in restricted browser modes.
+  }
+  return department;
+}
 
 function vietnamDateParts(date = new Date()) {
   return Object.fromEntries(
@@ -343,6 +366,10 @@ const state = {
   nandaPage: 1,
   nandaEditingId: null,
   nandaForm: createDefaultNandaForm(),
+  nandaAutoFillText: "",
+  nandaAutoFillRows: [],
+  nandaAutoFillError: "",
+  nandaLastDepartment: readStoredNandaDepartment(),
 };
 
 const initialAssessmentChecklist = JSON.parse(JSON.stringify(state.assessmentChecklist));
@@ -1922,6 +1949,31 @@ function normalizeNandaDepartmentValue(value) {
   return nandaDepartmentOptions().find((item) => searchKey(item) === key) || cleanLine(value);
 }
 
+function rememberNandaDepartment(value) {
+  const department = normalizeNandaDepartmentValue(value);
+  if (!department) return "";
+  state.nandaLastDepartment = department;
+  writeStoredNandaDepartment(department);
+  return department;
+}
+
+function latestNandaEnteredDepartment() {
+  const latestRow = (state.nandaRows || []).find((row) => cleanLine(row.khoa));
+  return normalizeNandaDepartmentValue(state.nandaLastDepartment || latestRow?.khoa || "");
+}
+
+function nandaFormWithLatestDepartment(form = createDefaultNandaForm()) {
+  const next = { ...createDefaultNandaForm(), ...form };
+  if (!cleanLine(next.khoa)) next.khoa = latestNandaEnteredDepartment();
+  return next;
+}
+
+function applyLatestDepartmentToNandaForm() {
+  if (state.nandaEditingId || cleanLine(state.nandaForm.khoa)) return;
+  const department = latestNandaEnteredDepartment();
+  if (department) state.nandaForm.khoa = department;
+}
+
 function uniqueCleanValues(values) {
   const grouped = new Map();
   for (const value of values) {
@@ -2000,6 +2052,18 @@ function updateNandaFormDomFields() {
     const input = app.querySelector(`[data-nanda-field="${field}"]`);
     if (input && input.value !== value) input.value = value;
   }
+  resizeNandaAutosizeTextareas();
+}
+
+function resizeTextareaToContent(textarea) {
+  if (!textarea) return;
+  const minHeight = Number.parseFloat(window.getComputedStyle(textarea).minHeight) || 42;
+  textarea.style.height = "auto";
+  textarea.style.height = `${Math.max(textarea.scrollHeight, minHeight)}px`;
+}
+
+function resizeNandaAutosizeTextareas(root = app) {
+  root.querySelectorAll("textarea[data-nanda-autosize]").forEach(resizeTextareaToContent);
 }
 
 function nandaGoalItems() {
@@ -2157,6 +2221,9 @@ async function refreshNandaRowsForDuplicateCheck() {
     state.nandaSchemaSupportsDepartment = true;
   }
   state.nandaRows = (data || []).map((row) => ({ khoa: "", ...row }));
+  const latestDepartment = latestNandaEnteredDepartment();
+  if (latestDepartment) rememberNandaDepartment(latestDepartment);
+  applyLatestDepartmentToNandaForm();
   state.nandaLoaded = true;
 }
 
@@ -2225,6 +2292,9 @@ async function loadNandaRows(force = false) {
       state.nandaSchemaSupportsDepartment = true;
     }
     state.nandaRows = (data || []).map((row) => ({ khoa: "", ...row }));
+    const latestDepartment = latestNandaEnteredDepartment();
+    if (latestDepartment) rememberNandaDepartment(latestDepartment);
+    applyLatestDepartmentToNandaForm();
     state.nandaLoaded = true;
   } catch (error) {
     state.nandaError = error.message || String(error);
@@ -2277,7 +2347,8 @@ async function saveNandaForm() {
     if (error) throw error;
   }
 
-  state.nandaForm = createDefaultNandaForm();
+  rememberNandaDepartment(payload.khoa);
+  state.nandaForm = nandaFormWithLatestDepartment();
   state.nandaEditingId = null;
   state.nandaLoaded = false;
   state.nandaPage = 1;
@@ -2290,7 +2361,7 @@ async function deleteNandaRow(id) {
   if (error) throw error;
   if (String(state.nandaEditingId) === String(id)) {
     state.nandaEditingId = null;
-    state.nandaForm = createDefaultNandaForm();
+    state.nandaForm = nandaFormWithLatestDepartment();
   }
   state.nandaLoaded = false;
   await loadNandaRows(true);
@@ -2298,6 +2369,7 @@ async function deleteNandaRow(id) {
 
 function renderNandaFormScreen() {
   loadNandaRows();
+  applyLatestDepartmentToNandaForm();
   const form = state.nandaForm;
   const rows = filteredNandaRows();
   const pageRows = paginatedNandaRows(rows);
@@ -2313,6 +2385,10 @@ function renderNandaFormScreen() {
   return `
     <div class="mobile-app nanda-screen">
       ${appBar("Danh mục NANDA", "patients")}
+      <div class="nanda-ai-toolbar">
+        ${renderDiagnosisAiTools()}
+        ${renderNandaAutoFillBox()}
+      </div>
       <main class="nanda-layout">
         <section class="panel nanda-form-panel">
           <div class="panel-header">
@@ -2332,11 +2408,11 @@ function renderNandaFormScreen() {
               </div>
               <div class="field">
                 <label>Vấn đề *</label>
-                <input type="text" list="nanda-problem-options" data-nanda-field="van_de" value="${h(form.van_de)}" placeholder="Ví dụ: Khó thở" />
+                <textarea rows="1" data-nanda-field="van_de" data-nanda-autosize placeholder="Ví dụ: Khó thở">${h(form.van_de)}</textarea>
               </div>
               <div class="field">
                 <label>Nguyên nhân</label>
-                <textarea data-nanda-field="nguyen_nhan" placeholder="Nhập nguyên nhân liên quan">${h(form.nguyen_nhan)}</textarea>
+                <textarea rows="1" data-nanda-field="nguyen_nhan" data-nanda-autosize placeholder="Nhập nguyên nhân liên quan">${h(form.nguyen_nhan)}</textarea>
               </div>
               <div class="field wide nanda-goals-field">
                 <label>Mục tiêu can thiệp</label>
@@ -2390,23 +2466,26 @@ function renderNandaFormScreen() {
               <label>Tim kiem</label>
               <input type="search" data-nanda-search value="${h(state.nandaSearch)}" placeholder="Tim theo khoa, nhom, van de, ma hoac noi dung" />
             </div>
-            <div class="field nanda-department-filter-field">
-              <label>Loc theo khoa</label>
-              <select data-nanda-department-filter>
-                <option value="">Tat ca khoa</option>
-                ${enteredDepartments.map((department) => `
-                  <option value="${h(department)}" ${searchKey(state.nandaDepartmentFilter) === searchKey(department) ? "selected" : ""}>${h(department)}</option>
-                `).join("")}
-              </select>
-            </div>
-            ${enteredGroups.length ? `
-              <div class="nanda-filter-group" aria-label="Loc nhanh theo nhom van de">
-                <button type="button" class="btn ${!state.nandaGroupFilter ? "primary" : ""}" data-action="filter-nanda-group" data-group-value="">Tat ca</button>
-                ${enteredGroups.map((group) => `
-                  <button type="button" class="btn ${searchKey(state.nandaGroupFilter) === searchKey(group) ? "primary" : ""}" data-action="filter-nanda-group" data-group-value="${h(group)}">${h(group)}</button>
-                `).join("")}
+            <div class="nanda-filter-row">
+              <div class="field nanda-department-filter-field">
+                <label>Loc theo khoa</label>
+                <select data-nanda-department-filter>
+                  <option value="">Tat ca khoa</option>
+                  ${enteredDepartments.map((department) => `
+                    <option value="${h(department)}" ${searchKey(state.nandaDepartmentFilter) === searchKey(department) ? "selected" : ""}>${h(department)}</option>
+                  `).join("")}
+                </select>
               </div>
-            ` : ""}
+              <div class="field nanda-group-filter-field">
+                <label>Loc theo nhom van de</label>
+                <select data-nanda-group-filter>
+                  <option value="">Tat ca nhom van de</option>
+                  ${enteredGroups.map((group) => `
+                    <option value="${h(group)}" ${searchKey(state.nandaGroupFilter) === searchKey(group) ? "selected" : ""}>${h(group)}</option>
+                  `).join("")}
+                </select>
+              </div>
+            </div>
             ${state.nandaError ? `<div class="empty care-list-empty">Khong tai duoc du lieu: ${h(state.nandaError)}</div>` : ""}
             ${!state.nandaError && state.nandaLoading ? `<div class="empty care-list-empty">Dang tai danh muc NANDA...</div>` : ""}
             ${!state.nandaError && !state.nandaLoading && !rows.length ? `<div class="empty care-list-empty">Chua co du lieu phu hop.</div>` : ""}
@@ -2456,7 +2535,7 @@ function patientHomeAppBar() {
   return `
     <header class="app-bar patient-home-app-bar">
       <span></span>
-      <h1>Phiên bản cập nhật 26/5/2026</h1>
+      <h1>Phiên bản cập nhật 28/5/2026</h1>
       <button class="grid-icon" data-screen="patients" aria-label="Danh sách">
         <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
       </button>
@@ -2512,13 +2591,13 @@ const homeExperienceCards = [
     title: "Thông tin cập nhật",
     action: "show-update-info",
     icon: "26/5",
-    note: "Xem nội dung thay đổi trong phiên bản cập nhật ngày 26/5/2026.",
+    note: "Xem nội dung thay đổi trong phiên bản cập nhật ngày 28/5/2026.",
   },
 ];
 
 function showUpdateInfo() {
   alert([
-    "Thông tin cập nhật ngày 26/5/2026",
+    "Thông tin cập nhật ngày 28/5/2026",
     "",
     "- Fix lỗi nhập vào ô textbox phải chọn lại mới nhập được tiếp",
     "- Bổ sung các nội dung nhận định theo các cơ quan mà các khoa đã ý kiến bổ sung",
@@ -3554,6 +3633,7 @@ function render(focusSelector = "") {
   if (state.screen === "nanda") {
     const focusSnapshot = focusSelector ? { selector: focusSelector, start: null, end: null } : captureNandaFocus();
     app.innerHTML = renderNandaFormScreen();
+    resizeNandaAutosizeTextareas();
     restoreNandaFocus(focusSnapshot);
     return;
   }
@@ -4897,6 +4977,113 @@ function renderDiagnosisPanelV2() {
     </section>
     ${state.diagnosisPicker ? renderDiagnosisPickerModal() : ""}
   `;
+}
+
+function renderDiagnosisAiTools() {
+  return `
+    <div class="diagnosis-ai-tools" aria-label="Tro ly AI ho tro tao chan doan dieu duong">
+      <span>Tr&#7907; l&#253; AI h&#7895; tr&#7907; t&#7841;o ch&#7849;n &#273;o&#225;n &#273;i&#7873;u d&#432;&#7905;ng</span>
+      <div>
+        <a class="btn primary diagnosis-ai-link" href="https://notebooklm.google.com/notebook/314859a7-bf0c-4889-81b5-3f459f124cef" target="_blank" rel="noopener noreferrer">NotebookLM</a>
+      </div>
+    </div>
+  `;
+}
+
+function renderNandaAutoFillBox() {
+  const rows = state.nandaAutoFillRows || [];
+  return `
+    <div class="nanda-autofill-box">
+      <label for="nanda-autofill-text">D&#225;n b&#7843;ng t&#7915; NotebookLM</label>
+      <textarea id="nanda-autofill-text" data-nanda-autofill-text placeholder="Nh&#243;m v&#7845;n &#273;&#7873; | V&#7845;n &#273;&#7873; | Nguy&#234;n nh&#226;n | M&#7909;c ti&#234;u | Can thi&#7879;p | M&#227;">${h(state.nandaAutoFillText)}</textarea>
+      <div class="nanda-autofill-actions">
+        <button type="button" class="btn primary" data-action="apply-nanda-autofill">T&#7921; &#273;&#7897;ng &#273;i&#7873;n</button>
+        <button type="button" class="btn ghost" data-action="clear-nanda-autofill">X&#243;a n&#7897;i dung</button>
+      </div>
+      ${state.nandaAutoFillError ? `<div class="nanda-autofill-error">${h(state.nandaAutoFillError)}</div>` : ""}
+      ${rows.length ? `
+        <div class="nanda-autofill-preview">
+          <strong>&#272;&#227; nh&#7853;n ${rows.length} d&#242;ng. D&#242;ng &#273;&#7847;u &#273;&#227; &#273;i&#7873;n v&#224;o form.</strong>
+          <div>
+            ${rows.map((row, index) => `
+              <button type="button" class="btn" data-action="apply-nanda-autofill-row" data-row-index="${index}">
+                ${index + 1}. ${h(row.van_de || row.nhom_van_de || "D&#242;ng")} ${row.nguyen_nhan ? `- ${h(row.nguyen_nhan)}` : ""}
+              </button>
+            `).join("")}
+          </div>
+        </div>
+      ` : ""}
+    </div>
+  `;
+}
+
+function splitNandaAutoFillLine(line) {
+  const value = cleanLine(line);
+  if (!value) return [];
+  if (/^\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)+\|?$/.test(value)) return [];
+  if (value.includes("|")) {
+    const parts = value.split("|").map((item) => cleanLine(item));
+    if (!parts[0]) parts.shift();
+    if (!parts[parts.length - 1]) parts.pop();
+    return parts;
+  }
+  if (value.includes("\t")) return value.split("\t").map((item) => cleanLine(item));
+  return [];
+}
+
+function nandaAutoFillColumnKey(label) {
+  const key = searchKey(label);
+  if (!key) return "";
+  if (key.includes("khoa")) return "khoa";
+  if (key.includes("nhom") && key.includes("van de")) return "nhom_van_de";
+  if ((key.includes("van de") && !key.includes("nhom")) || key.includes("chan doan")) return "van_de";
+  if (key.includes("nguyen nhan") || key.includes("yeu to lien quan")) return "nguyen_nhan";
+  if (key.includes("muc tieu")) return "muc_tieu_can_thiep";
+  if (key === "ma" || key.includes("ma can thiep") || key.includes("ma tham khao")) return "ma_can_thiep";
+  if (key.includes("can thiep") || key.includes("noi dung") || key.includes("hoat dong cham soc")) return "noi_dung_can_thiep";
+  return "";
+}
+
+function parseNandaAutoFillText(text) {
+  const tableRows = String(text || "")
+    .split(/\r?\n/)
+    .map(splitNandaAutoFillLine)
+    .filter((columns) => columns.length);
+  if (!tableRows.length) return [];
+
+  const defaultKeys = [
+    "nhom_van_de",
+    "van_de",
+    "nguyen_nhan",
+    "muc_tieu_can_thiep",
+    "noi_dung_can_thiep",
+    "ma_can_thiep",
+  ];
+  const firstRowKeys = tableRows[0].map(nandaAutoFillColumnKey);
+  const hasHeader = firstRowKeys.filter(Boolean).length >= 2;
+  const keys = hasHeader ? firstRowKeys : defaultKeys;
+  const dataRows = (hasHeader ? tableRows.slice(1) : tableRows).filter((columns) => columns.length >= 6);
+
+  return dataRows
+    .map((columns) => {
+      const row = createDefaultNandaForm();
+      columns.forEach((value, index) => {
+        const field = keys[index];
+        if (field) row[field] = cleanLine(value);
+      });
+      return row;
+    })
+    .filter((row) => cleanLine(row.nhom_van_de) || cleanLine(row.van_de) || cleanLine(row.nguyen_nhan) || cleanLine(row.noi_dung_can_thiep));
+}
+
+function applyNandaAutoFillRow(row) {
+  const currentDepartment = cleanLine(state.nandaForm.khoa);
+  state.nandaEditingId = null;
+  state.nandaForm = {
+    ...createDefaultNandaForm(),
+    ...normalizeNandaPayload(row),
+    khoa: cleanLine(row.khoa) || currentDepartment,
+  };
 }
 
 function renderSavedDiagnosisRows() {
@@ -7049,15 +7236,35 @@ app.addEventListener("click", (event) => {
     return;
   }
 
-  if (target.dataset.action === "filter-nanda-group") {
-    state.nandaGroupFilter = target.dataset.groupValue || "";
-    state.nandaPage = 1;
+  if (target.dataset.action === "nanda-page") {
+    state.nandaPage = Number(target.dataset.page) || 1;
     render();
     return;
   }
 
-  if (target.dataset.action === "nanda-page") {
-    state.nandaPage = Number(target.dataset.page) || 1;
+  if (target.dataset.action === "apply-nanda-autofill") {
+    const rows = parseNandaAutoFillText(state.nandaAutoFillText);
+    state.nandaAutoFillRows = rows;
+    state.nandaAutoFillError = rows.length ? "" : "Khong tim thay dong du lieu hop le. Hay dan bang co cot ngan cach bang dau |.";
+    if (rows.length) applyNandaAutoFillRow(rows[0]);
+    render();
+    return;
+  }
+
+  if (target.dataset.action === "apply-nanda-autofill-row") {
+    const row = state.nandaAutoFillRows[Number(target.dataset.rowIndex)];
+    if (row) {
+      applyNandaAutoFillRow(row);
+      state.nandaAutoFillError = "";
+      render();
+    }
+    return;
+  }
+
+  if (target.dataset.action === "clear-nanda-autofill") {
+    state.nandaAutoFillText = "";
+    state.nandaAutoFillRows = [];
+    state.nandaAutoFillError = "";
     render();
     return;
   }
@@ -7083,7 +7290,7 @@ app.addEventListener("click", (event) => {
 
   if (target.dataset.action === "clear-nanda-form") {
     state.nandaEditingId = null;
-    state.nandaForm = createDefaultNandaForm();
+    state.nandaForm = nandaFormWithLatestDepartment();
     render();
     return;
   }
@@ -7342,11 +7549,22 @@ app.addEventListener("input", (event) => {
     return;
   }
 
+  if (target.dataset.nandaAutofillText !== undefined) {
+    state.nandaAutoFillText = target.value;
+    state.nandaAutoFillError = "";
+    return;
+  }
+
   if (target.dataset.nandaField) {
     const field = target.dataset.nandaField;
     state.nandaForm[field] = target.value;
+    if (field === "khoa" && isValidNandaDepartment(target.value)) {
+      state.nandaForm.khoa = normalizeNandaDepartmentValue(target.value);
+      rememberNandaDepartment(state.nandaForm.khoa);
+    }
     syncNandaLinkedFields(field);
     updateNandaFormDomFields();
+    if (target.dataset.nandaAutosize !== undefined) resizeTextareaToContent(target);
     return;
   }
 
@@ -7599,6 +7817,13 @@ app.addEventListener("change", (event) => {
     return;
   }
 
+  if (target.dataset.nandaGroupFilter !== undefined) {
+    state.nandaGroupFilter = target.value;
+    state.nandaPage = 1;
+    render();
+    return;
+  }
+
   if (target.dataset.nandaInterventionField) {
     const rows = nandaInterventionRows();
     const index = Number(target.dataset.interventionIndex);
@@ -7627,8 +7852,10 @@ app.addEventListener("change", (event) => {
       alert("Khoa phai chon trong danh muc goi y tu dmkhoa.json.");
     } else if (field === "khoa") {
       state.nandaForm.khoa = normalizeNandaDepartmentValue(target.value);
+      if (state.nandaForm.khoa) rememberNandaDepartment(state.nandaForm.khoa);
     }
     updateNandaFormDomFields();
+    if (target.dataset.nandaAutosize !== undefined) resizeTextareaToContent(target);
     const problemDatalist = document.getElementById("nanda-problem-options");
     if (problemDatalist) {
       problemDatalist.outerHTML = renderDatalist("nanda-problem-options", nandaProblemOptions());
@@ -8047,7 +8274,6 @@ async function init() {
       if (index >= 0) state.selectedPatientIndex = index;
     }
     resetForCondition();
-    setTimeout(showUpdateInfo, 0);
   } catch (error) {
     app.innerHTML = `
       <div class="error">

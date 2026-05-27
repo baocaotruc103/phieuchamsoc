@@ -1529,9 +1529,81 @@ button {
 
 .nanda-layout {
   display: grid;
-  grid-template-columns: minmax(320px, 0.85fr) minmax(0, 1.15fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
+  width: min(100%, 1180px);
+  box-sizing: border-box;
+  margin: 0 auto;
   padding: 18px;
+}
+
+.nanda-ai-toolbar {
+  width: min(100%, 1180px);
+  box-sizing: border-box;
+  margin: 0 auto;
+  padding: 14px 18px 0;
+}
+
+.nanda-ai-toolbar .diagnosis-ai-tools {
+  margin-top: 0;
+  padding: 10px 12px;
+  border: 1px solid #dbe4ee;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+}
+
+.nanda-autofill-box {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid #dbe4ee;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+}
+
+.nanda-autofill-box label {
+  color: #334155;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.nanda-autofill-box textarea {
+  width: 100%;
+  min-height: 92px;
+  resize: vertical;
+}
+
+.nanda-autofill-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.nanda-autofill-error {
+  color: #b91c1c;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.nanda-autofill-preview {
+  display: grid;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.nanda-autofill-preview strong {
+  color: #334155;
+  font-size: 13px;
+}
+
+.nanda-autofill-preview > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .nanda-form-panel,
@@ -1539,12 +1611,29 @@ button {
   min-width: 0;
 }
 
+.nanda-form-panel input,
+.nanda-form-panel textarea {
+  color: #0b5ed7;
+}
+
+.nanda-form-panel input::placeholder,
+.nanda-form-panel textarea::placeholder {
+  color: #64748b;
+}
+
+.nanda-field-grid .field {
+  align-content: start;
+}
+
 .nanda-field-grid .field.wide {
   grid-column: 1 / -1;
 }
 
-.nanda-field-grid textarea {
-  min-height: 110px;
+.nanda-field-grid textarea[data-nanda-autosize] {
+  min-height: 38px;
+  height: 38px;
+  overflow: hidden;
+  resize: none;
 }
 
 .nanda-goal-list {
@@ -1595,21 +1684,16 @@ button {
   margin-bottom: 14px;
 }
 
-.nanda-department-filter-field {
+.nanda-filter-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
   margin-bottom: 14px;
 }
 
-.nanda-filter-group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: -4px 0 14px;
-}
-
-.nanda-filter-group .btn {
-  min-height: 36px;
-  padding: 7px 10px;
-  font-size: 13px;
+.nanda-department-filter-field,
+.nanda-group-filter-field {
+  min-width: 0;
 }
 
 .nanda-row-list {
@@ -1688,8 +1772,11 @@ button {
 
 @media (max-width: 860px) {
   .nanda-layout {
-    grid-template-columns: 1fr;
     padding: 12px;
+  }
+
+  .nanda-ai-toolbar {
+    padding: 12px 12px 0;
   }
 
   .nanda-row {
@@ -3930,6 +4017,33 @@ button {
   padding: 10px 12px;
   font-size: 13px;
   font-weight: 700;
+}
+
+.diagnosis-ai-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin-top: 8px;
+}
+
+.diagnosis-ai-tools span {
+  color: #475569;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.diagnosis-ai-tools > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.diagnosis-ai-link {
+  min-height: 34px;
+  padding: 7px 10px;
+  text-decoration: none;
+  font-size: 13px;
 }
 
 .saved-diagnosis-list {
