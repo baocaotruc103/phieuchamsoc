@@ -6,6 +6,7 @@ create table if not exists public.nanda (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
 
+  khoa text not null,
   nhom_van_de text not null,
   van_de text not null,
   nguyen_nhan text,
@@ -14,7 +15,18 @@ create table if not exists public.nanda (
   noi_dung_can_thiep text not null
 );
 
+alter table public.nanda
+  add column if not exists khoa text;
+
+alter table public.nanda
+  drop constraint if exists nanda_khoa_required;
+
+alter table public.nanda
+  add constraint nanda_khoa_required
+  check (khoa is not null and length(btrim(khoa)) > 0) not valid;
+
 comment on table public.nanda is 'Bang danh muc NANDA va can thiep dieu duong';
+comment on column public.nanda.khoa is 'Ma khoa';
 comment on column public.nanda.nhom_van_de is 'Nhom van de';
 comment on column public.nanda.van_de is 'Van de';
 comment on column public.nanda.nguyen_nhan is 'Nguyen nhan';
@@ -24,6 +36,9 @@ comment on column public.nanda.noi_dung_can_thiep is 'Noi dung can thiep';
 
 create index if not exists idx_nanda_nhom_van_de
   on public.nanda (nhom_van_de);
+
+create index if not exists idx_nanda_khoa
+  on public.nanda (khoa);
 
 create index if not exists idx_nanda_van_de
   on public.nanda (van_de);

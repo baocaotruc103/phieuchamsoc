@@ -125,6 +125,7 @@ function createHandoverMedicineRow() {
 
 function createDefaultNandaForm() {
   return {
+    khoa: "",
     nhom_van_de: "",
     van_de: "",
     nguyen_nhan: "",
@@ -328,13 +329,18 @@ const state = {
   activeHealthEducationStage: null,
   handoverMedicineModalOpen: false,
   handoverMedicineDraft: createHandoverMedicineRow(),
+  openAssessmentCards: new Set(),
   problemCatalog: [],
+  departmentCatalog: [],
   nandaRows: [],
   nandaLoaded: false,
   nandaLoading: false,
   nandaError: "",
+  nandaSchemaSupportsDepartment: null,
   nandaSearch: "",
+  nandaDepartmentFilter: "",
   nandaGroupFilter: "",
+  nandaPage: 1,
   nandaEditingId: null,
   nandaForm: createDefaultNandaForm(),
 };
@@ -1550,6 +1556,7 @@ function resetCareFormState({ resetChecklist = false } = {}) {
   state.activeGoalSuggest = null;
   state.activeInterventionSuggest = null;
   state.activeCareFormTab = "patient";
+  state.openAssessmentCards = new Set();
   state.handoverMedicineModalOpen = false;
   state.handoverMedicineDraft = createHandoverMedicineRow();
 }
@@ -1830,6 +1837,7 @@ function appBar(title, backTarget = "") {
 
 function normalizeNandaPayload(form = {}) {
   return {
+    khoa: cleanLine(form.khoa),
     nhom_van_de: cleanLine(form.nhom_van_de),
     van_de: cleanLine(form.van_de),
     nguyen_nhan: cleanLine(form.nguyen_nhan),
@@ -1843,6 +1851,7 @@ function nandaMatchesSearch(row, query) {
   const value = searchKey(query);
   if (!value) return true;
   return [
+    row.khoa,
     row.nhom_van_de,
     row.van_de,
     row.nguyen_nhan,
@@ -1862,14 +1871,55 @@ function formatNandaDiagnosis(row = {}) {
 
 function filteredNandaRows() {
   const groupFilter = searchKey(state.nandaGroupFilter);
+  const departmentFilter = searchKey(state.nandaDepartmentFilter);
   return state.nandaRows.filter((row) => {
+    if (departmentFilter && searchKey(row.khoa) !== departmentFilter) return false;
     if (groupFilter && searchKey(row.nhom_van_de) !== groupFilter) return false;
     return nandaMatchesSearch(row, state.nandaSearch);
   });
 }
 
+const NANDA_ROWS_PER_PAGE = 5;
+
+function nandaEnteredDepartmentOptions() {
+  return uniqueCleanValues(state.nandaRows.map((row) => row.khoa));
+}
+
 function nandaEnteredGroupOptions() {
   return uniqueCleanValues(state.nandaRows.map((row) => row.nhom_van_de));
+}
+
+function nandaPageCount(rowCount) {
+  return Math.max(1, Math.ceil(rowCount / NANDA_ROWS_PER_PAGE));
+}
+
+function clampNandaPage(rowCount) {
+  const pageCount = nandaPageCount(rowCount);
+  const page = Number(state.nandaPage) || 1;
+  state.nandaPage = Math.min(Math.max(page, 1), pageCount);
+  return state.nandaPage;
+}
+
+function paginatedNandaRows(rows) {
+  const page = clampNandaPage(rows.length);
+  const start = (page - 1) * NANDA_ROWS_PER_PAGE;
+  return rows.slice(start, start + NANDA_ROWS_PER_PAGE);
+}
+
+function nandaDepartmentOptions() {
+  return uniqueCleanValues(Array.isArray(state.departmentCatalog) ? state.departmentCatalog : []);
+}
+
+function isValidNandaDepartment(value) {
+  const key = searchKey(value);
+  if (!key) return false;
+  return nandaDepartmentOptions().some((item) => searchKey(item) === key);
+}
+
+function normalizeNandaDepartmentValue(value) {
+  const key = searchKey(value);
+  if (!key) return "";
+  return nandaDepartmentOptions().find((item) => searchKey(item) === key) || cleanLine(value);
 }
 
 function uniqueCleanValues(values) {
@@ -2002,16 +2052,13 @@ function syncNandaInterventionRow(rows, index, field) {
 
 function validateNandaInterventionSelection(rows = completedNandaInterventionRows()) {
   if (!rows.length) {
-    throw new Error("Vui lòng chọn ít nhất một Mã can thiệp và Nội dung can thiệp trong danh mục gợi ý.");
+    throw new Error("Vui long nhap it nhat mot Noi dung can thiep.");
   }
 
   for (const row of rows) {
-    const code = cleanLine(row.code);
     const content = cleanLine(row.content);
-    const byCode = findNandaInterventionByCode(code);
-    const byName = findNandaInterventionByName(content);
-    if (!code || !content || !byCode || !byName || interventionMatchKey(byCode.name) !== interventionMatchKey(content) || interventionMatchKey(byName.code) !== interventionMatchKey(code)) {
-      throw new Error("Mã can thiệp và Nội dung can thiệp phải chọn đúng trong danh mục gợi ý, không nhập mới ngoài danh mục.");
+    if (!content) {
+      throw new Error("Moi dong can thiep phai co Noi dung can thiep.");
     }
   }
 }
@@ -2081,6 +2128,80 @@ function renderDatalist(id, options, valueKey = null, labelKey = null) {
   `;
 }
 
+function supabaseErrorMentionsColumn(error, column) {
+  const key = searchKey(column);
+  return [error?.message, error?.details, error?.hint, error?.code]
+    .map((value) => searchKey(value || ""))
+    .some((value) => value.includes(key) || value.includes(`'${key}'`) || value.includes(`"${key}"`));
+}
+
+function nandaPayloadForCurrentSchema(payload) {
+  if (state.nandaSchemaSupportsDepartment !== false) return payload;
+  const { khoa, ...rest } = payload;
+  return rest;
+}
+
+async function queryNandaRows() {
+  return getSupabaseClient()
+    .from("nanda")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(200);
+}
+
+async function refreshNandaRowsForDuplicateCheck() {
+  if (!isSupabaseConfigured()) return;
+  const { data, error } = await queryNandaRows();
+  if (error) return;
+  if ((data || []).some((row) => Object.prototype.hasOwnProperty.call(row, "khoa"))) {
+    state.nandaSchemaSupportsDepartment = true;
+  }
+  state.nandaRows = (data || []).map((row) => ({ khoa: "", ...row }));
+  state.nandaLoaded = true;
+}
+
+function duplicateNandaRowsForPayload(payload) {
+  const problemKey = searchKey(payload.van_de);
+  const causeKey = searchKey(payload.nguyen_nhan);
+  if (!problemKey || !causeKey) return [];
+  return careNandaRows().filter((row) =>
+    String(row.id) !== String(state.nandaEditingId || "") &&
+    searchKey(row.van_de) === problemKey &&
+    searchKey(row.nguyen_nhan) === causeKey,
+  );
+}
+
+function nandaDuplicateRowDetail(row) {
+  const interventions = completedNandaInterventionRows(row)
+    .map((item) => `${cleanLine(item.code) ? `${cleanLine(item.code)}: ` : ""}${cleanLine(item.content)}`)
+    .filter(Boolean)
+    .join("; ");
+  return [
+    `Khoa: ${cleanLine(row.khoa) || "Chua co khoa"}`,
+    `Chan doan dieu duong: ${formatNandaDiagnosis(row) || cleanLine(row.van_de) || "Chua co"}`,
+    `Ma can thiep: ${cleanLine(row.ma_can_thiep) || "Chua co"}`,
+    `Can thiep: ${interventions || cleanLine(row.noi_dung_can_thiep) || "Chua co"}`,
+  ].join("\n");
+}
+
+function confirmDuplicateNandaSave(payload) {
+  const duplicates = duplicateNandaRowsForPayload(payload);
+  if (!duplicates.length) return true;
+  const details = duplicates
+    .slice(0, 3)
+    .map((row, index) => `${index + 1}. ${nandaDuplicateRowDetail(row)}`)
+    .join("\n\n");
+  const extra = duplicates.length > 3 ? `\n\nCon ${duplicates.length - 3} dong trung khac.` : "";
+  return confirm([
+    `Van de "${payload.van_de}" va nguyen nhan "${payload.nguyen_nhan}" da duoc nhap boi:`,
+    "",
+    details,
+    extra,
+    "",
+    "Co dong y them tiep vao bang du lieu khong?",
+  ].join("\n"));
+}
+
 async function loadNandaRows(force = false) {
   if (!force && (state.nandaLoading || state.nandaLoaded)) return;
   state.nandaLoading = true;
@@ -2098,16 +2219,16 @@ async function loadNandaRows(force = false) {
   }
 
   try {
-    const { data, error } = await getSupabaseClient()
-      .from("nanda")
-      .select("id, created_at, nhom_van_de, van_de, nguyen_nhan, muc_tieu_can_thiep, ma_can_thiep, noi_dung_can_thiep")
-      .order("created_at", { ascending: false })
-      .limit(200);
+    const { data, error } = await queryNandaRows();
     if (error) throw error;
-    state.nandaRows = data || [];
+    if ((data || []).some((row) => Object.prototype.hasOwnProperty.call(row, "khoa"))) {
+      state.nandaSchemaSupportsDepartment = true;
+    }
+    state.nandaRows = (data || []).map((row) => ({ khoa: "", ...row }));
     state.nandaLoaded = true;
   } catch (error) {
     state.nandaError = error.message || String(error);
+    state.nandaLoaded = true;
   } finally {
     state.nandaLoading = false;
     if (
@@ -2121,30 +2242,47 @@ async function loadNandaRows(force = false) {
 
 async function saveNandaForm() {
   const payload = normalizeNandaPayload(state.nandaForm);
-  if (!payload.nhom_van_de || !payload.van_de || !payload.noi_dung_can_thiep) {
-    throw new Error("Vui lòng nhập Nhóm vấn đề, Vấn đề và Nội dung can thiệp.");
+  if (!payload.khoa || !payload.nhom_van_de || !payload.van_de || !payload.noi_dung_can_thiep) {
+    throw new Error("Vui long nhap Khoa, Nhom van de, Van de va Noi dung can thiep.");
   }
+  if (!isValidNandaDepartment(payload.khoa)) {
+    throw new Error("Khoa phai chon trong danh muc goi y tu dmkhoa.json.");
+  }
+  payload.khoa = normalizeNandaDepartmentValue(payload.khoa);
   const interventionRows = completedNandaInterventionRows(payload);
   validateNandaInterventionSelection(interventionRows);
   payload.ma_can_thiep = interventionRows.map((row) => cleanLine(row.code)).join("\n");
   payload.noi_dung_can_thiep = interventionRows.map((row) => cleanLine(row.content)).join("\n");
 
+  await refreshNandaRowsForDuplicateCheck();
+  if (!confirmDuplicateNandaSave(payload)) return false;
+
   const client = getSupabaseClient();
+  let dbPayload = nandaPayloadForCurrentSchema(payload);
   if (state.nandaEditingId) {
-    const { error } = await client
-      .from("nanda")
-      .update({ ...payload, updated_at: new Date().toISOString() })
-      .eq("id", state.nandaEditingId);
+    let { error } = await client.from("nanda").update(dbPayload).eq("id", state.nandaEditingId);
+    if (error && state.nandaSchemaSupportsDepartment !== false && supabaseErrorMentionsColumn(error, "khoa")) {
+      state.nandaSchemaSupportsDepartment = false;
+      dbPayload = nandaPayloadForCurrentSchema(payload);
+      ({ error } = await client.from("nanda").update(dbPayload).eq("id", state.nandaEditingId));
+    }
     if (error) throw error;
   } else {
-    const { error } = await client.from("nanda").insert(payload);
+    let { error } = await client.from("nanda").insert(dbPayload);
+    if (error && state.nandaSchemaSupportsDepartment !== false && supabaseErrorMentionsColumn(error, "khoa")) {
+      state.nandaSchemaSupportsDepartment = false;
+      dbPayload = nandaPayloadForCurrentSchema(payload);
+      ({ error } = await client.from("nanda").insert(dbPayload));
+    }
     if (error) throw error;
   }
 
   state.nandaForm = createDefaultNandaForm();
   state.nandaEditingId = null;
   state.nandaLoaded = false;
+  state.nandaPage = 1;
   await loadNandaRows(true);
+  return true;
 }
 
 async function deleteNandaRow(id) {
@@ -2162,10 +2300,14 @@ function renderNandaFormScreen() {
   loadNandaRows();
   const form = state.nandaForm;
   const rows = filteredNandaRows();
+  const pageRows = paginatedNandaRows(rows);
+  const pageCount = nandaPageCount(rows.length);
   const editing = Boolean(state.nandaEditingId);
   const interventionOptions = nandaInterventionOptions();
+  const departmentOptions = nandaDepartmentOptions();
   const goalItems = nandaGoalItems();
   const interventionRows = nandaInterventionRows();
+  const enteredDepartments = nandaEnteredDepartmentOptions();
   const enteredGroups = nandaEnteredGroupOptions();
 
   return `
@@ -2180,6 +2322,10 @@ function renderNandaFormScreen() {
           </div>
           <div class="panel-body">
             <div class="field-grid nanda-field-grid">
+              <div class="field">
+                <label>Khoa *</label>
+                <input type="search" list="nanda-khoa-options" data-nanda-field="khoa" value="${h(form.khoa)}" placeholder="Chon khoa" />
+              </div>
               <div class="field">
                 <label>Nhóm vấn đề *</label>
                 <input type="text" list="nanda-group-options" data-nanda-field="nhom_van_de" value="${h(form.nhom_van_de)}" placeholder="Ví dụ: Hô hấp" />
@@ -2211,11 +2357,11 @@ function renderNandaFormScreen() {
                     <div class="nanda-intervention-row">
                       <div class="field">
                         <label>Nội dung can thiệp</label>
-                        <input type="text" list="nanda-intervention-content-options" data-nanda-intervention-field="content" data-intervention-index="${index}" value="${h(item.content)}" placeholder="Chọn nội dung can thiệp" />
+                        <input type="text" list="nanda-intervention-content-options" data-nanda-intervention-field="content" data-intervention-index="${index}" value="${h(item.content)}" placeholder="Chon hoac nhap noi dung can thiep" />
                       </div>
                       <div class="field">
                         <label>Mã can thiệp</label>
-                        <input type="text" list="nanda-intervention-code-options" data-nanda-intervention-field="code" data-intervention-index="${index}" value="${h(item.code)}" placeholder="Ví dụ: C2, C14" />
+                        <input type="text" list="nanda-intervention-code-options" data-nanda-intervention-field="code" data-intervention-index="${index}" value="${h(item.code)}" placeholder="Co the de trong" />
                       </div>
                       ${interventionRows.length > 1 ? `<button type="button" class="remove-row-btn" data-action="remove-nanda-intervention" data-intervention-index="${index}" aria-label="Xóa can thiệp">Xóa</button>` : ""}
                     </div>
@@ -2241,43 +2387,63 @@ function renderNandaFormScreen() {
           </div>
           <div class="panel-body">
             <div class="field nanda-search-field">
-              <label>Tìm kiếm</label>
-              <input type="search" data-nanda-search value="${h(state.nandaSearch)}" placeholder="Tìm theo nhóm, vấn đề, mã hoặc nội dung" />
+              <label>Tim kiem</label>
+              <input type="search" data-nanda-search value="${h(state.nandaSearch)}" placeholder="Tim theo khoa, nhom, van de, ma hoac noi dung" />
+            </div>
+            <div class="field nanda-department-filter-field">
+              <label>Loc theo khoa</label>
+              <select data-nanda-department-filter>
+                <option value="">Tat ca khoa</option>
+                ${enteredDepartments.map((department) => `
+                  <option value="${h(department)}" ${searchKey(state.nandaDepartmentFilter) === searchKey(department) ? "selected" : ""}>${h(department)}</option>
+                `).join("")}
+              </select>
             </div>
             ${enteredGroups.length ? `
-              <div class="nanda-filter-group" aria-label="Lọc nhanh theo nhóm vấn đề">
-                <button type="button" class="btn ${!state.nandaGroupFilter ? "primary" : ""}" data-action="filter-nanda-group" data-group-value="">Tất cả</button>
+              <div class="nanda-filter-group" aria-label="Loc nhanh theo nhom van de">
+                <button type="button" class="btn ${!state.nandaGroupFilter ? "primary" : ""}" data-action="filter-nanda-group" data-group-value="">Tat ca</button>
                 ${enteredGroups.map((group) => `
                   <button type="button" class="btn ${searchKey(state.nandaGroupFilter) === searchKey(group) ? "primary" : ""}" data-action="filter-nanda-group" data-group-value="${h(group)}">${h(group)}</button>
                 `).join("")}
               </div>
             ` : ""}
-            ${state.nandaError ? `<div class="empty care-list-empty">Không tải được dữ liệu: ${h(state.nandaError)}</div>` : ""}
-            ${!state.nandaError && state.nandaLoading ? `<div class="empty care-list-empty">Đang tải danh mục NANDA...</div>` : ""}
-            ${!state.nandaError && !state.nandaLoading && !rows.length ? `<div class="empty care-list-empty">Chưa có dữ liệu phù hợp.</div>` : ""}
+            ${state.nandaError ? `<div class="empty care-list-empty">Khong tai duoc du lieu: ${h(state.nandaError)}</div>` : ""}
+            ${!state.nandaError && state.nandaLoading ? `<div class="empty care-list-empty">Dang tai danh muc NANDA...</div>` : ""}
+            ${!state.nandaError && !state.nandaLoading && !rows.length ? `<div class="empty care-list-empty">Chua co du lieu phu hop.</div>` : ""}
             ${!state.nandaError && rows.length ? `
               <div class="nanda-row-list">
-                ${rows.map((row) => `
+                ${pageRows.map((row) => `
                   <article class="nanda-row">
                     <div class="nanda-row-main">
-                      <span>${h(row.nhom_van_de || "Chưa có nhóm")}</span>
-                      ${formatNandaDiagnosis(row) ? `<p><b>Chẩn đoán điều dưỡng:</b> ${h(formatNandaDiagnosis(row))}</p>` : ""}
-                      <p><b>Vấn đề:</b> ${h(row.van_de)}</p>
-                      ${row.nguyen_nhan ? `<p><b>Nguyên nhân:</b> ${h(row.nguyen_nhan)}</p>` : ""}
-                      ${row.muc_tieu_can_thiep ? `<p><b>Mục tiêu:</b> ${h(row.muc_tieu_can_thiep)}</p>` : ""}
-                      ${completedNandaInterventionRows(row).map((item) => `<p><b>Can thiệp:</b> ${h(item.code)}: ${h(item.content)}</p>`).join("")}
+                      <div class="nanda-row-meta">
+                        <span>Khoa: ${h(row.khoa || "Chua co khoa")}</span>
+                        <span>Nhom: ${h(row.nhom_van_de || "Chua co nhom")}</span>
+                      </div>
+                      ${formatNandaDiagnosis(row) ? `<p><b>Chan doan dieu duong:</b> ${h(formatNandaDiagnosis(row))}</p>` : ""}
+                      <p><b>Van de:</b> ${h(row.van_de)}</p>
+                      ${row.nguyen_nhan ? `<p><b>Nguyen nhan:</b> ${h(row.nguyen_nhan)}</p>` : ""}
+                      ${row.muc_tieu_can_thiep ? `<p><b>Muc tieu:</b> ${h(row.muc_tieu_can_thiep)}</p>` : ""}
+                      ${completedNandaInterventionRows(row).map((item) => `<p><b>Can thiep:</b> ${item.code ? `${h(item.code)}: ` : ""}${h(item.content)}</p>`).join("")}
                     </div>
                     <div class="nanda-row-actions">
-                      <button type="button" class="btn" data-action="edit-nanda" data-nanda-id="${h(row.id)}">Sửa</button>
-                      <button type="button" class="btn danger" data-action="delete-nanda" data-nanda-id="${h(row.id)}">Xóa</button>
+                      <button type="button" class="btn" data-action="edit-nanda" data-nanda-id="${h(row.id)}">Sua</button>
+                      <button type="button" class="btn danger" data-action="delete-nanda" data-nanda-id="${h(row.id)}">Xoa</button>
                     </div>
                   </article>
                 `).join("")}
               </div>
+              ${pageCount > 1 ? `
+                <div class="nanda-pagination" aria-label="Phan trang danh sach NANDA">
+                  <button type="button" class="btn" data-action="nanda-page" data-page="${state.nandaPage - 1}" ${state.nandaPage <= 1 ? "disabled" : ""}>Truoc</button>
+                  <span>Trang ${state.nandaPage}/${pageCount}</span>
+                  <button type="button" class="btn" data-action="nanda-page" data-page="${state.nandaPage + 1}" ${state.nandaPage >= pageCount ? "disabled" : ""}>Sau</button>
+                </div>
+              ` : ""}
             ` : ""}
           </div>
         </section>
       </main>
+      ${renderDatalist("nanda-khoa-options", departmentOptions)}
       ${renderDatalist("nanda-group-options", nandaGroupOptions())}
       ${renderDatalist("nanda-problem-options", nandaProblemOptions())}
       ${renderDatalist("nanda-intervention-code-options", interventionOptions, "code", "name")}
@@ -3279,6 +3445,102 @@ function renderCareSheetDetailScreen() {
   `;
 }
 
+function nandaFocusSelectorForElement(element) {
+  if (!element?.dataset) return "";
+  if (element.dataset.nandaField) return `[data-nanda-field="${element.dataset.nandaField}"]`;
+  if (element.dataset.nandaGoalIndex !== undefined) return `[data-nanda-goal-index="${element.dataset.nandaGoalIndex}"]`;
+  if (element.dataset.nandaInterventionField) {
+    return `[data-nanda-intervention-field="${element.dataset.nandaInterventionField}"][data-intervention-index="${element.dataset.interventionIndex}"]`;
+  }
+  if (element.dataset.nandaSearch !== undefined) return "[data-nanda-search]";
+  return "";
+}
+
+function captureNandaFocus() {
+  const active = document.activeElement;
+  if (!active || !app.contains(active)) return null;
+  const selector = nandaFocusSelectorForElement(active);
+  if (!selector) return null;
+  return {
+    selector,
+    start: typeof active.selectionStart === "number" ? active.selectionStart : null,
+    end: typeof active.selectionEnd === "number" ? active.selectionEnd : null,
+  };
+}
+
+function restoreNandaFocus(snapshot) {
+  if (!snapshot?.selector) return;
+  const focusTarget = app.querySelector(snapshot.selector);
+  if (!focusTarget) return;
+  focusTarget.focus();
+  if (typeof focusTarget.setSelectionRange === "function") {
+    const valueLength = focusTarget.value.length;
+    const start = snapshot.start === null ? valueLength : Math.min(snapshot.start, valueLength);
+    const end = snapshot.end === null ? valueLength : Math.min(snapshot.end, valueLength);
+    focusTarget.setSelectionRange(start, end);
+  }
+}
+
+function assessmentCardHeading(card) {
+  return Array.from(card.children).find((child) => child.tagName === "H3");
+}
+
+function assessmentCardKey(card, index, heading) {
+  const classKey = Array.from(card.classList)
+    .find((className) => className.startsWith("assessment-field-") || className === "obgyn-assessment-card");
+  const titleKey = searchKey(heading?.textContent || "");
+  return `assessment-card:${index}:${classKey || titleKey || "section"}`;
+}
+
+function hydrateAssessmentAccordions() {
+  if (state.activeCareFormTab !== "assessment") return;
+  const cards = [...app.querySelectorAll(".structured-assessment .panel-body > .assessment-section-card")];
+  cards.forEach((card, index) => {
+    const existingHeader = card.querySelector(":scope > .assessment-card-head");
+    const heading = existingHeader ? null : assessmentCardHeading(card);
+    const key = card.dataset.assessmentCardKey || assessmentCardKey(card, index, heading || existingHeader);
+    const isOpen = state.openAssessmentCards.has(key);
+    card.dataset.assessmentCardKey = key;
+    card.classList.add("assessment-collapsible-card");
+    card.classList.toggle("is-open", isOpen);
+    card.classList.toggle("is-collapsed", !isOpen);
+
+    let header = existingHeader;
+    if (!header) {
+      header = document.createElement("div");
+      header.className = "assessment-card-head";
+
+      const titleButton = document.createElement("button");
+      titleButton.type = "button";
+      titleButton.className = "assessment-card-title";
+      titleButton.dataset.action = "toggle-assessment-card";
+      titleButton.dataset.assessmentCardKey = key;
+      titleButton.innerHTML = heading ? heading.innerHTML : "Nhom nhan dinh";
+
+      const collapseButton = document.createElement("button");
+      collapseButton.type = "button";
+      collapseButton.className = "assessment-card-collapse";
+      collapseButton.dataset.action = "toggle-assessment-card";
+      collapseButton.dataset.assessmentCardKey = key;
+
+      header.append(titleButton, collapseButton);
+      if (heading) {
+        heading.replaceWith(header);
+      } else {
+        card.prepend(header);
+      }
+    }
+
+    const buttons = header.querySelectorAll("[data-action='toggle-assessment-card']");
+    buttons.forEach((button) => {
+      button.dataset.assessmentCardKey = key;
+      button.setAttribute("aria-expanded", String(isOpen));
+    });
+    const collapseButton = header.querySelector(".assessment-card-collapse");
+    if (collapseButton) collapseButton.textContent = isOpen ? "\u1ea8n" : "M\u1edf";
+  });
+}
+
 function render(focusSelector = "") {
   ensureSelection();
   if (state.screen === "patients") {
@@ -3290,7 +3552,9 @@ function render(focusSelector = "") {
     return;
   }
   if (state.screen === "nanda") {
+    const focusSnapshot = focusSelector ? { selector: focusSelector, start: null, end: null } : captureNandaFocus();
     app.innerHTML = renderNandaFormScreen();
+    restoreNandaFocus(focusSnapshot);
     return;
   }
   if (state.screen === "record") {
@@ -3349,6 +3613,8 @@ function render(focusSelector = "") {
     ${state.handoverMedicineModalOpen ? renderHandoverMedicineModal() : ""}
     ${renderCareNandaDatalists()}
   `;
+
+  hydrateAssessmentAccordions();
 
   if (focusSelector) {
     const focusTarget = app.querySelector(focusSelector);
@@ -6479,6 +6745,17 @@ app.addEventListener("click", (event) => {
     return;
   }
 
+  if (target.dataset.action === "toggle-assessment-card" && target.dataset.assessmentCardKey) {
+    const key = target.dataset.assessmentCardKey;
+    if (state.openAssessmentCards.has(key)) {
+      state.openAssessmentCards.delete(key);
+    } else {
+      state.openAssessmentCards.add(key);
+    }
+    render();
+    return;
+  }
+
   if (target.dataset.obgynMode) {
     state.assessmentChecklist.obgynMode = target.dataset.obgynMode;
     clearHiddenObgynValues();
@@ -6774,6 +7051,13 @@ app.addEventListener("click", (event) => {
 
   if (target.dataset.action === "filter-nanda-group") {
     state.nandaGroupFilter = target.dataset.groupValue || "";
+    state.nandaPage = 1;
+    render();
+    return;
+  }
+
+  if (target.dataset.action === "nanda-page") {
+    state.nandaPage = Number(target.dataset.page) || 1;
     render();
     return;
   }
@@ -6783,8 +7067,8 @@ app.addEventListener("click", (event) => {
     target.disabled = true;
     target.textContent = "Đang lưu...";
     saveNandaForm()
-      .then(() => {
-        alert("Đã lưu dữ liệu NANDA.");
+      .then((saved) => {
+        if (saved) alert("Da luu du lieu NANDA.");
       })
       .catch((error) => {
         alert(`Không lưu được dữ liệu NANDA: ${error.message || error}`);
@@ -7053,6 +7337,7 @@ app.addEventListener("input", (event) => {
 
   if (target.dataset.nandaSearch !== undefined) {
     state.nandaSearch = target.value;
+    state.nandaPage = 1;
     render("[data-nanda-search]");
     return;
   }
@@ -7307,6 +7592,13 @@ app.addEventListener("change", (event) => {
     return;
   }
 
+  if (target.dataset.nandaDepartmentFilter !== undefined) {
+    state.nandaDepartmentFilter = target.value;
+    state.nandaPage = 1;
+    render();
+    return;
+  }
+
   if (target.dataset.nandaInterventionField) {
     const rows = nandaInterventionRows();
     const index = Number(target.dataset.interventionIndex);
@@ -7314,18 +7606,15 @@ app.addEventListener("change", (event) => {
     if (rows[index]) {
       rows[index][field] = target.value;
       syncNandaInterventionRow(rows, index, field);
-      const row = rows[index];
-      if (field === "code" && cleanLine(row.code) && !findNandaInterventionByCode(row.code)) {
-        row.code = "";
-        alert("Mã can thiệp phải chọn trong danh mục gợi ý.");
-      }
-      if (field === "content" && cleanLine(row.content) && !findNandaInterventionByName(row.content)) {
-        row.content = "";
-        alert("Nội dung can thiệp phải chọn trong danh mục gợi ý.");
-      }
       setNandaInterventionRows(rows);
+      const rowElement = target.closest(".nanda-intervention-row");
+      if (rowElement) {
+        const codeInput = rowElement.querySelector('[data-nanda-intervention-field="code"]');
+        const contentInput = rowElement.querySelector('[data-nanda-intervention-field="content"]');
+        if (codeInput && codeInput.value !== rows[index].code) codeInput.value = rows[index].code;
+        if (contentInput && contentInput.value !== rows[index].content) contentInput.value = rows[index].content;
+      }
     }
-    render(`[data-nanda-intervention-field="${field}"]`);
     return;
   }
 
@@ -7333,15 +7622,17 @@ app.addEventListener("change", (event) => {
     const field = target.dataset.nandaField;
     state.nandaForm[field] = target.value;
     syncNandaLinkedFields(field);
-    if (field === "ma_can_thiep" && cleanLine(target.value) && !findNandaInterventionByCode(target.value)) {
-      state.nandaForm.ma_can_thiep = "";
-      alert("Mã can thiệp phải chọn trong danh mục gợi ý.");
+    if (field === "khoa" && cleanLine(target.value) && !isValidNandaDepartment(target.value)) {
+      state.nandaForm.khoa = "";
+      alert("Khoa phai chon trong danh muc goi y tu dmkhoa.json.");
+    } else if (field === "khoa") {
+      state.nandaForm.khoa = normalizeNandaDepartmentValue(target.value);
     }
-    if (field === "noi_dung_can_thiep" && cleanLine(target.value) && !findNandaInterventionByName(target.value)) {
-      state.nandaForm.noi_dung_can_thiep = "";
-      alert("Nội dung can thiệp phải chọn trong danh mục gợi ý.");
+    updateNandaFormDomFields();
+    const problemDatalist = document.getElementById("nanda-problem-options");
+    if (problemDatalist) {
+      problemDatalist.outerHTML = renderDatalist("nanda-problem-options", nandaProblemOptions());
     }
-    render(`[data-nanda-field="${field}"]`);
     return;
   }
 
@@ -7715,13 +8006,14 @@ app.addEventListener("change", (event) => {
 
 async function init() {
   try {
-    const [response, scaleResponse, assessmentResponse, interventionCodeResponse, obgynResponse, problemResponse] = await Promise.all([
+    const [response, scaleResponse, assessmentResponse, interventionCodeResponse, obgynResponse, problemResponse, departmentResponse] = await Promise.all([
       fetch("./cd_deu_duong.json"),
       fetch("./thangdiem.json"),
       fetch("./nhan_dinh.json"),
       fetch("./ma_can_thiep.json"),
       fetch("./sankhoa.json"),
       fetch("./vande.json"),
+      fetch("./dmkhoa.json"),
     ]);
     if (!response.ok) throw new Error(`Khong tai duoc cd_deu_duong.json (${response.status})`);
     state.raw = await response.json();
@@ -7740,6 +8032,9 @@ async function init() {
     }
     if (problemResponse.ok) {
       state.problemCatalog = deepFix(await problemResponse.json());
+    }
+    if (departmentResponse.ok) {
+      state.departmentCatalog = deepFix(await departmentResponse.json());
     }
     state.categoryId = state.data.categories[0].id;
     state.departmentId = state.data.categories[0].khoa[0].id;
