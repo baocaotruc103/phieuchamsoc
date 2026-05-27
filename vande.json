@@ -1,0 +1,418 @@
+[
+  {
+    "nhom_van_de": "Hô hấp",
+    "van_de": "Khó thở"
+  },
+  {
+    "nhom_van_de": "Hô hấp",
+    "van_de": "Suy hô hấp / Nguy cơ suy hô hấp"
+  },
+  {
+    "nhom_van_de": "Hô hấp",
+    "van_de": "Đường thở không thông thoáng"
+  },
+  {
+    "nhom_van_de": "Hô hấp",
+    "van_de": "Giảm trao đổi khí"
+  },
+  {
+    "nhom_van_de": "Hô hấp",
+    "van_de": "Nguy cơ sặc"
+  },
+  {
+    "nhom_van_de": "Hô hấp",
+    "van_de": "Thở máy không hiệu quả"
+  },
+  {
+    "nhom_van_de": "Hô hấp",
+    "van_de": "Nguy cơ tắc/tụt đường thở nhân tạo"
+  },
+  {
+    "nhom_van_de": "Tuần hoàn",
+    "van_de": "Giảm cung lượng tim"
+  },
+  {
+    "nhom_van_de": "Tuần hoàn",
+    "van_de": "Rối loạn huyết động"
+  },
+  {
+    "nhom_van_de": "Tuần hoàn",
+    "van_de": "Nguy cơ sốc"
+  },
+  {
+    "nhom_van_de": "Tuần hoàn",
+    "van_de": "Giảm thể tích tuần hoàn"
+  },
+  {
+    "nhom_van_de": "Tuần hoàn",
+    "van_de": "Giảm tưới máu mô"
+  },
+  {
+    "nhom_van_de": "Tuần hoàn",
+    "van_de": "Rối loạn nhịp tim"
+  },
+  {
+    "nhom_van_de": "Tuần hoàn",
+    "van_de": "Tuần hoàn ngoại vi kém hiệu quả"
+  },
+  {
+    "nhom_van_de": "Đau",
+    "van_de": "Đau cấp tính"
+  },
+  {
+    "nhom_van_de": "Đau",
+    "van_de": "Đau mạn tính"
+  },
+  {
+    "nhom_van_de": "Đau",
+    "van_de": "Đau chưa được kiểm soát"
+  },
+  {
+    "nhom_van_de": "Đau",
+    "van_de": "Đau do phẫu thuật/thủ thuật"
+  },
+  {
+    "nhom_van_de": "Đau",
+    "van_de": "Nguy cơ đau tăng lên"
+  },
+  {
+    "nhom_van_de": "Thần kinh - nhận thức",
+    "van_de": "Rối loạn ý thức"
+  },
+  {
+    "nhom_van_de": "Thần kinh - nhận thức",
+    "van_de": "Rối loạn nhận thức/định hướng"
+  },
+  {
+    "nhom_van_de": "Thần kinh - nhận thức",
+    "van_de": "Nguy cơ tổn thương thần kinh tiến triển"
+  },
+  {
+    "nhom_van_de": "Thần kinh - nhận thức",
+    "van_de": "Nguy cơ tăng áp lực nội sọ"
+  },
+  {
+    "nhom_van_de": "Thần kinh - nhận thức",
+    "van_de": "Nguy cơ co giật"
+  },
+  {
+    "nhom_van_de": "Thần kinh - nhận thức",
+    "van_de": "Rối loạn hành vi do thay đổi tri giác"
+  },
+  {
+    "nhom_van_de": "Thần kinh - nhận thức",
+    "van_de": "Nguy cơ mất an toàn do rối loạn tri giác"
+  },
+  {
+    "nhom_van_de": "Da - vết thương",
+    "van_de": "Tổn thương da/niêm mạc"
+  },
+  {
+    "nhom_van_de": "Da - vết thương",
+    "van_de": "Nguy cơ tổn thương da/niêm mạc"
+  },
+  {
+    "nhom_van_de": "Da - vết thương",
+    "van_de": "Loét tỳ đè / Nguy cơ loét tỳ đè"
+  },
+  {
+    "nhom_van_de": "Da - vết thương",
+    "van_de": "Chậm liền vết thương/vết mổ"
+  },
+  {
+    "nhom_van_de": "Da - vết thương",
+    "van_de": "Nguy cơ bục/tách vết thương/vết mổ"
+  },
+  {
+    "nhom_van_de": "Da - vết thương",
+    "van_de": "Rối loạn dẫn lưu vết thương"
+  },
+  {
+    "nhom_van_de": "Nhiễm khuẩn - miễn dịch",
+    "van_de": "Nguy cơ nhiễm khuẩn"
+  },
+  {
+    "nhom_van_de": "Nhiễm khuẩn - miễn dịch",
+    "van_de": "Nhiễm khuẩn"
+  },
+  {
+    "nhom_van_de": "Nhiễm khuẩn - miễn dịch",
+    "van_de": "Sốt"
+  },
+  {
+    "nhom_van_de": "Nhiễm khuẩn - miễn dịch",
+    "van_de": "Nguy cơ nhiễm khuẩn bệnh viện"
+  },
+  {
+    "nhom_van_de": "Nhiễm khuẩn - miễn dịch",
+    "van_de": "Suy giảm miễn dịch / Nguy cơ suy giảm miễn dịch"
+  },
+  {
+    "nhom_van_de": "Nhiễm khuẩn - miễn dịch",
+    "van_de": "Nguy cơ nhiễm khuẩn liên quan dụng cụ xâm lấn"
+  },
+  {
+    "nhom_van_de": "Nhiễm khuẩn - miễn dịch",
+    "van_de": "Nguy cơ lây nhiễm"
+  },
+  {
+    "nhom_van_de": "Dinh dưỡng",
+    "van_de": "Thiếu dinh dưỡng"
+  },
+  {
+    "nhom_van_de": "Dinh dưỡng",
+    "van_de": "Nguy cơ thiếu dinh dưỡng"
+  },
+  {
+    "nhom_van_de": "Dinh dưỡng",
+    "van_de": "Ăn uống kém"
+  },
+  {
+    "nhom_van_de": "Dinh dưỡng",
+    "van_de": "Rối loạn nuốt"
+  },
+  {
+    "nhom_van_de": "Dinh dưỡng",
+    "van_de": "Dinh dưỡng không đáp ứng nhu cầu cơ thể"
+  },
+  {
+    "nhom_van_de": "Dinh dưỡng",
+    "van_de": "Nuôi dưỡng không hiệu quả"
+  },
+  {
+    "nhom_van_de": "Dinh dưỡng",
+    "van_de": "Nguy cơ rối loạn đường huyết liên quan dinh dưỡng"
+  },
+  {
+    "nhom_van_de": "Dịch - điện giải",
+    "van_de": "Thiếu hụt thể tích dịch"
+  },
+  {
+    "nhom_van_de": "Dịch - điện giải",
+    "van_de": "Nguy cơ thiếu hụt thể tích dịch"
+  },
+  {
+    "nhom_van_de": "Dịch - điện giải",
+    "van_de": "Thừa thể tích dịch"
+  },
+  {
+    "nhom_van_de": "Dịch - điện giải",
+    "van_de": "Mất cân bằng dịch vào/ra"
+  },
+  {
+    "nhom_van_de": "Dịch - điện giải",
+    "van_de": "Rối loạn điện giải / Nguy cơ rối loạn điện giải"
+  },
+  {
+    "nhom_van_de": "Dịch - điện giải",
+    "van_de": "Nguy cơ thừa thể tích dịch"
+  },
+  {
+    "nhom_van_de": "Dịch - điện giải",
+    "van_de": "Cân bằng dịch không ổn định"
+  },
+  {
+    "nhom_van_de": "Tiêu hóa",
+    "van_de": "Buồn nôn / nôn"
+  },
+  {
+    "nhom_van_de": "Tiêu hóa",
+    "van_de": "Tiêu chảy"
+  },
+  {
+    "nhom_van_de": "Tiêu hóa",
+    "van_de": "Táo bón"
+  },
+  {
+    "nhom_van_de": "Tiêu hóa",
+    "van_de": "Chướng bụng / đầy hơi"
+  },
+  {
+    "nhom_van_de": "Tiêu hóa",
+    "van_de": "Rối loạn bài tiết ruột"
+  },
+  {
+    "nhom_van_de": "Tiêu hóa",
+    "van_de": "Nguy cơ xuất huyết tiêu hóa"
+  },
+  {
+    "nhom_van_de": "Tiêu hóa",
+    "van_de": "Nguy cơ rối loạn chức năng tiêu hóa"
+  },
+  {
+    "nhom_van_de": "Tiết niệu",
+    "van_de": "Rối loạn bài tiết nước tiểu"
+  },
+  {
+    "nhom_van_de": "Tiết niệu",
+    "van_de": "Bí tiểu"
+  },
+  {
+    "nhom_van_de": "Tiết niệu",
+    "van_de": "Tiểu không tự chủ"
+  },
+  {
+    "nhom_van_de": "Tiết niệu",
+    "van_de": "Giảm lượng nước tiểu"
+  },
+  {
+    "nhom_van_de": "Tiết niệu",
+    "van_de": "Nguy cơ rối loạn bài tiết nước tiểu"
+  },
+  {
+    "nhom_van_de": "Tiết niệu",
+    "van_de": "Rối loạn dẫn lưu nước tiểu"
+  },
+  {
+    "nhom_van_de": "Tiết niệu",
+    "van_de": "Nguy cơ tổn thương đường tiết niệu do dụng cụ"
+  },
+  {
+    "nhom_van_de": "Vận động - tự chăm sóc",
+    "van_de": "Hạn chế vận động"
+  },
+  {
+    "nhom_van_de": "Vận động - tự chăm sóc",
+    "van_de": "Giảm khả năng di chuyển"
+  },
+  {
+    "nhom_van_de": "Vận động - tự chăm sóc",
+    "van_de": "Giảm khả năng tự chăm sóc"
+  },
+  {
+    "nhom_van_de": "Vận động - tự chăm sóc",
+    "van_de": "Không dung nạp hoạt động"
+  },
+  {
+    "nhom_van_de": "Vận động - tự chăm sóc",
+    "van_de": "Nguy cơ teo cơ/cứng khớp"
+  },
+  {
+    "nhom_van_de": "Vận động - tự chăm sóc",
+    "van_de": "Nguy cơ suy giảm khả năng phục hồi chức năng"
+  },
+  {
+    "nhom_van_de": "Vận động - tự chăm sóc",
+    "van_de": "Phụ thuộc chăm sóc"
+  },
+  {
+    "nhom_van_de": "An toàn",
+    "van_de": "Nguy cơ té ngã"
+  },
+  {
+    "nhom_van_de": "An toàn",
+    "van_de": "Nguy cơ chấn thương"
+  },
+  {
+    "nhom_van_de": "An toàn",
+    "van_de": "Nguy cơ tự rút ống/dây truyền"
+  },
+  {
+    "nhom_van_de": "An toàn",
+    "van_de": "Nguy cơ tai biến do thuốc"
+  },
+  {
+    "nhom_van_de": "An toàn",
+    "van_de": "Nguy cơ dị ứng/phản vệ"
+  },
+  {
+    "nhom_van_de": "An toàn",
+    "van_de": "Nguy cơ mất an toàn khi chăm sóc/thủ thuật"
+  },
+  {
+    "nhom_van_de": "An toàn",
+    "van_de": "Nguy cơ bỏ sót theo dõi/cảnh báo bất thường"
+  },
+  {
+    "nhom_van_de": "Giấc ngủ - nghỉ ngơi",
+    "van_de": "Rối loạn giấc ngủ"
+  },
+  {
+    "nhom_van_de": "Giấc ngủ - nghỉ ngơi",
+    "van_de": "Nghỉ ngơi không hiệu quả"
+  },
+  {
+    "nhom_van_de": "Giấc ngủ - nghỉ ngơi",
+    "van_de": "Rối loạn chu kỳ thức - ngủ"
+  },
+  {
+    "nhom_van_de": "Giấc ngủ - nghỉ ngơi",
+    "van_de": "Thiếu ngủ"
+  },
+  {
+    "nhom_van_de": "Tâm lý - cảm xúc",
+    "van_de": "Lo âu"
+  },
+  {
+    "nhom_van_de": "Tâm lý - cảm xúc",
+    "van_de": "Sợ hãi"
+  },
+  {
+    "nhom_van_de": "Tâm lý - cảm xúc",
+    "van_de": "Căng thẳng tâm lý"
+  },
+  {
+    "nhom_van_de": "Tâm lý - cảm xúc",
+    "van_de": "Khó thích nghi với tình trạng bệnh"
+  },
+  {
+    "nhom_van_de": "Tâm lý - cảm xúc",
+    "van_de": "Không hợp tác điều trị/chăm sóc"
+  },
+  {
+    "nhom_van_de": "Tâm lý - cảm xúc",
+    "van_de": "Tâm trạng buồn chán"
+  },
+  {
+    "nhom_van_de": "Tâm lý - cảm xúc",
+    "van_de": "Nguy cơ khủng hoảng tâm lý"
+  },
+  {
+    "nhom_van_de": "Giao tiếp",
+    "van_de": "Giảm khả năng giao tiếp"
+  },
+  {
+    "nhom_van_de": "Giao tiếp",
+    "van_de": "Khó tiếp nhận thông tin"
+  },
+  {
+    "nhom_van_de": "Giao tiếp",
+    "van_de": "Khó diễn đạt nhu cầu chăm sóc"
+  },
+  {
+    "nhom_van_de": "Giao tiếp",
+    "van_de": "Giao tiếp bằng lời không hiệu quả"
+  },
+  {
+    "nhom_van_de": "Giao tiếp",
+    "van_de": "Giao tiếp không lời chưa hiệu quả"
+  },
+  {
+    "nhom_van_de": "Kiến thức - giáo dục sức khỏe",
+    "van_de": "Thiếu kiến thức về bệnh"
+  },
+  {
+    "nhom_van_de": "Kiến thức - giáo dục sức khỏe",
+    "van_de": "Thiếu kiến thức về điều trị"
+  },
+  {
+    "nhom_van_de": "Kiến thức - giáo dục sức khỏe",
+    "van_de": "Thiếu kiến thức về tự chăm sóc"
+  },
+  {
+    "nhom_van_de": "Kiến thức - giáo dục sức khỏe",
+    "van_de": "Thực hành chăm sóc chưa đúng"
+  },
+  {
+    "nhom_van_de": "Kiến thức - giáo dục sức khỏe",
+    "van_de": "Nguy cơ không tuân thủ điều trị"
+  },
+  {
+    "nhom_van_de": "Kiến thức - giáo dục sức khỏe",
+    "van_de": "Khả năng tự quản lý bệnh chưa hiệu quả"
+  },
+  {
+    "nhom_van_de": "Kiến thức - giáo dục sức khỏe",
+    "van_de": "Người nhà chưa sẵn sàng tham gia chăm sóc"
+  }
+]

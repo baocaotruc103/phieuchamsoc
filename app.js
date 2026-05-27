@@ -123,6 +123,17 @@ function createHandoverMedicineRow() {
   };
 }
 
+function createDefaultNandaForm() {
+  return {
+    nhom_van_de: "",
+    van_de: "",
+    nguyen_nhan: "",
+    muc_tieu_can_thiep: "",
+    ma_can_thiep: "",
+    noi_dung_can_thiep: "",
+  };
+}
+
 function normalizeHandoverMedicineRow(row = {}) {
   const { orderTime, note, ...current } = row;
   return {
@@ -317,6 +328,15 @@ const state = {
   activeHealthEducationStage: null,
   handoverMedicineModalOpen: false,
   handoverMedicineDraft: createHandoverMedicineRow(),
+  problemCatalog: [],
+  nandaRows: [],
+  nandaLoaded: false,
+  nandaLoading: false,
+  nandaError: "",
+  nandaSearch: "",
+  nandaGroupFilter: "",
+  nandaEditingId: null,
+  nandaForm: createDefaultNandaForm(),
 };
 
 const initialAssessmentChecklist = JSON.parse(JSON.stringify(state.assessmentChecklist));
@@ -1343,6 +1363,18 @@ function diagnosisDetailText(row) {
 
 function interventionCatalogItems() {
   const grouped = new Map();
+  for (const item of interventionCodeCatalogItems()) {
+    const key = interventionOptionKey(item);
+    if ((item.code || item.name) && !grouped.has(key)) grouped.set(key, item);
+  }
+  for (const item of careNandaRows().flatMap((row) => completedNandaInterventionRows(row))) {
+    const option = {
+      code: cleanLine(item.code),
+      name: cleanLine(item.content || item.name),
+    };
+    const key = interventionOptionKey(option);
+    if ((option.code || option.name) && !grouped.has(key)) grouped.set(key, option);
+  }
   for (const record of diagnosisCatalogRows()) {
     for (const item of record.interventions || []) {
       const option = {
@@ -1796,6 +1828,467 @@ function appBar(title, backTarget = "") {
   `;
 }
 
+function normalizeNandaPayload(form = {}) {
+  return {
+    nhom_van_de: cleanLine(form.nhom_van_de),
+    van_de: cleanLine(form.van_de),
+    nguyen_nhan: cleanLine(form.nguyen_nhan),
+    muc_tieu_can_thiep: cleanLine(form.muc_tieu_can_thiep),
+    ma_can_thiep: cleanLine(form.ma_can_thiep),
+    noi_dung_can_thiep: cleanLine(form.noi_dung_can_thiep),
+  };
+}
+
+function nandaMatchesSearch(row, query) {
+  const value = searchKey(query);
+  if (!value) return true;
+  return [
+    row.nhom_van_de,
+    row.van_de,
+    row.nguyen_nhan,
+    row.muc_tieu_can_thiep,
+    row.ma_can_thiep,
+    row.noi_dung_can_thiep,
+  ].some((text) => searchKey(text).includes(value));
+}
+
+function formatNandaDiagnosis(row = {}) {
+  const problem = cleanLine(row.van_de);
+  const cause = cleanLine(row.nguyen_nhan);
+  if (!problem) return "";
+  if (!cause) return problem;
+  return `${problem} liên quan đến ${cause.charAt(0).toLowerCase()}${cause.slice(1)}`;
+}
+
+function filteredNandaRows() {
+  const groupFilter = searchKey(state.nandaGroupFilter);
+  return state.nandaRows.filter((row) => {
+    if (groupFilter && searchKey(row.nhom_van_de) !== groupFilter) return false;
+    return nandaMatchesSearch(row, state.nandaSearch);
+  });
+}
+
+function nandaEnteredGroupOptions() {
+  return uniqueCleanValues(state.nandaRows.map((row) => row.nhom_van_de));
+}
+
+function uniqueCleanValues(values) {
+  const grouped = new Map();
+  for (const value of values) {
+    const clean = cleanLine(value);
+    const key = searchKey(clean);
+    if (clean && !grouped.has(key)) grouped.set(key, clean);
+  }
+  return [...grouped.values()].sort((a, b) => a.localeCompare(b, "vi"));
+}
+
+function nandaProblemRows() {
+  return Array.isArray(state.problemCatalog) ? state.problemCatalog : [];
+}
+
+function nandaGroupOptions() {
+  return uniqueCleanValues(nandaProblemRows().map((item) => item.nhom_van_de));
+}
+
+function nandaProblemOptions() {
+  const selectedGroup = searchKey(state.nandaForm.nhom_van_de);
+  const rows = selectedGroup
+    ? nandaProblemRows().filter((item) => searchKey(item.nhom_van_de) === selectedGroup)
+    : nandaProblemRows();
+  return uniqueCleanValues(rows.map((item) => item.van_de));
+}
+
+function findProblemGroupByProblem(problem) {
+  const key = searchKey(problem);
+  if (!key) return "";
+  const matches = nandaProblemRows().filter((item) => searchKey(item.van_de) === key);
+  const groups = uniqueCleanValues(matches.map((item) => item.nhom_van_de));
+  return groups.length === 1 ? groups[0] : "";
+}
+
+function interventionCodeCatalogItems() {
+  const grouped = new Map();
+  for (const item of state.interventionCatalog || []) {
+    const option = {
+      code: cleanLine(item.ma_hoa || item.code),
+      name: cleanLine(item.danh_muc_huong_dan_cham_soc || item.name || item.content),
+    };
+    const key = interventionOptionKey(option);
+    if ((option.code || option.name) && !grouped.has(key)) grouped.set(key, option);
+  }
+  return [...grouped.values()];
+}
+
+function interventionMatchKey(value) {
+  return searchKey(value)
+    .replace(/\s+/g, " ")
+    .replace(/[‐‑‒–—―]/g, "-")
+    .trim();
+}
+
+function findNandaInterventionByCode(code) {
+  const key = interventionMatchKey(code);
+  if (!key) return null;
+  return interventionCodeCatalogItems().find((item) => interventionMatchKey(item.code) === key) || null;
+}
+
+function findNandaInterventionByName(name) {
+  const key = interventionMatchKey(name);
+  if (!key) return null;
+  return interventionCodeCatalogItems().find((item) => interventionMatchKey(item.name) === key) || null;
+}
+
+function syncNandaLinkedFields(field) {
+  if (field === "van_de" && !cleanLine(state.nandaForm.nhom_van_de)) {
+    const group = findProblemGroupByProblem(state.nandaForm.van_de);
+    if (group) state.nandaForm.nhom_van_de = group;
+  }
+}
+
+function updateNandaFormDomFields() {
+  for (const [field, value] of Object.entries(state.nandaForm)) {
+    const input = app.querySelector(`[data-nanda-field="${field}"]`);
+    if (input && input.value !== value) input.value = value;
+  }
+}
+
+function nandaGoalItems() {
+  return String(state.nandaForm.muc_tieu_can_thiep || "")
+    .split("\n")
+    .map((item) => cleanLine(item));
+}
+
+function setNandaGoalItems(goals) {
+  state.nandaForm.muc_tieu_can_thiep = goals.map((item) => cleanLine(item)).join("\n");
+}
+
+function splitNandaLines(value) {
+  return String(value || "")
+    .split("\n")
+    .map((item) => cleanLine(item));
+}
+
+function nandaInterventionRows(form = state.nandaForm) {
+  const codes = splitNandaLines(form.ma_can_thiep);
+  const contents = splitNandaLines(form.noi_dung_can_thiep);
+  const length = Math.max(codes.length, contents.length, 1);
+  return Array.from({ length }, (_, index) => ({
+    code: codes[index] || "",
+    content: contents[index] || "",
+  }));
+}
+
+function setNandaInterventionRows(rows) {
+  state.nandaForm.ma_can_thiep = rows.map((row) => cleanLine(row.code)).join("\n");
+  state.nandaForm.noi_dung_can_thiep = rows.map((row) => cleanLine(row.content)).join("\n");
+}
+
+function completedNandaInterventionRows(form = state.nandaForm) {
+  return nandaInterventionRows(form).filter((row) => cleanLine(row.code) || cleanLine(row.content));
+}
+
+function syncNandaInterventionRow(rows, index, field) {
+  const row = rows[index];
+  if (!row) return;
+  if (field === "code") {
+    const matched = findNandaInterventionByCode(row.code);
+    if (matched?.name) row.content = matched.name;
+  }
+  if (field === "content") {
+    const matched = findNandaInterventionByName(row.content);
+    if (matched?.code) row.code = matched.code;
+  }
+}
+
+function validateNandaInterventionSelection(rows = completedNandaInterventionRows()) {
+  if (!rows.length) {
+    throw new Error("Vui lòng chọn ít nhất một Mã can thiệp và Nội dung can thiệp trong danh mục gợi ý.");
+  }
+
+  for (const row of rows) {
+    const code = cleanLine(row.code);
+    const content = cleanLine(row.content);
+    const byCode = findNandaInterventionByCode(code);
+    const byName = findNandaInterventionByName(content);
+    if (!code || !content || !byCode || !byName || interventionMatchKey(byCode.name) !== interventionMatchKey(content) || interventionMatchKey(byName.code) !== interventionMatchKey(code)) {
+      throw new Error("Mã can thiệp và Nội dung can thiệp phải chọn đúng trong danh mục gợi ý, không nhập mới ngoài danh mục.");
+    }
+  }
+}
+
+function nandaInterventionOptions() {
+  return interventionCodeCatalogItems();
+}
+
+function careNandaRows() {
+  return Array.isArray(state.nandaRows) ? state.nandaRows : [];
+}
+
+function careNandaDiagnosisOptions() {
+  return uniqueCleanValues([
+    ...diagnosisCatalogRows().flatMap((row) => splitSuggestionLines(row.nanda)),
+    ...careNandaRows().map((row) => row.van_de),
+  ]);
+}
+
+function careNandaCauseOptions() {
+  return uniqueCleanValues([
+    ...diagnosisCatalogRows().flatMap((row) => splitSuggestionLines(row.cause)),
+    ...careNandaRows().map((row) => row.nguyen_nhan),
+  ]);
+}
+
+function careNandaGoalOptions() {
+  return uniqueCleanValues([
+    ...diagnosisCatalogRows().flatMap((row) => splitSuggestionLines(row.noc)),
+    ...careNandaRows().flatMap((row) => splitNandaLines(row.muc_tieu_can_thiep)),
+  ]);
+}
+
+function careNandaInterventionOptions() {
+  const grouped = new Map();
+  const addOption = (option) => {
+    const cleanOption = {
+      code: cleanLine(option.code),
+      name: cleanLine(option.name || option.content),
+    };
+    const key = interventionOptionKey(cleanOption);
+    if ((cleanOption.code || cleanOption.name) && !grouped.has(key)) grouped.set(key, cleanOption);
+  };
+  diagnosisCatalogRows().flatMap((row) => row.interventions || []).forEach(addOption);
+  careNandaRows().flatMap((row) => completedNandaInterventionRows(row)).forEach(addOption);
+  interventionCodeCatalogItems().forEach(addOption);
+  return [...grouped.values()];
+}
+
+function renderCareNandaDatalists() {
+  const interventionOptions = careNandaInterventionOptions();
+  return `
+    ${renderDatalist("care-nanda-diagnosis-options", careNandaDiagnosisOptions())}
+    ${renderDatalist("care-nanda-cause-options", careNandaCauseOptions())}
+    ${renderDatalist("care-nanda-goal-options", careNandaGoalOptions())}
+    ${renderDatalist("care-nanda-intervention-code-options", interventionOptions, "code", "name")}
+    ${renderDatalist("care-nanda-intervention-content-options", interventionOptions, "name", "code")}
+  `;
+}
+
+function renderDatalist(id, options, valueKey = null, labelKey = null) {
+  return `
+    <datalist id="${h(id)}">
+      ${options.map((item) => {
+        const value = valueKey ? item[valueKey] : item;
+        const label = labelKey ? item[labelKey] : "";
+        return `<option value="${h(value)}"${label ? ` label="${h(label)}"` : ""}></option>`;
+      }).join("")}
+    </datalist>
+  `;
+}
+
+async function loadNandaRows(force = false) {
+  if (!force && (state.nandaLoading || state.nandaLoaded)) return;
+  state.nandaLoading = true;
+  state.nandaError = "";
+
+  if (!isSupabaseConfigured()) {
+    state.nandaRows = [];
+    state.nandaLoaded = true;
+    state.nandaLoading = false;
+    state.nandaError = "Chưa cấu hình Supabase nên chưa tải được danh mục NANDA.";
+    setTimeout(() => {
+      if (state.screen === "nanda") render();
+    }, 0);
+    return;
+  }
+
+  try {
+    const { data, error } = await getSupabaseClient()
+      .from("nanda")
+      .select("id, created_at, nhom_van_de, van_de, nguyen_nhan, muc_tieu_can_thiep, ma_can_thiep, noi_dung_can_thiep")
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (error) throw error;
+    state.nandaRows = data || [];
+    state.nandaLoaded = true;
+  } catch (error) {
+    state.nandaError = error.message || String(error);
+  } finally {
+    state.nandaLoading = false;
+    if (
+      state.screen === "nanda" ||
+      (state.screen === "careForm" && (state.activeCareFormTab === "diagnosis" || state.activeCareFormTab === "intervention"))
+    ) {
+      render();
+    }
+  }
+}
+
+async function saveNandaForm() {
+  const payload = normalizeNandaPayload(state.nandaForm);
+  if (!payload.nhom_van_de || !payload.van_de || !payload.noi_dung_can_thiep) {
+    throw new Error("Vui lòng nhập Nhóm vấn đề, Vấn đề và Nội dung can thiệp.");
+  }
+  const interventionRows = completedNandaInterventionRows(payload);
+  validateNandaInterventionSelection(interventionRows);
+  payload.ma_can_thiep = interventionRows.map((row) => cleanLine(row.code)).join("\n");
+  payload.noi_dung_can_thiep = interventionRows.map((row) => cleanLine(row.content)).join("\n");
+
+  const client = getSupabaseClient();
+  if (state.nandaEditingId) {
+    const { error } = await client
+      .from("nanda")
+      .update({ ...payload, updated_at: new Date().toISOString() })
+      .eq("id", state.nandaEditingId);
+    if (error) throw error;
+  } else {
+    const { error } = await client.from("nanda").insert(payload);
+    if (error) throw error;
+  }
+
+  state.nandaForm = createDefaultNandaForm();
+  state.nandaEditingId = null;
+  state.nandaLoaded = false;
+  await loadNandaRows(true);
+}
+
+async function deleteNandaRow(id) {
+  const { error } = await getSupabaseClient().from("nanda").delete().eq("id", id);
+  if (error) throw error;
+  if (String(state.nandaEditingId) === String(id)) {
+    state.nandaEditingId = null;
+    state.nandaForm = createDefaultNandaForm();
+  }
+  state.nandaLoaded = false;
+  await loadNandaRows(true);
+}
+
+function renderNandaFormScreen() {
+  loadNandaRows();
+  const form = state.nandaForm;
+  const rows = filteredNandaRows();
+  const editing = Boolean(state.nandaEditingId);
+  const interventionOptions = nandaInterventionOptions();
+  const goalItems = nandaGoalItems();
+  const interventionRows = nandaInterventionRows();
+  const enteredGroups = nandaEnteredGroupOptions();
+
+  return `
+    <div class="mobile-app nanda-screen">
+      ${appBar("Danh mục NANDA", "patients")}
+      <main class="nanda-layout">
+        <section class="panel nanda-form-panel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Chẩn đoán điều dưỡng</h2>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="field-grid nanda-field-grid">
+              <div class="field">
+                <label>Nhóm vấn đề *</label>
+                <input type="text" list="nanda-group-options" data-nanda-field="nhom_van_de" value="${h(form.nhom_van_de)}" placeholder="Ví dụ: Hô hấp" />
+              </div>
+              <div class="field">
+                <label>Vấn đề *</label>
+                <input type="text" list="nanda-problem-options" data-nanda-field="van_de" value="${h(form.van_de)}" placeholder="Ví dụ: Khó thở" />
+              </div>
+              <div class="field">
+                <label>Nguyên nhân</label>
+                <textarea data-nanda-field="nguyen_nhan" placeholder="Nhập nguyên nhân liên quan">${h(form.nguyen_nhan)}</textarea>
+              </div>
+              <div class="field wide nanda-goals-field">
+                <label>Mục tiêu can thiệp</label>
+                <div class="nanda-goal-list">
+                  ${goalItems.map((goal, index) => `
+                    <div class="nanda-goal-row">
+                      <input type="text" data-nanda-goal-index="${index}" value="${h(goal)}" placeholder="Nhập mục tiêu ${index + 1}" />
+                      ${goalItems.length > 1 ? `<button type="button" class="remove-row-btn" data-action="remove-nanda-goal" data-goal-index="${index}" aria-label="Xóa mục tiêu">Xóa</button>` : ""}
+                    </div>
+                  `).join("")}
+                </div>
+                <button type="button" class="btn nanda-add-goal-btn" data-action="add-nanda-goal">Thêm mục tiêu</button>
+              </div>
+              <div class="field wide nanda-interventions-field">
+                <label>Can thiệp điều dưỡng *</label>
+                <div class="nanda-intervention-list">
+                  ${interventionRows.map((item, index) => `
+                    <div class="nanda-intervention-row">
+                      <div class="field">
+                        <label>Nội dung can thiệp</label>
+                        <input type="text" list="nanda-intervention-content-options" data-nanda-intervention-field="content" data-intervention-index="${index}" value="${h(item.content)}" placeholder="Chọn nội dung can thiệp" />
+                      </div>
+                      <div class="field">
+                        <label>Mã can thiệp</label>
+                        <input type="text" list="nanda-intervention-code-options" data-nanda-intervention-field="code" data-intervention-index="${index}" value="${h(item.code)}" placeholder="Ví dụ: C2, C14" />
+                      </div>
+                      ${interventionRows.length > 1 ? `<button type="button" class="remove-row-btn" data-action="remove-nanda-intervention" data-intervention-index="${index}" aria-label="Xóa can thiệp">Xóa</button>` : ""}
+                    </div>
+                  `).join("")}
+                </div>
+                <button type="button" class="btn nanda-add-goal-btn" data-action="add-nanda-intervention">Thêm can thiệp</button>
+              </div>
+            </div>
+            <div class="nanda-actions">
+              <button type="button" class="btn primary" data-action="save-nanda">${editing ? "Cập nhật" : "Lưu"}</button>
+              <button type="button" class="btn" data-action="clear-nanda-form">Làm mới</button>
+              <button type="button" class="btn ghost" data-action="refresh-nanda">Tải lại</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel nanda-list-panel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Danh sách đã nhập</h2>
+              <p class="panel-subtitle">${state.nandaLoading ? "Đang tải dữ liệu..." : `${rows.length}/${state.nandaRows.length} dòng`}</p>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="field nanda-search-field">
+              <label>Tìm kiếm</label>
+              <input type="search" data-nanda-search value="${h(state.nandaSearch)}" placeholder="Tìm theo nhóm, vấn đề, mã hoặc nội dung" />
+            </div>
+            ${enteredGroups.length ? `
+              <div class="nanda-filter-group" aria-label="Lọc nhanh theo nhóm vấn đề">
+                <button type="button" class="btn ${!state.nandaGroupFilter ? "primary" : ""}" data-action="filter-nanda-group" data-group-value="">Tất cả</button>
+                ${enteredGroups.map((group) => `
+                  <button type="button" class="btn ${searchKey(state.nandaGroupFilter) === searchKey(group) ? "primary" : ""}" data-action="filter-nanda-group" data-group-value="${h(group)}">${h(group)}</button>
+                `).join("")}
+              </div>
+            ` : ""}
+            ${state.nandaError ? `<div class="empty care-list-empty">Không tải được dữ liệu: ${h(state.nandaError)}</div>` : ""}
+            ${!state.nandaError && state.nandaLoading ? `<div class="empty care-list-empty">Đang tải danh mục NANDA...</div>` : ""}
+            ${!state.nandaError && !state.nandaLoading && !rows.length ? `<div class="empty care-list-empty">Chưa có dữ liệu phù hợp.</div>` : ""}
+            ${!state.nandaError && rows.length ? `
+              <div class="nanda-row-list">
+                ${rows.map((row) => `
+                  <article class="nanda-row">
+                    <div class="nanda-row-main">
+                      <span>${h(row.nhom_van_de || "Chưa có nhóm")}</span>
+                      ${formatNandaDiagnosis(row) ? `<p><b>Chẩn đoán điều dưỡng:</b> ${h(formatNandaDiagnosis(row))}</p>` : ""}
+                      <p><b>Vấn đề:</b> ${h(row.van_de)}</p>
+                      ${row.nguyen_nhan ? `<p><b>Nguyên nhân:</b> ${h(row.nguyen_nhan)}</p>` : ""}
+                      ${row.muc_tieu_can_thiep ? `<p><b>Mục tiêu:</b> ${h(row.muc_tieu_can_thiep)}</p>` : ""}
+                      ${completedNandaInterventionRows(row).map((item) => `<p><b>Can thiệp:</b> ${h(item.code)}: ${h(item.content)}</p>`).join("")}
+                    </div>
+                    <div class="nanda-row-actions">
+                      <button type="button" class="btn" data-action="edit-nanda" data-nanda-id="${h(row.id)}">Sửa</button>
+                      <button type="button" class="btn danger" data-action="delete-nanda" data-nanda-id="${h(row.id)}">Xóa</button>
+                    </div>
+                  </article>
+                `).join("")}
+              </div>
+            ` : ""}
+          </div>
+        </section>
+      </main>
+      ${renderDatalist("nanda-group-options", nandaGroupOptions())}
+      ${renderDatalist("nanda-problem-options", nandaProblemOptions())}
+      ${renderDatalist("nanda-intervention-code-options", interventionOptions, "code", "name")}
+      ${renderDatalist("nanda-intervention-content-options", interventionOptions, "name", "code")}
+    </div>
+  `;
+}
+
 function patientHomeAppBar() {
   return `
     <header class="app-bar patient-home-app-bar">
@@ -1826,6 +2319,12 @@ const homeExperienceCards = [
     action: "start-diagnosis-test",
     icon: "CĐ",
     note: "Vào trực tiếp phần chẩn đoán, nguyên nhân và mục tiêu.",
+  },
+  {
+    title: "Danh mục NANDA",
+    action: "open-nanda-form",
+    icon: "ND",
+    note: "Thêm, sửa và tra cứu nhóm vấn đề, nguyên nhân, mục tiêu và can thiệp.",
   },
   {
     title: "Test chức năng Tư vấn, hướng dẫn GDSK",
@@ -2793,6 +3292,10 @@ function render(focusSelector = "") {
     app.innerHTML = renderRiskScaleHomeScreen();
     return;
   }
+  if (state.screen === "nanda") {
+    app.innerHTML = renderNandaFormScreen();
+    return;
+  }
   if (state.screen === "record") {
     app.innerHTML = renderRecordScreen();
     return;
@@ -2847,6 +3350,7 @@ function render(focusSelector = "") {
     ${state.activeFallRiskScalePicker ? renderFallRiskScalePickerModal() : ""}
     ${state.activeHealthEducationStage ? renderHealthEducationModal() : ""}
     ${state.handoverMedicineModalOpen ? renderHandoverMedicineModal() : ""}
+    ${renderCareNandaDatalists()}
   `;
 
   if (focusSelector) {
@@ -2891,6 +3395,10 @@ function renderCareFormTabs() {
 }
 
 function renderActiveCareFormTab(assessments) {
+  if (state.activeCareFormTab === "diagnosis" || state.activeCareFormTab === "intervention") {
+    loadNandaRows();
+    ensureDiagnosisCatalogLoaded({ renderOnComplete: true });
+  }
   switch (state.activeCareFormTab) {
     case "assessment":
       return `${renderAssessmentPanel(assessments)}${renderFluidBalancePanel()}`;
@@ -4208,7 +4716,7 @@ function renderDiagnosisRowV2(row, index) {
         <div class="field diagnosis-search-field diagnosis-picker-field">
           <label>Chẩn đoán điều dưỡng</label>
           <div class="diagnosis-combobox">
-            <input type="search" value="${h(query)}" placeholder="Nhập keyword nhận định..." data-dx-query="${index}" ${inputNextAttrs("search")} />
+            <input type="search" list="care-nanda-diagnosis-options" value="${h(query)}" placeholder="Nhập keyword nhận định..." data-dx-query="${index}" ${inputNextAttrs("search")} />
             <button type="button" class="diagnosis-dropdown-toggle" data-action="toggle-dx-dropdown" data-index="${index}" aria-label="Hiển thị danh sách nhận định">▼</button>
           </div>
           ${state.activeDiagnosisSuggest === index && (diagnosisLoading || diagnosisOptions.length || showAddDiagnosisOption) ? `
@@ -4241,7 +4749,7 @@ function renderDiagnosisRowV2(row, index) {
         <div class="field diagnosis-search-field diagnosis-nested-dropdown">
           <label>Liên quan tới</label>
           <div class="diagnosis-combobox">
-            <input type="search" value="${h(causeInputValue)}" placeholder="Nhập keyword nguyên nhân..." data-dx-cause-query="${index}" ${inputNextAttrs("search")} />
+            <input type="search" list="care-nanda-cause-options" value="${h(causeInputValue)}" placeholder="Nhập keyword nguyên nhân..." data-dx-cause-query="${index}" ${inputNextAttrs("search")} />
             <button type="button" class="diagnosis-dropdown-toggle" data-action="toggle-dx-cause-dropdown" data-index="${index}" aria-label="Hiển thị danh sách nguyên nhân">▼</button>
           </div>
           ${state.activeCauseSuggest === index ? `
@@ -4263,7 +4771,7 @@ function renderDiagnosisRowV2(row, index) {
         <div class="field diagnosis-search-field diagnosis-nested-dropdown">
           <label>Mục tiêu can thiệp gợi ý</label>
           <div class="diagnosis-combobox diagnosis-combobox-with-add">
-            <input type="search" value="${h(goalInputValue)}" placeholder="Nhập keyword mục tiêu..." data-dx-goal-query="${index}" ${inputNextAttrs("search")} />
+            <input type="search" list="care-nanda-goal-options" value="${h(goalInputValue)}" placeholder="Nhập keyword mục tiêu..." data-dx-goal-query="${index}" ${inputNextAttrs("search")} />
             <button type="button" class="diagnosis-add-inline-btn" data-action="add-custom-goal" data-index="${index}" aria-label="Thêm mục tiêu">+</button>
             <button type="button" class="diagnosis-dropdown-toggle" data-action="toggle-dx-goal-dropdown" data-index="${index}" aria-label="Hiển thị danh sách mục tiêu">▼</button>
           </div>
@@ -4363,7 +4871,7 @@ function renderInterventionPanel() {
             <div class="field intervention-search-field intervention-code-field">
               <label>Mã can thiệp</label>
               <div class="diagnosis-combobox">
-                <input value="${h(draft.codeQuery)}" placeholder="Nhập mã..." data-iv-code-query="draft" ${inputNextAttrs()} />
+                <input list="care-nanda-intervention-code-options" value="${h(draft.codeQuery)}" placeholder="Nhập mã..." data-iv-code-query="draft" ${inputNextAttrs()} />
                 <button type="button" class="diagnosis-dropdown-toggle" data-action="toggle-iv-code-dropdown" aria-label="Hiển thị danh sách mã can thiệp">▼</button>
               </div>
               ${codeLoading || codeOptions.length ? `
@@ -4384,7 +4892,7 @@ function renderInterventionPanel() {
             <div class="field intervention-search-field">
               <label>Nội dung can thiệp</label>
               <div class="diagnosis-combobox">
-                <input value="${h(draft.contentQuery)}" placeholder="Nhập nội dung..." data-iv-content-query="draft" ${inputNextAttrs()} />
+                <input list="care-nanda-intervention-content-options" value="${h(draft.contentQuery)}" placeholder="Nhập nội dung..." data-iv-content-query="draft" ${inputNextAttrs()} />
                 <button type="button" class="diagnosis-dropdown-toggle" data-action="toggle-iv-content-dropdown" aria-label="Hiển thị danh sách nội dung can thiệp">▼</button>
               </div>
               ${contentLoading || contentOptions.length ? `
@@ -5786,6 +6294,13 @@ app.addEventListener("click", (event) => {
     return;
   }
 
+  if (target.dataset.action === "open-nanda-form") {
+    state.screen = "nanda";
+    loadNandaRows(true);
+    render();
+    return;
+  }
+
   if (target.dataset.action === "start-full-care-test") {
     startHomeCareTest("patient");
     return;
@@ -6228,6 +6743,109 @@ app.addEventListener("click", (event) => {
     return;
   }
 
+  if (target.dataset.action === "add-nanda-goal") {
+    const goals = nandaGoalItems();
+    goals.push("");
+    setNandaGoalItems(goals);
+    render();
+    return;
+  }
+
+  if (target.dataset.action === "remove-nanda-goal") {
+    const goals = nandaGoalItems();
+    goals.splice(Number(target.dataset.goalIndex), 1);
+    setNandaGoalItems(goals);
+    render();
+    return;
+  }
+
+  if (target.dataset.action === "add-nanda-intervention") {
+    const rows = nandaInterventionRows();
+    rows.push({ code: "", content: "" });
+    setNandaInterventionRows(rows);
+    render();
+    return;
+  }
+
+  if (target.dataset.action === "remove-nanda-intervention") {
+    const rows = nandaInterventionRows();
+    rows.splice(Number(target.dataset.interventionIndex), 1);
+    setNandaInterventionRows(rows);
+    render();
+    return;
+  }
+
+  if (target.dataset.action === "filter-nanda-group") {
+    state.nandaGroupFilter = target.dataset.groupValue || "";
+    render();
+    return;
+  }
+
+  if (target.dataset.action === "save-nanda") {
+    const originalText = target.textContent;
+    target.disabled = true;
+    target.textContent = "Đang lưu...";
+    saveNandaForm()
+      .then(() => {
+        alert("Đã lưu dữ liệu NANDA.");
+      })
+      .catch((error) => {
+        alert(`Không lưu được dữ liệu NANDA: ${error.message || error}`);
+      })
+      .finally(() => {
+        target.disabled = false;
+        target.textContent = originalText;
+        if (state.screen === "nanda") render();
+      });
+    return;
+  }
+
+  if (target.dataset.action === "clear-nanda-form") {
+    state.nandaEditingId = null;
+    state.nandaForm = createDefaultNandaForm();
+    render();
+    return;
+  }
+
+  if (target.dataset.action === "refresh-nanda") {
+    state.nandaLoaded = false;
+    loadNandaRows(true);
+    render();
+    return;
+  }
+
+  if (target.dataset.action === "edit-nanda") {
+    const row = state.nandaRows.find((item) => String(item.id) === String(target.dataset.nandaId));
+    if (!row) {
+      alert("Không tìm thấy dòng NANDA để sửa.");
+      return;
+    }
+    state.nandaEditingId = row.id;
+    state.nandaForm = {
+      ...createDefaultNandaForm(),
+      ...normalizeNandaPayload(row),
+    };
+    render();
+    return;
+  }
+
+  if (target.dataset.action === "delete-nanda") {
+    const row = state.nandaRows.find((item) => String(item.id) === String(target.dataset.nandaId));
+    if (!row) {
+      alert("Không tìm thấy dòng NANDA để xóa.");
+      return;
+    }
+    if (!confirm(`Xóa dòng NANDA: ${row.van_de || row.ma_can_thiep || row.id}?`)) return;
+    deleteNandaRow(row.id)
+      .then(() => {
+        alert("Đã xóa dòng NANDA.");
+      })
+      .catch((error) => {
+        alert(`Không xóa được dữ liệu NANDA: ${error.message || error}`);
+      });
+    return;
+  }
+
   if (target.dataset.action === "save-care") {
     const missingTabs = missingCareFormTabs();
     if (missingTabs.length) {
@@ -6407,6 +7025,46 @@ app.addEventListener("input", (event) => {
   if (target.dataset.input === "search") {
     state.search = target.value;
     render('[data-input="search"]');
+    return;
+  }
+
+  if (target.dataset.nandaGoalIndex !== undefined) {
+    const goals = nandaGoalItems();
+    goals[Number(target.dataset.nandaGoalIndex)] = target.value;
+    setNandaGoalItems(goals);
+    return;
+  }
+
+  if (target.dataset.nandaInterventionField) {
+    const rows = nandaInterventionRows();
+    const index = Number(target.dataset.interventionIndex);
+    const field = target.dataset.nandaInterventionField;
+    if (rows[index]) {
+      rows[index][field] = target.value;
+      syncNandaInterventionRow(rows, index, field);
+      setNandaInterventionRows(rows);
+      const rowElement = target.closest(".nanda-intervention-row");
+      if (rowElement) {
+        const codeInput = rowElement.querySelector('[data-nanda-intervention-field="code"]');
+        const contentInput = rowElement.querySelector('[data-nanda-intervention-field="content"]');
+        if (codeInput && codeInput.value !== rows[index].code) codeInput.value = rows[index].code;
+        if (contentInput && contentInput.value !== rows[index].content) contentInput.value = rows[index].content;
+      }
+    }
+    return;
+  }
+
+  if (target.dataset.nandaSearch !== undefined) {
+    state.nandaSearch = target.value;
+    render("[data-nanda-search]");
+    return;
+  }
+
+  if (target.dataset.nandaField) {
+    const field = target.dataset.nandaField;
+    state.nandaForm[field] = target.value;
+    syncNandaLinkedFields(field);
+    updateNandaFormDomFields();
     return;
   }
 
@@ -6605,6 +7263,91 @@ app.addEventListener("input", (event) => {
 
 app.addEventListener("change", (event) => {
   const target = event.target;
+  if (target.dataset.dxCauseQuery !== undefined) {
+    const row = state.diagnosisRows[Number(target.dataset.dxCauseQuery)];
+    const value = cleanLine(target.value);
+    if (row && value) {
+      row.causes = [value];
+      row.causeQuery = value;
+      row.goals = (row.goals || []).filter((goal) => goalOptionsForDiagnosisRow(row).includes(goal) || careNandaGoalOptions().some((item) => searchKey(item) === searchKey(goal)));
+    }
+    state.activeCauseSuggest = null;
+    render();
+    return;
+  }
+
+  if (target.dataset.dxGoalQuery !== undefined) {
+    const row = state.diagnosisRows[Number(target.dataset.dxGoalQuery)];
+    const value = cleanLine(target.value);
+    if (row && value) {
+      row.goals = [value];
+      row.goalQuery = value;
+    }
+    state.activeGoalSuggest = null;
+    render();
+    return;
+  }
+
+  if (target.dataset.ivCodeQuery === "draft") {
+    const matched = findInterventionByCode(target.value);
+    if (matched) {
+      state.interventionDraft.codeQuery = matched.code;
+      state.interventionDraft.contentQuery = matched.name;
+      toggleInterventionDraftSelection(matched, true);
+    }
+    render();
+    return;
+  }
+
+  if (target.dataset.ivContentQuery === "draft") {
+    const matched = findInterventionByName(target.value);
+    if (matched) {
+      state.interventionDraft.codeQuery = matched.code;
+      state.interventionDraft.contentQuery = matched.name;
+      toggleInterventionDraftSelection(matched, true);
+    }
+    render();
+    return;
+  }
+
+  if (target.dataset.nandaInterventionField) {
+    const rows = nandaInterventionRows();
+    const index = Number(target.dataset.interventionIndex);
+    const field = target.dataset.nandaInterventionField;
+    if (rows[index]) {
+      rows[index][field] = target.value;
+      syncNandaInterventionRow(rows, index, field);
+      const row = rows[index];
+      if (field === "code" && cleanLine(row.code) && !findNandaInterventionByCode(row.code)) {
+        row.code = "";
+        alert("Mã can thiệp phải chọn trong danh mục gợi ý.");
+      }
+      if (field === "content" && cleanLine(row.content) && !findNandaInterventionByName(row.content)) {
+        row.content = "";
+        alert("Nội dung can thiệp phải chọn trong danh mục gợi ý.");
+      }
+      setNandaInterventionRows(rows);
+    }
+    render(`[data-nanda-intervention-field="${field}"]`);
+    return;
+  }
+
+  if (target.dataset.nandaField) {
+    const field = target.dataset.nandaField;
+    state.nandaForm[field] = target.value;
+    syncNandaLinkedFields(field);
+    if (field === "ma_can_thiep" && cleanLine(target.value) && !findNandaInterventionByCode(target.value)) {
+      state.nandaForm.ma_can_thiep = "";
+      alert("Mã can thiệp phải chọn trong danh mục gợi ý.");
+    }
+    if (field === "noi_dung_can_thiep" && cleanLine(target.value) && !findNandaInterventionByName(target.value)) {
+      state.nandaForm.noi_dung_can_thiep = "";
+      alert("Nội dung can thiệp phải chọn trong danh mục gợi ý.");
+    }
+    render(`[data-nanda-field="${field}"]`);
+    return;
+  }
+
   if (target.dataset.categorySelect !== undefined) {
     state.categoryId = target.value;
     state.departmentId = currentCategory().khoa[0].id;
@@ -6975,12 +7718,13 @@ app.addEventListener("change", (event) => {
 
 async function init() {
   try {
-    const [response, scaleResponse, assessmentResponse, interventionCodeResponse, obgynResponse] = await Promise.all([
+    const [response, scaleResponse, assessmentResponse, interventionCodeResponse, obgynResponse, problemResponse] = await Promise.all([
       fetch("./cd_deu_duong.json"),
       fetch("./thangdiem.json"),
       fetch("./nhan_dinh.json"),
       fetch("./ma_can_thiep.json"),
       fetch("./sankhoa.json"),
+      fetch("./vande.json"),
     ]);
     if (!response.ok) throw new Error(`Khong tai duoc cd_deu_duong.json (${response.status})`);
     state.raw = await response.json();
@@ -6996,6 +7740,9 @@ async function init() {
     }
     if (obgynResponse.ok) {
       state.obgynTemplate = deepFix(await obgynResponse.json());
+    }
+    if (problemResponse.ok) {
+      state.problemCatalog = deepFix(await problemResponse.json());
     }
     state.categoryId = state.data.categories[0].id;
     state.departmentId = state.data.categories[0].khoa[0].id;
