@@ -2025,10 +2025,7 @@ function careNandaRows() {
 }
 
 function careNandaDiagnosisOptions() {
-  return uniqueCleanValues([
-    ...diagnosisCatalogRows().flatMap((row) => splitSuggestionLines(row.nanda)),
-    ...careNandaRows().map((row) => row.van_de),
-  ]);
+  return uniqueCleanValues(diagnosisCatalogRows().flatMap((row) => splitSuggestionLines(row.nanda)));
 }
 
 function careNandaCauseOptions() {
