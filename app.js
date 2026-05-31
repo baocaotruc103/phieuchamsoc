@@ -1937,6 +1937,20 @@ function nandaDepartmentOptions() {
   return uniqueCleanValues(Array.isArray(state.departmentCatalog) ? state.departmentCatalog : []);
 }
 
+function nandaDepartmentEntrySummary() {
+  const counts = new Map();
+  for (const row of state.nandaRows || []) {
+    const department = normalizeNandaDepartmentValue(row.khoa);
+    const key = searchKey(department);
+    if (!key) continue;
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+  return nandaDepartmentOptions().map((department) => ({
+    department,
+    count: counts.get(searchKey(department)) || 0,
+  }));
+}
+
 function isValidNandaDepartment(value) {
   const key = searchKey(value);
   if (!key) return false;
@@ -2377,6 +2391,7 @@ function renderNandaFormScreen() {
   const editing = Boolean(state.nandaEditingId);
   const interventionOptions = nandaInterventionOptions();
   const departmentOptions = nandaDepartmentOptions();
+  const departmentSummaryRows = nandaDepartmentEntrySummary();
   const goalItems = nandaGoalItems();
   const interventionRows = nandaInterventionRows();
   const enteredDepartments = nandaEnteredDepartmentOptions();
@@ -2462,6 +2477,20 @@ function renderNandaFormScreen() {
             </div>
           </div>
           <div class="panel-body">
+            <div class="nanda-department-summary">
+              <div class="nanda-department-summary-header">
+                <h3>Danh sách nhập theo khoa</h3>
+                <span>Tên khoa / Số đã nhập</span>
+              </div>
+              <div class="nanda-department-summary-grid">
+                ${departmentSummaryRows.map((item) => `
+                  <div class="nanda-department-summary-row">
+                    <span class="nanda-department-summary-name">${h(item.department)}</span>
+                    <strong class="nanda-department-summary-count">${h(item.count)}</strong>
+                  </div>
+                `).join("")}
+              </div>
+            </div>
             <div class="field nanda-search-field">
               <label>Tim kiem</label>
               <input type="search" data-nanda-search value="${h(state.nandaSearch)}" placeholder="Tim theo khoa, nhom, van de, ma hoac noi dung" />
