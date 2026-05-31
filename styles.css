@@ -1851,6 +1851,198 @@ button {
   }
 }
 
+.nanda-public-page {
+  min-height: 100vh;
+  background: #eef3f7;
+}
+
+.nanda-public-shell {
+  width: min(1440px, 100%);
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.nanda-public-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.nanda-public-eyebrow {
+  margin: 0 0 6px;
+  color: #0f766e;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.nanda-public-hero h1 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 34px;
+  line-height: 1.1;
+}
+
+.nanda-public-hero p:last-child {
+  margin: 8px 0 0;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.nanda-public-home {
+  white-space: nowrap;
+}
+
+.nanda-public-card {
+  border: 1px solid #d7e2ec;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+}
+
+.nanda-public-toolbar {
+  display: grid;
+  grid-template-columns: minmax(260px, 1.5fr) minmax(180px, 0.8fr) minmax(180px, 0.8fr) auto;
+  gap: 12px;
+  align-items: end;
+  padding: 16px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.nanda-public-toolbar label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.nanda-public-toolbar span {
+  color: #334155;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.nanda-public-toolbar input,
+.nanda-public-toolbar select {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #0f172a;
+  font: inherit;
+  padding: 9px 11px;
+}
+
+.nanda-public-table-wrap {
+  overflow-x: auto;
+}
+
+.nanda-public-table {
+  width: 100%;
+  min-width: 1180px;
+  border-collapse: collapse;
+}
+
+.nanda-public-table th,
+.nanda-public-table td {
+  border-bottom: 1px solid #e2e8f0;
+  color: #334155;
+  font-size: 13px;
+  line-height: 1.45;
+  padding: 12px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.nanda-public-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f1f5f9;
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.nanda-public-table td:nth-child(1) {
+  width: 120px;
+  font-weight: 900;
+}
+
+.nanda-public-table td:nth-child(2),
+.nanda-public-table td:nth-child(3) {
+  width: 180px;
+}
+
+.nanda-public-table td:nth-child(6) {
+  width: 130px;
+}
+
+.nanda-public-table strong {
+  color: #0f172a;
+}
+
+.nanda-public-table ul {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding-left: 16px;
+}
+
+.nanda-public-muted {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.nanda-public-loading,
+.nanda-public-empty,
+.nanda-public-error {
+  padding: 24px;
+  color: #475569;
+  font-weight: 800;
+}
+
+.nanda-public-error {
+  border-bottom: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+@media (max-width: 980px) {
+  .nanda-public-toolbar {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .nanda-public-toolbar .btn {
+    justify-self: start;
+  }
+}
+
+@media (max-width: 640px) {
+  .nanda-public-shell {
+    padding: 14px;
+  }
+
+  .nanda-public-hero {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .nanda-public-hero h1 {
+    font-size: 28px;
+  }
+
+  .nanda-public-toolbar {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 860px) {
   .nanda-layout {
     padding: 12px;
