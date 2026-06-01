@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Đánh giá nguy cơ té ngã nhi khoa</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f6f8fb;
+      margin: 0;
+      padding: 16px;
+      color: #222;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    h2 {
+      text-align: center;
+      color: #0f4c81;
+      margin-bottom: 20px;
+    }
+
+    .group {
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 14px;
+      background: #fafafa;
+    }
+
+    .group-title {
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #0f4c81;
+    }
+
+    label {
+      display: block;
+      padding: 8px;
+      margin: 6px 0;
+      background: #fff;
+      border-radius: 8px;
+      border: 1px solid #e0e0e0;
+      cursor: pointer;
+    }
+
+    input[type="radio"] {
+      margin-right: 8px;
+    }
+
+    .result {
+      margin-top: 20px;
+      padding: 16px;
+      border-radius: 10px;
+      background: #eaf3ff;
+      border-left: 5px solid #0f4c81;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .high {
+      background: #ffeaea;
+      border-left-color: #d93025;
+      color: #b00020;
+    }
+
+    .low {
+      background: #e9f8ef;
+      border-left-color: #188038;
+      color: #137333;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #0f4c81;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 12px;
+    }
+
+    button:hover {
+      background: #0b3b63;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>II. CÔNG CỤ ĐÁNH GIÁ NGUY CƠ TÉ NGÃ Ở TRẺ EM</h2>
+
+  <form id="fallRiskForm">
+
+    <div class="group">
+      <div class="group-title">1. Tuổi</div>
+      <label><input type="radio" name="tuoi" value="4"> &lt; 3 tuổi — 4 điểm</label>
+      <label><input type="radio" name="tuoi" value="3"> 3 tuổi đến &lt; 7 tuổi — 3 điểm</label>
+      <label><input type="radio" name="tuoi" value="2"> 7 tuổi đến &lt; 13 tuổi — 2 điểm</label>
+      <label><input type="radio" name="tuoi" value="1"> ≥ 13 tuổi — 1 điểm</label>
+    </div>
+
+    <div class="group">
+      <div class="group-title">2. Giới</div>
+      <label><input type="radio" name="gioi" value="2"> Nam — 2 điểm</label>
+      <label><input type="radio" name="gioi" value="1"> Nữ — 1 điểm</label>
+    </div>
+
+    <div class="group">
+      <div class="group-title">3. Chẩn đoán</div>
+      <label><input type="radio" name="chan_doan" value="4"> Chẩn đoán thần kinh — 4 điểm</label>
+      <label><input type="radio" name="chan_doan" value="3"> Suy giảm thể trạng/thay đổi oxy hóa — 3 điểm</label>
+      <label><input type="radio" name="chan_doan" value="2"> Tâm thần/hành vi — 2 điểm</label>
+      <label><input type="radio" name="chan_doan" value="1"> Chẩn đoán khác — 1 điểm</label>
+    </div>
+
+    <div class="group">
+      <div class="group-title">4. Suy giảm nhận thức</div>
+      <label><input type="radio" name="nhan_thuc" value="3"> Không nhận biết được giới hạn bản thân — 3 điểm</label>
+      <label><input type="radio" name="nhan_thuc" value="2"> Hay quên các giới hạn của bản thân — 2 điểm</label>
+      <label><input type="radio" name="nhan_thuc" value="1"> Định hướng phù hợp với khả năng của bản thân — 1 điểm</label>
+    </div>
+
+    <div class="group">
+      <div class="group-title">5. Yếu tố môi trường</div>
+      <label><input type="radio" name="moi_truong" value="4"> Tiền sử té ngã; trẻ nhũ nhi/trẻ mới biết đi được đặt trên giường — 4 điểm</label>
+      <label><input type="radio" name="moi_truong" value="3"> Sử dụng dụng cụ hỗ trợ; trẻ nằm trong cũi — 3 điểm</label>
+      <label><input type="radio" name="moi_truong" value="2"> Người bệnh được đặt trên giường — 2 điểm</label>
+      <label><input type="radio" name="moi_truong" value="1"> Khu vực ngoại trú — 1 điểm</label>
+    </div>
+
+    <div class="group">
+      <div class="group-title">6. Người bệnh đã phẫu thuật/an thần sâu</div>
+      <label><input type="radio" name="phau_thuat" value="3"> Trong vòng 24 giờ — 3 điểm</label>
+      <label><input type="radio" name="phau_thuat" value="2"> Trong vòng 48 giờ — 2 điểm</label>
+      <label><input type="radio" name="phau_thuat" value="1"> Trên 48 giờ/không có — 1 điểm</label>
+    </div>
+
+    <div class="group">
+      <div class="group-title">7. Sử dụng thuốc</div>
+      <label>
+        <input type="radio" name="thuoc" value="3">
+        Sử dụng nhiều thuốc nguy cơ: an thần, thuốc ngủ, barbiturat, chống trầm cảm, nhuận tràng, lợi tiểu, opioid — 3 điểm
+      </label>
+      <label><input type="radio" name="thuoc" value="2"> Sử dụng một trong các thuốc nêu trên — 2 điểm</label>
+      <label><input type="radio" name="thuoc" value="1"> Thuốc khác/không dùng thuốc — 1 điểm</label>
+    </div>
+
+    <button type="button" onclick="calculateScore()">Tính điểm</button>
+
+    <div id="result" class="result">
+      Tổng điểm: 0 — Chưa đánh giá
+    </div>
+
+  </form>
+</div>
+
+<script>
+  function calculateScore() {
+    const groups = [
+      "tuoi",
+      "gioi",
+      "chan_doan",
+      "nhan_thuc",
+      "moi_truong",
+      "phau_thuat",
+      "thuoc"
+    ];
+
+    let total = 0;
+
+    for (const group of groups) {
+      const selected = document.querySelector(`input[name="${group}"]:checked`);
+      if (!selected) {
+        alert("Vui lòng chọn đầy đủ tất cả các mục đánh giá.");
+        return;
+      }
+      total += Number(selected.value);
+    }
+
+    const result = document.getElementById("result");
+
+    if (total >= 12) {
+      result.className = "result high";
+      result.innerHTML = `Tổng điểm: ${total} — NGUY CƠ TÉ NGÃ CAO`;
+    } else {
+      result.className = "result low";
+      result.innerHTML = `Tổng điểm: ${total} — Nguy cơ té ngã thấp`;
+    }
+  }
+</script>
+
+</body>
+</html>

@@ -1765,6 +1765,120 @@ button {
   min-width: 0;
 }
 
+.nanda-department-list {
+  display: grid;
+  gap: 10px;
+}
+
+.nanda-department-group {
+  border: 1px solid #dbe4ee;
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.nanda-department-group.is-open {
+  border-color: #b7d7c2;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.nanda-department-toggle {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 54px;
+  border: 0;
+  background: #fff;
+  color: #0f172a;
+  padding: 12px 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.nanda-department-toggle:hover,
+.nanda-department-toggle:focus-visible {
+  background: #f8fafc;
+}
+
+.nanda-department-chevron {
+  width: 9px;
+  height: 9px;
+  border-right: 2px solid #64748b;
+  border-bottom: 2px solid #64748b;
+  transform: rotate(-45deg);
+  transition: transform 0.18s ease;
+}
+
+.nanda-department-group.is-open .nanda-department-chevron {
+  transform: rotate(45deg);
+}
+
+.nanda-department-title {
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.nanda-department-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.nanda-department-badges strong,
+.nanda-department-badges span,
+.nanda-problem-group-header span {
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.nanda-department-badges strong {
+  background: #e7f4f1;
+  color: #0f766e;
+}
+
+.nanda-department-badges span,
+.nanda-problem-group-header span {
+  background: #eef2f7;
+  color: #475569;
+}
+
+.nanda-department-content {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.nanda-problem-group {
+  display: grid;
+  gap: 8px;
+}
+
+.nanda-problem-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.nanda-problem-group-header h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 13px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
 .nanda-row-list {
   display: grid;
   gap: 12px;
@@ -1848,6 +1962,15 @@ button {
 @media (max-width: 640px) {
   .nanda-department-summary-grid {
     grid-template-columns: 1fr;
+  }
+
+  .nanda-department-toggle {
+    grid-template-columns: 18px minmax(0, 1fr);
+  }
+
+  .nanda-department-badges {
+    grid-column: 2;
+    justify-content: flex-start;
   }
 }
 

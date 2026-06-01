@@ -364,6 +364,7 @@ const state = {
   nandaDepartmentFilter: "",
   nandaGroupFilter: "",
   nandaPage: 1,
+  nandaExpandedDepartments: new Set(),
   nandaEditingId: null,
   nandaForm: createDefaultNandaForm(),
   nandaAutoFillText: "",
@@ -532,12 +533,12 @@ const HUMPTY_DUMPTY_SCALE = {
   items: [
     {
       key: "age",
-      label: "Tuổi bệnh nhi",
+      label: "Tuổi",
       options: [
-        { label: "Dưới 3 tuổi", score: 4 },
-        { label: "Từ 3 tuổi đến dưới 7 tuổi", score: 3 },
-        { label: "Từ 7 tuổi đến dưới 13 tuổi", score: 2 },
-        { label: "Từ 13 tuổi đến 18 tuổi", score: 1 },
+        { label: "< 3 tuổi", score: 4 },
+        { label: "3 tuổi đến < 7 tuổi", score: 3 },
+        { label: "7 tuổi đến < 13 tuổi", score: 2 },
+        { label: "≥ 13 tuổi", score: 1 },
       ],
     },
     {
@@ -550,11 +551,11 @@ const HUMPTY_DUMPTY_SCALE = {
     },
     {
       key: "diagnosis",
-      label: "Chẩn đoán bệnh lý",
+      label: "Chẩn đoán",
       options: [
-        { label: "Chẩn đoán về thần kinh (Động kinh, chấn thương sọ não, u não...)", score: 4 },
-        { label: "Thay đổi về oxy hóa cơ quan (Hô hấp, mất máu, thiếu máu, tim mạch...)", score: 3 },
-        { label: "Rối loạn hành vi / Tâm thần", score: 2 },
+        { label: "Chẩn đoán thần kinh", score: 4 },
+        { label: "Suy giảm thể trạng/thay đổi oxy hóa", score: 3 },
+        { label: "Tâm thần/hành vi", score: 2 },
         { label: "Chẩn đoán khác", score: 1 },
       ],
     },
@@ -562,37 +563,37 @@ const HUMPTY_DUMPTY_SCALE = {
       key: "cognition",
       label: "Suy giảm nhận thức",
       options: [
-        { label: "Không nhận thức được giới hạn của bản thân (mê sảng, hiếu động quá mức...)", score: 3 },
-        { label: "Quên mất các giới hạn vật lý (trẻ nhỏ chưa ý thức được nguy hiểm)", score: 2 },
-        { label: "Tỉnh táo, định hướng tốt, tự biết giới hạn của mình", score: 1 },
+        { label: "Không nhận biết được giới hạn bản thân", score: 3 },
+        { label: "Hay quên các giới hạn của bản thân", score: 2 },
+        { label: "Định hướng phù hợp với khả năng của bản thân", score: 1 },
       ],
     },
     {
       key: "environment",
       label: "Yếu tố môi trường",
       options: [
-        { label: "Có tiền sử té ngã hoặc trẻ sơ sinh/trẻ nhỏ được đặt trên giường/võng không an toàn", score: 4 },
-        { label: "Trẻ có sử dụng dụng cụ hỗ trợ (xe lăn, nạng, xe đẩy) hoặc nằm giường bệnh viện", score: 3 },
-        { label: "Trẻ nằm giường cũi hoặc nằm phòng điều trị ban ngày", score: 2 },
-        { label: "Khu vực chơi ngoại trú / phòng khám", score: 1 },
+        { label: "Tiền sử té ngã; trẻ nhũ nhi/trẻ mới biết đi được đặt trên giường", score: 4 },
+        { label: "Sử dụng dụng cụ hỗ trợ; trẻ nằm trong cũi", score: 3 },
+        { label: "Người bệnh được đặt trên giường", score: 2 },
+        { label: "Khu vực ngoại trú", score: 1 },
       ],
     },
     {
       key: "anesthesia",
-      label: "Phẫu thuật / Gây mê / An thần",
+      label: "Người bệnh đã phẫu thuật/an thần sâu",
       options: [
-        { label: "Trong vòng 24 giờ qua", score: 3 },
-        { label: "Trong vòng 48 giờ qua", score: 2 },
-        { label: "Trên 48 giờ hoặc không phẫu thuật", score: 1 },
+        { label: "Trong vòng 24 giờ", score: 3 },
+        { label: "Trong vòng 48 giờ", score: 2 },
+        { label: "Trên 48 giờ/không có", score: 1 },
       ],
     },
     {
       key: "medication",
-      label: "Sử dụng thuốc điều trị",
+      label: "Sử dụng thuốc",
       options: [
-        { label: "Sử dụng đồng thời nhiều loại thuốc: an thần, gây ngủ, chống động kinh, vận mạch, giãn cơ, lợi tiểu, opioids", score: 3 },
-        { label: "Sử dụng một trong các loại thuốc kể trên", score: 2 },
-        { label: "Các loại thuốc khác hoặc không dùng thuốc", score: 1 },
+        { label: "Sử dụng nhiều thuốc nguy cơ: an thần, thuốc ngủ, barbiturat, chống trầm cảm, nhuận tràng, lợi tiểu, opioid", score: 3 },
+        { label: "Sử dụng một trong các thuốc nêu trên", score: 2 },
+        { label: "Thuốc khác/không dùng thuốc", score: 1 },
       ],
     },
   ],
@@ -1933,6 +1934,50 @@ function paginatedNandaRows(rows) {
   return rows.slice(start, start + NANDA_ROWS_PER_PAGE);
 }
 
+function nandaDepartmentLabel(row = {}) {
+  return cleanLine(row.khoa) || "Chua co khoa";
+}
+
+function nandaDepartmentGroupKey(department) {
+  return searchKey(department) || "__no_department__";
+}
+
+function nandaRowsGroupedByDepartment(rows = []) {
+  const grouped = new Map();
+  for (const row of rows) {
+    const department = nandaDepartmentLabel(row);
+    const key = nandaDepartmentGroupKey(department);
+    if (!grouped.has(key)) {
+      grouped.set(key, {
+        key,
+        department,
+        rows: [],
+        groups: new Map(),
+      });
+    }
+    const departmentGroup = grouped.get(key);
+    departmentGroup.rows.push(row);
+
+    const problemGroup = cleanLine(row.nhom_van_de) || "Chua co nhom";
+    const problemGroupKey = searchKey(problemGroup) || "__no_group__";
+    if (!departmentGroup.groups.has(problemGroupKey)) {
+      departmentGroup.groups.set(problemGroupKey, {
+        key: problemGroupKey,
+        name: problemGroup,
+        rows: [],
+      });
+    }
+    departmentGroup.groups.get(problemGroupKey).rows.push(row);
+  }
+
+  return [...grouped.values()]
+    .map((item) => ({
+      ...item,
+      groups: [...item.groups.values()].sort((a, b) => a.name.localeCompare(b.name, "vi")),
+    }))
+    .sort((a, b) => a.department.localeCompare(b.department, "vi"));
+}
+
 function nandaDepartmentOptions() {
   return uniqueCleanValues(Array.isArray(state.departmentCatalog) ? state.departmentCatalog : []);
 }
@@ -2113,6 +2158,71 @@ function setNandaInterventionRows(rows) {
 
 function completedNandaInterventionRows(form = state.nandaForm) {
   return nandaInterventionRows(form).filter((row) => cleanLine(row.code) || cleanLine(row.content));
+}
+
+function renderNandaRowCard(row) {
+  return `
+    <article class="nanda-row">
+      <div class="nanda-row-main">
+        <div class="nanda-row-meta">
+          <span>Nhom: ${h(row.nhom_van_de || "Chua co nhom")}</span>
+        </div>
+        ${formatNandaDiagnosis(row) ? `<p><b>Chan doan dieu duong:</b> ${h(formatNandaDiagnosis(row))}</p>` : ""}
+        <p><b>Van de:</b> ${h(row.van_de)}</p>
+        ${row.nguyen_nhan ? `<p><b>Nguyen nhan:</b> ${h(row.nguyen_nhan)}</p>` : ""}
+        ${row.muc_tieu_can_thiep ? `<p><b>Muc tieu:</b> ${h(row.muc_tieu_can_thiep)}</p>` : ""}
+        ${completedNandaInterventionRows(row).map((item) => `<p><b>Can thiep:</b> ${item.code ? `${h(item.code)}: ` : ""}${h(item.content)}</p>`).join("")}
+      </div>
+      <div class="nanda-row-actions">
+        <button type="button" class="btn" data-action="edit-nanda" data-nanda-id="${h(row.id)}">Sua</button>
+        <button type="button" class="btn danger" data-action="delete-nanda" data-nanda-id="${h(row.id)}">Xoa</button>
+      </div>
+    </article>
+  `;
+}
+
+function renderNandaDepartmentGroupList(departmentGroups) {
+  return `
+    <div class="nanda-department-list">
+      ${departmentGroups.map((departmentGroup) => {
+        const expanded = state.nandaExpandedDepartments.has(departmentGroup.key);
+        const problemGroupCount = departmentGroup.groups.length;
+        return `
+          <section class="nanda-department-group ${expanded ? "is-open" : ""}">
+            <button
+              type="button"
+              class="nanda-department-toggle"
+              data-action="toggle-nanda-department"
+              data-department-key="${h(departmentGroup.key)}"
+              aria-expanded="${expanded ? "true" : "false"}"
+            >
+              <span class="nanda-department-chevron" aria-hidden="true"></span>
+              <span class="nanda-department-title">${h(departmentGroup.department)}</span>
+              <span class="nanda-department-badges">
+                <strong>${h(departmentGroup.rows.length)} chan doan</strong>
+                <span>${h(problemGroupCount)} nhom</span>
+              </span>
+            </button>
+            ${expanded ? `
+              <div class="nanda-department-content">
+                ${departmentGroup.groups.map((problemGroup) => `
+                  <section class="nanda-problem-group">
+                    <div class="nanda-problem-group-header">
+                      <h3>${h(problemGroup.name)}</h3>
+                      <span>${h(problemGroup.rows.length)} dong</span>
+                    </div>
+                    <div class="nanda-row-list">
+                      ${problemGroup.rows.map(renderNandaRowCard).join("")}
+                    </div>
+                  </section>
+                `).join("")}
+              </div>
+            ` : ""}
+          </section>
+        `;
+      }).join("")}
+    </div>
+  `;
 }
 
 function syncNandaInterventionRow(rows, index, field) {
@@ -2386,8 +2496,7 @@ function renderNandaFormScreen() {
   applyLatestDepartmentToNandaForm();
   const form = state.nandaForm;
   const rows = filteredNandaRows();
-  const pageRows = paginatedNandaRows(rows);
-  const pageCount = nandaPageCount(rows.length);
+  const departmentGroups = nandaRowsGroupedByDepartment(rows);
   const editing = Boolean(state.nandaEditingId);
   const interventionOptions = nandaInterventionOptions();
   const departmentOptions = nandaDepartmentOptions();
@@ -2518,36 +2627,7 @@ function renderNandaFormScreen() {
             ${state.nandaError ? `<div class="empty care-list-empty">Khong tai duoc du lieu: ${h(state.nandaError)}</div>` : ""}
             ${!state.nandaError && state.nandaLoading ? `<div class="empty care-list-empty">Dang tai danh muc NANDA...</div>` : ""}
             ${!state.nandaError && !state.nandaLoading && !rows.length ? `<div class="empty care-list-empty">Chua co du lieu phu hop.</div>` : ""}
-            ${!state.nandaError && rows.length ? `
-              <div class="nanda-row-list">
-                ${pageRows.map((row) => `
-                  <article class="nanda-row">
-                    <div class="nanda-row-main">
-                      <div class="nanda-row-meta">
-                        <span>Khoa: ${h(row.khoa || "Chua co khoa")}</span>
-                        <span>Nhom: ${h(row.nhom_van_de || "Chua co nhom")}</span>
-                      </div>
-                      ${formatNandaDiagnosis(row) ? `<p><b>Chan doan dieu duong:</b> ${h(formatNandaDiagnosis(row))}</p>` : ""}
-                      <p><b>Van de:</b> ${h(row.van_de)}</p>
-                      ${row.nguyen_nhan ? `<p><b>Nguyen nhan:</b> ${h(row.nguyen_nhan)}</p>` : ""}
-                      ${row.muc_tieu_can_thiep ? `<p><b>Muc tieu:</b> ${h(row.muc_tieu_can_thiep)}</p>` : ""}
-                      ${completedNandaInterventionRows(row).map((item) => `<p><b>Can thiep:</b> ${item.code ? `${h(item.code)}: ` : ""}${h(item.content)}</p>`).join("")}
-                    </div>
-                    <div class="nanda-row-actions">
-                      <button type="button" class="btn" data-action="edit-nanda" data-nanda-id="${h(row.id)}">Sua</button>
-                      <button type="button" class="btn danger" data-action="delete-nanda" data-nanda-id="${h(row.id)}">Xoa</button>
-                    </div>
-                  </article>
-                `).join("")}
-              </div>
-              ${pageCount > 1 ? `
-                <div class="nanda-pagination" aria-label="Phan trang danh sach NANDA">
-                  <button type="button" class="btn" data-action="nanda-page" data-page="${state.nandaPage - 1}" ${state.nandaPage <= 1 ? "disabled" : ""}>Truoc</button>
-                  <span>Trang ${state.nandaPage}/${pageCount}</span>
-                  <button type="button" class="btn" data-action="nanda-page" data-page="${state.nandaPage + 1}" ${state.nandaPage >= pageCount ? "disabled" : ""}>Sau</button>
-                </div>
-              ` : ""}
-            ` : ""}
+            ${!state.nandaError && rows.length ? renderNandaDepartmentGroupList(departmentGroups) : ""}
           </div>
         </section>
       </main>
@@ -4823,22 +4903,6 @@ function startFallRiskScale(type) {
 function renderFallRiskScalePickerModal() {
   const key = state.activeFallRiskScalePicker || "fallRiskAssessment";
   const hasMorse = Boolean(getScaleForKey(key));
-  const inpatientTimes = [
-    "Trong 24 giờ đầu sau khi nhập viện.",
-    "Khi chuyển khoa/phòng.",
-    "Sau phẫu thuật, thủ thuật, gây mê/gây tê.",
-    "Sau khi bắt đầu hoặc điều chỉnh thuốc ảnh hưởng đến tri giác/vận động (an thần, hạ áp, lợi tiểu, opioid...).",
-    "Sau khi tình trạng bệnh thay đổi đáng kể.",
-    "Ngay sau mỗi lần té ngã.",
-    "Định kỳ mỗi ca trực (ít nhất 1 lần/ngày) đối với người bệnh nguy cơ cao.",
-  ];
-  const obstetricTimes = [
-    "Khi nhập viện (antepartum, intrapartum, postpartum).",
-    "Ngay khi chuyển từ phòng sinh/phòng mổ về khoa Hậu sản.",
-    "Mỗi 2 giờ sau khi rút ống thông gây tê ngoài màng cứng cho đến khi hồi phục vận động hoàn toàn.",
-    "Ngay sau các biến cố: băng huyết, ngất, chóng mặt; khi chỉ định Magnesium Sulfate, thuốc hạ áp, an thần.",
-    "Định kỳ mỗi ngày (đầu ca sáng).",
-  ];
   return `
     <div class="scale-modal-overlay" data-action="close-fall-risk-picker-overlay">
       <div class="scale-modal fall-risk-picker-modal">
@@ -4847,15 +4911,6 @@ function renderFallRiskScalePickerModal() {
           <button class="scale-modal-close" data-action="close-fall-risk-picker">✕</button>
         </div>
         <div class="scale-modal-body fall-risk-picker-body">
-          <section class="fall-risk-time-section">
-            <h3>Các thời điểm đánh giá</h3>
-            <div class="fall-risk-time-table">
-              <div class="fall-risk-time-label"><strong>Nội trú (Người lớn & Nhi)</strong></div>
-              <ul>${inpatientTimes.map((item) => `<li>${h(item)}</li>`).join("")}</ul>
-              <div class="fall-risk-time-label"><strong>Sản khoa (OFRAS)</strong></div>
-              <ul>${obstetricTimes.map((item) => `<li>${h(item)}</li>`).join("")}</ul>
-            </div>
-          </section>
           <section class="fall-risk-scale-section">
             <h3>Chọn thang điểm</h3>
             <div class="fall-risk-scale-buttons">
@@ -7261,6 +7316,17 @@ app.addEventListener("click", (event) => {
     const rows = nandaInterventionRows();
     rows.splice(Number(target.dataset.interventionIndex), 1);
     setNandaInterventionRows(rows);
+    render();
+    return;
+  }
+
+  if (target.dataset.action === "toggle-nanda-department") {
+    const key = target.dataset.departmentKey;
+    if (state.nandaExpandedDepartments.has(key)) {
+      state.nandaExpandedDepartments.delete(key);
+    } else {
+      state.nandaExpandedDepartments.add(key);
+    }
     render();
     return;
   }
