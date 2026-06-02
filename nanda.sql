@@ -47,10 +47,28 @@ create index if not exists idx_nanda_ma_can_thiep
   on public.nanda (ma_can_thiep);
 
 alter table public.nanda enable row level security;
+alter table public.nanda replica identity full;
 
 grant usage on schema public to anon, authenticated;
 grant select, insert, update, delete on public.nanda to anon, authenticated;
 grant usage, select on sequence public.nanda_id_seq to anon, authenticated;
+
+do $$
+begin
+  if exists (
+    select 1
+    from pg_publication
+    where pubname = 'supabase_realtime'
+  ) and not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'nanda'
+  ) then
+    alter publication supabase_realtime add table public.nanda;
+  end if;
+end $$;
 
 drop policy if exists "Allow public nanda read" on public.nanda;
 drop policy if exists "Allow public nanda insert" on public.nanda;

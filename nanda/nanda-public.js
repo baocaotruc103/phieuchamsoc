@@ -3,7 +3,10 @@
   const state = {
     rows: [],
     loading: true,
+    syncing: false,
     error: "",
+    realtimeStatus: "",
+    realtimeChannel: null,
     search: "",
     department: "",
     group: "",
@@ -157,7 +160,8 @@
               `).join("")}
             </select>
           </label>
-          <button type="button" class="btn" data-public-nanda-refresh ${state.loading ? "disabled" : ""}>Tai lai</button>
+          <button type="button" class="btn" data-public-nanda-refresh ${state.loading || state.syncing ? "disabled" : ""}>Dong bo</button>
+          <span class="nanda-public-sync-status">${h(state.realtimeStatus || "Realtime san sang")}</span>
         </div>
         ${state.error ? `<div class="nanda-public-error">Khong tai duoc bang NANDA: ${h(state.error)}</div>` : ""}
         ${state.loading ? '<div class="nanda-public-loading">Dang tai du lieu NANDA...</div>' : renderRows(rows)}
@@ -214,6 +218,43 @@
     }
   }
 
+  async function syncRows() {
+    state.syncing = true;
+    render();
+    try {
+      await loadRows();
+    } finally {
+      state.syncing = false;
+      render();
+    }
+  }
+
+  function setupRealtimeSync() {
+    if (state.realtimeChannel) return;
+    try {
+      const client = getClient();
+      state.realtimeStatus = "Dang ket noi realtime";
+      state.realtimeChannel = client
+        .channel("public:nanda:public-sync")
+        .on("postgres_changes", { event: "*", schema: "public", table: "nanda" }, async () => {
+          state.realtimeStatus = "Dang dong bo thay doi moi";
+          await loadRows();
+          state.realtimeStatus = "Realtime da cap nhat";
+          render();
+        })
+        .subscribe((status) => {
+          if (status === "SUBSCRIBED") {
+            state.realtimeStatus = "Realtime dang bat";
+          } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+            state.realtimeStatus = "Realtime chua ket noi";
+          }
+          render();
+        });
+    } catch (error) {
+      state.realtimeStatus = `Realtime loi: ${error.message || error}`;
+    }
+  }
+
   root.addEventListener("input", (event) => {
     const target = event.target;
     if (target.dataset.publicNandaSearch !== undefined) {
@@ -236,8 +277,9 @@
 
   root.addEventListener("click", (event) => {
     const target = event.target.closest("[data-public-nanda-refresh]");
-    if (target) loadRows();
+    if (target) syncRows();
   });
 
+  setupRealtimeSync();
   loadRows();
 })();

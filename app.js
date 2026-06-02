@@ -321,6 +321,7 @@ const state = {
   },
   diagnosisRows: [],
   diagnosisSavedRows: [],
+  diagnosisCatalogSource: "legacy",
   diagnosisCatalog: [],
   diagnosisCatalogLoaded: false,
   diagnosisCatalogLoading: false,
@@ -358,7 +359,10 @@ const state = {
   nandaRows: [],
   nandaLoaded: false,
   nandaLoading: false,
+  nandaSyncing: false,
   nandaError: "",
+  nandaRealtimeStatus: "",
+  nandaRealtimeChannel: null,
   nandaSchemaSupportsDepartment: null,
   nandaSearch: "",
   nandaDepartmentFilter: "",
@@ -975,7 +979,31 @@ function filteredGoalOptions(row, goalValue = "") {
 }
 
 function diagnosisCatalogRows() {
+  if (state.diagnosisCatalogSource === "nanda") return nandaRowsAsDiagnosisCatalogRows();
   return Array.isArray(state.diagnosisCatalog) ? state.diagnosisCatalog : [];
+}
+
+function nandaRowsAsDiagnosisCatalogRows() {
+  return (Array.isArray(state.nandaRows) ? state.nandaRows : [])
+    .map((row, index) => {
+      const interventions = completedNandaInterventionRows(row).map((item) => ({
+        code: cleanLine(item.code),
+        name: cleanLine(item.content || item.name),
+      }));
+      return {
+        id: String(row.id ?? `nanda-${index + 1}`),
+        group: cleanLine(row.nhom_van_de),
+        nanda: cleanLine(row.van_de),
+        cause: cleanLine(row.nguyen_nhan),
+        noc: cleanLine(row.muc_tieu_can_thiep),
+        nic: interventions.map((item) => `${item.code ? `${item.code}: ` : ""}${item.name}`).join("; "),
+        interventionCodes: interventions.map((item) => item.code).filter(Boolean),
+        interventionNames: interventions.map((item) => item.name).filter(Boolean),
+        interventions,
+        raw: row,
+      };
+    })
+    .filter((item) => item.nanda);
 }
 
 function splitCatalogList(value) {
@@ -1091,6 +1119,11 @@ async function fetchDiagnosisCatalogFromSupabase(query, mode = "diagnosis") {
 }
 
 function requestDiagnosisCatalogSearch(query, mode = "diagnosis") {
+  if (state.diagnosisCatalogSource === "nanda") {
+    if (!state.nandaLoaded && !state.nandaLoading) loadNandaRows(true);
+    return Promise.resolve(diagnosisCatalogRows());
+  }
+
   const value = supabaseSearchValue(query);
   if (value.length < 2) return Promise.resolve(diagnosisCatalogRows());
   const requestKey = `${mode}:${searchKey(value)}`;
@@ -1149,6 +1182,7 @@ async function loadDiagnosisCatalogFromSupabase() {
 }
 
 function ensureDiagnosisCatalogLoaded({ renderOnComplete = true } = {}) {
+  if (state.diagnosisCatalogSource === "nanda") return loadNandaRows();
   if (state.diagnosisCatalogLoaded) return Promise.resolve(state.diagnosisCatalog);
   if (state.diagnosisCatalogLoading && state.diagnosisCatalogPromise) return state.diagnosisCatalogPromise;
 
@@ -1174,6 +1208,19 @@ function ensureDiagnosisCatalogLoaded({ renderOnComplete = true } = {}) {
 }
 
 function renderDiagnosisCatalogStatus() {
+  if (state.diagnosisCatalogSource === "nanda") {
+    if (state.nandaError) {
+      return `
+        <div class="empty care-list-empty">
+          <strong>Khong tai duoc du lieu tu bang NANDA.</strong>
+          <p>${h(state.nandaError)}</p>
+          <button type="button" class="btn primary" data-action="sync-nanda">Dong bo lai</button>
+        </div>
+      `;
+    }
+    return `<div class="empty care-list-empty">Dang tai du lieu tu bang public.nanda...</div>`;
+  }
+
   if (!state.diagnosisCatalogError) {
     return `<div class="empty care-list-empty">Đang tải dữ liệu NANDA/NIC/NOC từ Supabase...</div>`;
   }
@@ -1575,6 +1622,7 @@ function resetCareFormState({ resetChecklist = false } = {}) {
   }
   state.selectedAssessments = new Set();
   state.assessmentEdits = {};
+  state.diagnosisCatalogSource = "legacy";
   state.diagnosisRows = [createDiagnosisRow()];
   state.diagnosisSavedRows = [];
   state.interventionRows = [];
@@ -1703,6 +1751,25 @@ function startHomeCareTest(activeTab = "patient", activeScale = "") {
     if (!state.scaleScores[activeScale]) state.scaleScores[activeScale] = {};
   }
   state.screen = "careForm";
+  render();
+}
+
+function startNandaDiagnosisTest() {
+  state.careSheets = [];
+  state.careSheetsPatient = null;
+  state.careSheetsLoadedFor = "";
+  state.careSheetsError = "";
+  state.careGoalEvaluations = [];
+  state.careGoalEvaluationsLoadedFor = "";
+  state.careGoalEvaluationsError = "";
+  state.editingCareSheetId = null;
+  state.selectedCareSheetId = null;
+  state.hasCareSheet = true;
+  resetCareFormState({ resetChecklist: true });
+  state.diagnosisCatalogSource = "nanda";
+  state.activeCareFormTab = "diagnosis";
+  state.screen = "careForm";
+  loadNandaRows(true);
   render();
 }
 
@@ -2330,11 +2397,26 @@ function nandaPayloadForCurrentSchema(payload) {
 }
 
 async function queryNandaRows() {
-  return getSupabaseClient()
-    .from("nanda")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(200);
+  const client = getSupabaseClient();
+  const pageSize = 1000;
+  let from = 0;
+  const rows = [];
+
+  for (;;) {
+    const to = from + pageSize - 1;
+    const { data, error } = await client
+      .from("nanda")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .range(from, to);
+
+    if (error) return { data: null, error };
+    rows.push(...(data || []));
+    if (!data || data.length < pageSize) break;
+    from += pageSize;
+  }
+
+  return { data: rows, error: null };
 }
 
 async function refreshNandaRowsForDuplicateCheck() {
@@ -2434,6 +2516,53 @@ async function loadNandaRows(force = false) {
   }
 }
 
+async function syncNandaRows() {
+  state.nandaSyncing = true;
+  state.nandaLoaded = false;
+  state.nandaError = "";
+  try {
+    await loadNandaRows(true);
+  } finally {
+    state.nandaSyncing = false;
+    if (state.screen === "nanda") render();
+  }
+}
+
+function shouldRenderNandaDataChange() {
+  return (
+    state.screen === "nanda" ||
+    (state.screen === "careForm" && (state.activeCareFormTab === "diagnosis" || state.activeCareFormTab === "intervention"))
+  );
+}
+
+function setupNandaRealtimeSync() {
+  if (state.nandaRealtimeChannel || !isSupabaseConfigured()) return;
+
+  try {
+    const client = getSupabaseClient();
+    state.nandaRealtimeStatus = "Dang ket noi realtime";
+    state.nandaRealtimeChannel = client
+      .channel("public:nanda:sync")
+      .on("postgres_changes", { event: "*", schema: "public", table: "nanda" }, async () => {
+        state.nandaLoaded = false;
+        state.nandaRealtimeStatus = "Dang dong bo thay doi moi";
+        await loadNandaRows(true);
+        state.nandaRealtimeStatus = "Realtime da cap nhat";
+        if (shouldRenderNandaDataChange()) render();
+      })
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          state.nandaRealtimeStatus = "Realtime dang bat";
+        } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          state.nandaRealtimeStatus = "Realtime chua ket noi";
+        }
+        if (shouldRenderNandaDataChange()) render();
+      });
+  } catch (error) {
+    state.nandaRealtimeStatus = `Realtime loi: ${error.message || error}`;
+  }
+}
+
 async function saveNandaForm() {
   const payload = normalizeNandaPayload(state.nandaForm);
   if (!payload.khoa || !payload.nhom_van_de || !payload.van_de || !payload.noi_dung_can_thiep) {
@@ -2492,6 +2621,7 @@ async function deleteNandaRow(id) {
 }
 
 function renderNandaFormScreen() {
+  setupNandaRealtimeSync();
   loadNandaRows();
   applyLatestDepartmentToNandaForm();
   const form = state.nandaForm;
@@ -2571,6 +2701,8 @@ function renderNandaFormScreen() {
               </div>
             </div>
             <div class="nanda-actions">
+              <button type="button" class="btn ghost" data-action="sync-nanda" ${state.nandaLoading || state.nandaSyncing ? "disabled" : ""}>Dong bo</button>
+              <span class="nanda-sync-status">${h(state.nandaRealtimeStatus || "Realtime san sang")}</span>
               <button type="button" class="btn primary" data-action="save-nanda">${editing ? "Cập nhật" : "Lưu"}</button>
               <button type="button" class="btn" data-action="clear-nanda-form">Làm mới</button>
               <button type="button" class="btn ghost" data-action="refresh-nanda">Tải lại</button>
@@ -2673,6 +2805,12 @@ const homeExperienceCards = [
   },
   {
     title: "Danh mục NANDA",
+    action: "start-nanda-diagnosis-test",
+    icon: "ND",
+    note: "Goi y chan doan, nguyen nhan va muc tieu tu bang public.nanda.",
+  },
+  {
+    title: "Danh mục NANDA",
     action: "open-nanda-form",
     icon: "ND",
     note: "Thêm, sửa và tra cứu nhóm vấn đề, nguyên nhân, mục tiêu và can thiệp.",
@@ -2720,7 +2858,19 @@ function showUpdateInfo() {
   ].join("\n"));
 }
 
+const hiddenHomeActions = new Set([
+  "show-experience-guide",
+  "start-education-test",
+  "start-scale-test",
+]);
+
+function homeCardTitle(card) {
+  if (card.action === "start-nanda-diagnosis-test") return "Test chan doan dieu duong theo NANDA";
+  return card.title;
+}
+
 function renderPatientListScreen() {
+  const visibleCards = homeExperienceCards.filter((card) => !hiddenHomeActions.has(card.action));
   return `
     <div class="mobile-app patient-list-screen home-screen">
       ${patientHomeAppBar()}
@@ -2731,10 +2881,10 @@ function renderPatientListScreen() {
         </div>
       </section>
       <section class="home-action-grid" aria-label="Danh sách chức năng trải nghiệm">
-        ${homeExperienceCards.map((card) => `
+        ${visibleCards.map((card) => `
           <button type="button" class="home-action-card ${card.tone ? `home-action-card-${h(card.tone)}` : ""}" data-action="${h(card.action)}">
             <span class="home-action-icon">${h(card.icon)}</span>
-            <strong>${h(card.title)}</strong>
+            <strong>${h(homeCardTitle(card))}</strong>
             <small>${h(card.note)}</small>
           </button>
         `).join("")}
@@ -3848,6 +3998,7 @@ function renderCareFormTabs() {
 
 function renderActiveCareFormTab(assessments) {
   if (state.activeCareFormTab === "diagnosis" || state.activeCareFormTab === "intervention") {
+    if (state.diagnosisCatalogSource === "nanda") setupNandaRealtimeSync();
     loadNandaRows();
     ensureDiagnosisCatalogLoaded({ renderOnComplete: true });
   }
@@ -5238,7 +5389,9 @@ function renderDiagnosisRowV2(row, index) {
   const goalInputValue = state.activeGoalSuggest === `goal:${index}` ? goalQuery : (goalQuery || (row.goals || []).join("; "));
   const diagnosisOptions = state.activeDiagnosisSuggest === index ? nandaCatalogOptions(query) : [];
   const hasExactDiagnosisOption = diagnosisOptions.some((item) => searchKey(item.nanda) === searchKey(query));
-  const diagnosisLoading = state.activeDiagnosisSuggest === index && state.diagnosisCatalogLoading;
+  const diagnosisLoading = state.activeDiagnosisSuggest === index && (
+    state.diagnosisCatalogSource === "nanda" ? state.nandaLoading : state.diagnosisCatalogLoading
+  );
   const showAddDiagnosisOption = state.activeDiagnosisSuggest === index && !diagnosisLoading && cleanLine(query) && !hasExactDiagnosisOption;
   const hasExactGoalOption = goals.some((goal) => searchKey(goal) === searchKey(goalQuery));
   const showAddGoalOption = state.activeGoalSuggest === `goal:${index}` && cleanLine(goalQuery) && !hasExactGoalOption;
@@ -6845,6 +6998,11 @@ app.addEventListener("click", (event) => {
     return;
   }
 
+  if (target.dataset.action === "start-nanda-diagnosis-test") {
+    startNandaDiagnosisTest();
+    return;
+  }
+
   if (target.dataset.action === "start-education-test") {
     startHomeCareTest("education");
     return;
@@ -7394,6 +7552,11 @@ app.addEventListener("click", (event) => {
     state.nandaLoaded = false;
     loadNandaRows(true);
     render();
+    return;
+  }
+
+  if (target.dataset.action === "sync-nanda") {
+    syncNandaRows();
     return;
   }
 

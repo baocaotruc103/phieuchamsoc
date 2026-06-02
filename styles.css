@@ -1676,8 +1676,15 @@ button {
 .nanda-actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 10px;
   margin-top: 14px;
+}
+
+.nanda-sync-status {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .nanda-search-field {
@@ -2030,7 +2037,7 @@ button {
 
 .nanda-public-toolbar {
   display: grid;
-  grid-template-columns: minmax(260px, 1.5fr) minmax(180px, 0.8fr) minmax(180px, 0.8fr) auto;
+  grid-template-columns: minmax(260px, 1.5fr) minmax(180px, 0.8fr) minmax(180px, 0.8fr) auto minmax(140px, auto);
   gap: 12px;
   align-items: end;
   padding: 16px;
@@ -2048,6 +2055,13 @@ button {
   color: #334155;
   font-size: 12px;
   font-weight: 900;
+}
+
+.nanda-public-sync-status {
+  align-self: center;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .nanda-public-toolbar input,
