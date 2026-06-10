@@ -79,6 +79,51 @@
     });
   }
 
+  function exportRowsToExcel() {
+    const rows = filteredRows();
+    if (!rows.length) {
+      alert("Không có dữ liệu NANDA phù hợp để xuất Excel.");
+      return;
+    }
+    if (!window.XLSX) {
+      alert("Không tải được công cụ xuất Excel. Vui lòng kiểm tra kết nối mạng và thử lại.");
+      return;
+    }
+
+    const exportRows = rows.map((row, index) => ({
+      STT: index + 1,
+      Khoa: row.khoa || "",
+      "Nhóm vấn đề": row.nhom_van_de || "",
+      "Vấn đề": row.van_de || "",
+      "Nguyên nhân": row.nguyen_nhan || "",
+      "Mục tiêu can thiệp": row.muc_tieu_can_thiep || "",
+      "Mã can thiệp": row.ma_can_thiep || "",
+      "Nội dung can thiệp": row.noi_dung_can_thiep || "",
+    }));
+    const worksheet = window.XLSX.utils.json_to_sheet(exportRows);
+    worksheet["!autofilter"] = { ref: worksheet["!ref"] };
+    worksheet["!cols"] = [
+      { wch: 6 },
+      { wch: 24 },
+      { wch: 28 },
+      { wch: 36 },
+      { wch: 42 },
+      { wch: 42 },
+      { wch: 22 },
+      { wch: 56 },
+    ];
+
+    const workbook = window.XLSX.utils.book_new();
+    window.XLSX.utils.book_append_sheet(workbook, worksheet, "Danh sach NANDA");
+    const date = new Date();
+    const datePart = [
+      date.getFullYear(),
+      String(date.getMonth() + 1).padStart(2, "0"),
+      String(date.getDate()).padStart(2, "0"),
+    ].join("-");
+    window.XLSX.writeFile(workbook, `danh-sach-nanda-${datePart}.xlsx`);
+  }
+
   function renderLineList(value) {
     const lines = splitLines(value);
     if (!lines.length) return '<span class="nanda-public-muted">Chua co</span>';
@@ -161,6 +206,7 @@
             </select>
           </label>
           <button type="button" class="btn" data-public-nanda-refresh ${state.loading || state.syncing ? "disabled" : ""}>Dong bo</button>
+          <button type="button" class="btn primary" data-public-nanda-export ${state.loading || !rows.length ? "disabled" : ""}>Xuất Excel</button>
           <span class="nanda-public-sync-status">${h(state.realtimeStatus || "Realtime san sang")}</span>
         </div>
         ${state.error ? `<div class="nanda-public-error">Khong tai duoc bang NANDA: ${h(state.error)}</div>` : ""}
@@ -276,8 +322,13 @@
   });
 
   root.addEventListener("click", (event) => {
-    const target = event.target.closest("[data-public-nanda-refresh]");
-    if (target) syncRows();
+    if (event.target.closest("[data-public-nanda-refresh]")) {
+      syncRows();
+      return;
+    }
+    if (event.target.closest("[data-public-nanda-export]")) {
+      exportRowsToExcel();
+    }
   });
 
   setupRealtimeSync();
