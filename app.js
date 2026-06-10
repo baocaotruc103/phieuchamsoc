@@ -1974,6 +1974,51 @@ function filteredNandaRows() {
   });
 }
 
+function exportNandaRowsToExcel() {
+  const rows = filteredNandaRows();
+  if (!rows.length) {
+    alert("Không có dữ liệu NANDA phù hợp để xuất Excel.");
+    return;
+  }
+  if (!window.XLSX) {
+    alert("Không tải được công cụ xuất Excel. Vui lòng kiểm tra kết nối mạng và thử lại.");
+    return;
+  }
+
+  const exportRows = rows.map((row, index) => ({
+    STT: index + 1,
+    Khoa: row.khoa || "",
+    "Nhóm vấn đề": row.nhom_van_de || "",
+    "Vấn đề": row.van_de || "",
+    "Nguyên nhân": row.nguyen_nhan || "",
+    "Mục tiêu can thiệp": row.muc_tieu_can_thiep || "",
+    "Mã can thiệp": row.ma_can_thiep || "",
+    "Nội dung can thiệp": row.noi_dung_can_thiep || "",
+  }));
+  const worksheet = window.XLSX.utils.json_to_sheet(exportRows);
+  worksheet["!autofilter"] = { ref: worksheet["!ref"] };
+  worksheet["!cols"] = [
+    { wch: 6 },
+    { wch: 24 },
+    { wch: 28 },
+    { wch: 36 },
+    { wch: 42 },
+    { wch: 42 },
+    { wch: 22 },
+    { wch: 56 },
+  ];
+
+  const workbook = window.XLSX.utils.book_new();
+  window.XLSX.utils.book_append_sheet(workbook, worksheet, "Danh sach NANDA");
+  const date = new Date();
+  const datePart = [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
+  window.XLSX.writeFile(workbook, `danh-sach-nanda-${datePart}.xlsx`);
+}
+
 const NANDA_ROWS_PER_PAGE = 5;
 
 function nandaEnteredDepartmentOptions() {
@@ -2716,6 +2761,7 @@ function renderNandaFormScreen() {
               <h2 class="panel-title">Danh sách đã nhập</h2>
               <p class="panel-subtitle">${state.nandaLoading ? "Đang tải dữ liệu..." : `${rows.length}/${state.nandaRows.length} dòng`}</p>
             </div>
+            <button type="button" class="btn primary" data-action="export-nanda-excel" ${state.nandaLoading || !rows.length ? "disabled" : ""}>Xuất Excel</button>
           </div>
           <div class="panel-body">
             <div class="nanda-department-summary">
@@ -7557,6 +7603,11 @@ app.addEventListener("click", (event) => {
 
   if (target.dataset.action === "sync-nanda") {
     syncNandaRows();
+    return;
+  }
+
+  if (target.dataset.action === "export-nanda-excel") {
+    exportNandaRowsToExcel();
     return;
   }
 
