@@ -8576,7 +8576,12 @@ async function init() {
     state.departmentId = state.data.categories[0].khoa[0].id;
     state.conditionId = state.data.categories[0].khoa[0].mat_benh[0].id;
     const params = new URLSearchParams(window.location.search);
-    if (params.get("screen")) state.screen = params.get("screen");
+    const path = window.location.pathname.replace(/\/+$/, "") || "/";
+    if (path === "/admin") {
+      state.screen = "nanda";
+    } else if (params.get("screen")) {
+      state.screen = params.get("screen");
+    }
     if (params.get("hasCareSheet") === "1") state.hasCareSheet = true;
     if (params.get("patient")) {
       const index = patients.findIndex((patient) => patient.code === params.get("patient"));
