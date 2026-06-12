@@ -2921,7 +2921,7 @@ function patientHomeAppBar() {
   return `
     <header class="app-bar patient-home-app-bar">
       <span></span>
-      <h1>Phiên bản cập nhật 28/5/2026</h1>
+      <h1>Demo phiếu chăm sóc điều dưỡng</h1>
       <button class="grid-icon" data-screen="patients" aria-label="Danh sách">
         <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
       </button>
@@ -3005,8 +3005,12 @@ function showUpdateInfo() {
 
 const hiddenHomeActions = new Set([
   "show-experience-guide",
+  "start-diagnosis-test",
+  "start-nanda-diagnosis-test",
   "start-education-test",
   "start-scale-test",
+  "open-sample-evaluation",
+  "show-update-info",
 ]);
 
 function homeCardTitle(card) {
