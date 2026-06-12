@@ -6,17 +6,19 @@
     <title>Phiếu chăm sóc điều dưỡng</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
-  <body>
+  <body data-care-form-layout="all">
     <div id="app">
-      <div class="loading">Đang tải dữ liệu chăm sóc...</div>
+      <div class="loading">Đang tải form phiếu chăm sóc...</div>
     </div>
+
     <script>
-      if (window.location.hostname === "demo.nurse103.pro.vn") {
-        document.body.dataset.careFormEntry = "grouped-assessment";
+      const params = new URLSearchParams(window.location.search);
+      if (!params.has("screen")) {
+        params.set("screen", "careForm");
+        window.history.replaceState(null, "", `${window.location.pathname}?${params}`);
       }
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="./supabase-config.js"></script>
     <script src="./app.js"></script>
   </body>

@@ -2,3 +2,8 @@
 /admin/ /index.html 200
 /nanda /nanda/index.html 200
 /nanda/ /nanda/index.html 200
+/phieu-cham-soc /phieu-cham-soc.html 200
+/phieu-cham-soc/ /phieu-cham-soc 301
+/phieu-cham-so /phieu-cham-soc.html 200
+/phieu-cham-so/ /phieu-cham-so 301
+/phieu-cham-so.html /phieu-cham-soc.html 301

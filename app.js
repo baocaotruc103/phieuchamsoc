@@ -321,7 +321,7 @@ const state = {
   },
   diagnosisRows: [],
   diagnosisSavedRows: [],
-  diagnosisCatalogSource: "legacy",
+  diagnosisCatalogSource: "nanda",
   diagnosisCatalog: [],
   diagnosisCatalogLoaded: false,
   diagnosisCatalogLoading: false,
@@ -704,7 +704,8 @@ function fixMojibake(value) {
       else if (cp1252[code]) bytes.push(cp1252[code]);
       else return value;
     }
-    return new TextDecoder("utf-8", { fatal: false }).decode(new Uint8Array(bytes));
+    const decoded = new TextDecoder("utf-8", { fatal: false }).decode(new Uint8Array(bytes));
+    return decoded.includes("\uFFFD") ? value : decoded;
   } catch {
     return value;
   }
@@ -833,8 +834,8 @@ function normalizeVietnameseText(text) {
     .replaceAll("C�ch ng�y", "Cách ngày")
     .replaceAll("Kh�c", "Khác")
     .replaceAll("Th�nh gi�c", "Thính giác")
-    .replaceAll("Tr�nh thai", "Trành thai")
-    .replaceAll("Tránh thai", "Trành thai");
+    .replaceAll("Tr�nh thai", "Tránh thai")
+    .replaceAll("Trành thai", "Tránh thai");
 }
 
 function splitBullets(text) {
@@ -875,6 +876,7 @@ function createDiagnosisRow() {
     goalQuery: "",
     goals: [],
     diagnosisIds: [],
+    diagnosisDepartment: "",
     causes: [],
   };
 }
@@ -892,6 +894,7 @@ function normalizeDiagnosisRowForSave(row) {
       .filter(Boolean)
       .filter((value, index, values) => values.indexOf(value) === index),
     diagnosisIds: Array.isArray(row.diagnosisIds) ? row.diagnosisIds.map(String) : [],
+    diagnosisDepartment: cleanLine(row.diagnosisDepartment),
     causes: (Array.isArray(row.causes) ? row.causes : []).map(cleanLine).filter(Boolean),
   };
 }
@@ -992,6 +995,7 @@ function nandaRowsAsDiagnosisCatalogRows() {
       }));
       return {
         id: String(row.id ?? `nanda-${index + 1}`),
+        department: cleanLine(row.khoa),
         group: cleanLine(row.nhom_van_de),
         nanda: cleanLine(row.van_de),
         cause: cleanLine(row.nguyen_nhan),
@@ -1008,7 +1012,7 @@ function nandaRowsAsDiagnosisCatalogRows() {
 
 function splitCatalogList(value) {
   return String(value || "")
-    .split(";")
+    .split(/[;\n]+/)
     .map(cleanLine)
     .filter(Boolean);
 }
@@ -1212,13 +1216,13 @@ function renderDiagnosisCatalogStatus() {
     if (state.nandaError) {
       return `
         <div class="empty care-list-empty">
-          <strong>Khong tai duoc du lieu tu bang NANDA.</strong>
+          <strong>Không tải được dữ liệu từ bảng NANDA.</strong>
           <p>${h(state.nandaError)}</p>
-          <button type="button" class="btn primary" data-action="sync-nanda">Dong bo lai</button>
+          <button type="button" class="btn primary" data-action="sync-nanda">Đồng bộ lại</button>
         </div>
       `;
     }
-    return `<div class="empty care-list-empty">Dang tai du lieu tu bang public.nanda...</div>`;
+    return `<div class="empty care-list-empty">Đang tải dữ liệu từ bảng public.nanda...</div>`;
   }
 
   if (!state.diagnosisCatalogError) {
@@ -1233,20 +1237,73 @@ function renderDiagnosisCatalogStatus() {
   `;
 }
 
-function nandaCatalogOptions(query = "") {
+function nandaCatalogOptions(query = "", options = {}) {
   const key = searchKey(query);
-  const grouped = new Map();
+  const selectedDepartment = cleanLine(options.department);
+  const selectedDepartmentKey = searchKey(selectedDepartment);
+  const isDepartmentQuery = selectedDepartmentKey && (
+    key === selectedDepartmentKey ||
+    key === searchKey(`Khoa: ${selectedDepartment}`)
+  );
+  const problemKey = isDepartmentQuery ? "" : key;
+  const problemGroups = new Map();
+  const departmentGroups = new Map();
   for (const item of diagnosisCatalogRows()) {
-    const group = cleanLine(item.group);
+    const department = cleanLine(item.department || item.raw?.khoa);
+    const departmentKey = searchKey(department);
+    if (selectedDepartmentKey && departmentKey !== selectedDepartmentKey) continue;
+    if (!selectedDepartmentKey && department && (!key || departmentKey.includes(key))) {
+      if (!departmentGroups.has(departmentKey)) {
+        departmentGroups.set(departmentKey, {
+          type: "department",
+          nanda: `Khoa: ${department}`,
+          department,
+          ids: [],
+          rows: [],
+        });
+      }
+      departmentGroups.get(departmentKey).ids.push(item.id);
+      departmentGroups.get(departmentKey).rows.push(item);
+    }
     for (const nanda of splitSuggestionLines(item.nanda)) {
-      if (key && !searchKey(`${group} ${nanda} ${item.id}`).includes(key)) continue;
-      if (!grouped.has(nanda)) grouped.set(nanda, { nanda, group, ids: [], rows: [] });
-      if (group && !grouped.get(nanda).group) grouped.get(nanda).group = group;
-      grouped.get(nanda).ids.push(item.id);
-      grouped.get(nanda).rows.push(item);
+      if (problemKey && !searchKey(`${department} ${nanda}`).includes(problemKey)) continue;
+      const optionKey = `${searchKey(department)}|${searchKey(nanda)}`;
+      if (!problemGroups.has(optionKey)) {
+        problemGroups.set(optionKey, {
+          type: "problem",
+          nanda,
+          department,
+          ids: [],
+          rows: [],
+        });
+      }
+      problemGroups.get(optionKey).ids.push(item.id);
+      problemGroups.get(optionKey).rows.push(item);
     }
   }
-  return [...grouped.values()].slice(0, 80);
+  return [...departmentGroups.values(), ...problemGroups.values()].slice(0, 80);
+}
+
+function exactNandaCatalogOption(value = "") {
+  const key = searchKey(value);
+  if (!key) return null;
+  return nandaCatalogOptions(value).find((item) =>
+    searchKey(item.nanda) === key ||
+    (item.type === "department" && searchKey(item.department) === key),
+  ) || null;
+}
+
+function applyNandaDepartmentFilter(row, department = "") {
+  if (!row) return;
+  const value = cleanLine(department);
+  row.diagnosisDepartment = value;
+  row.diagnosis = "";
+  row.diagnosisQuery = value ? `Khoa: ${value}` : "";
+  row.diagnosisIds = [];
+  row.causes = [];
+  row.goals = [];
+  row.causeQuery = "";
+  row.goalQuery = "";
 }
 
 function diseasedOrganSelectedItems() {
@@ -1262,7 +1319,7 @@ function setDiseasedOrganSelectedItems(items) {
 
 function splitSuggestionLines(value) {
   return String(value || "")
-    .split(";")
+    .split(/[;\n]+/)
     .map(cleanLine)
     .filter(Boolean);
 }
@@ -1303,24 +1360,40 @@ function diseasedOrganOptions(query = "") {
   return [...grouped.values()].slice(0, 12);
 }
 
-function nandaCatalogOptionByName(nanda) {
+function nandaCatalogOptionByName(nanda, department = "", type = "problem") {
   const name = cleanLine(nanda);
+  const departmentKey = searchKey(department);
   if (!name) return null;
-  const rows = diagnosisCatalogRows().filter((item) => catalogValueHasLine(item.nanda, name));
+  const nameKey = searchKey(name.replace(/^khoa\s*:\s*/i, ""));
+  const rows = diagnosisCatalogRows().filter((item) => {
+    const itemDepartmentKey = searchKey(item.department || item.raw?.khoa);
+    if (type === "department") {
+      return Boolean(nameKey) && itemDepartmentKey === nameKey;
+    }
+    return catalogValueHasLine(item.nanda, name) &&
+      (!departmentKey || itemDepartmentKey === departmentKey);
+  });
   if (!rows.length) return null;
   return {
-    nanda: name,
+    type,
+    nanda: type === "department" ? `Khoa: ${cleanLine(rows[0].department || rows[0].raw?.khoa)}` : name,
+    department: cleanLine(department || rows[0].department || rows[0].raw?.khoa),
     ids: rows.map((item) => item.id),
     rows,
   };
 }
 
-function applyNandaCatalogSelection(row, nanda) {
+function applyNandaCatalogSelection(row, nanda, department = "", type = "problem") {
   if (!row) return;
-  const option = nandaCatalogOptionByName(nanda);
-  row.diagnosis = cleanLine(nanda);
+  if (type === "department") {
+    applyNandaDepartmentFilter(row, department || nanda.replace(/^khoa\s*:\s*/i, ""));
+    return;
+  }
+  const option = nandaCatalogOptionByName(nanda, department, type);
+  row.diagnosis = option?.nanda || cleanLine(nanda);
   row.diagnosisQuery = row.diagnosis;
   row.diagnosisIds = option ? option.ids.map(String) : [];
+  row.diagnosisDepartment = option?.department || cleanLine(department);
   row.causes = (row.causes || []).filter((cause) =>
     causeOptionsForDiagnosis(row).some((item) => item.cause === cause),
   );
@@ -1351,12 +1424,17 @@ function syncDiagnosisFromSelectedIds(row) {
   );
 }
 
-function toggleNandaCatalogSelection(row, nanda, checked) {
+function toggleNandaCatalogSelection(row, nanda, department, checked, type = "problem") {
   if (!row) return;
-  const option = nandaCatalogOptionByName(nanda);
+  if (type === "department") {
+    applyNandaDepartmentFilter(row, checked ? (department || nanda.replace(/^khoa\s*:\s*/i, "")) : "");
+    return;
+  }
+  const option = nandaCatalogOptionByName(nanda, department, type);
   if (!option) return;
   row.diagnosisIds = checked ? option.ids.map(String) : [];
   row.diagnosis = checked ? option.nanda : "";
+  row.diagnosisDepartment = checked ? option.department : "";
   row.diagnosisQuery = row.diagnosis;
   row.causes = [];
   row.goals = [];
@@ -1366,6 +1444,9 @@ function toggleNandaCatalogSelection(row, nanda, checked) {
 
 function diagnosisRowsForSelectedNanda(row) {
   const selected = new Set(row.diagnosisIds || []);
+  if (selected.size) {
+    return diagnosisCatalogRows().filter((item) => selected.has(String(item.id)) || selected.has(item.id));
+  }
   const selectedNandas = new Set(
     diagnosisCatalogRows()
       .filter((item) => selected.has(String(item.id)) || selected.has(item.id))
@@ -1405,7 +1486,7 @@ function selectedDiagnosisRecords(row, options = {}) {
 function goalOptionsForDiagnosisRow(row) {
   return [...new Set(
     selectedDiagnosisRecords(row)
-      .flatMap((item) => String(item.noc || "").split(";"))
+      .flatMap((item) => splitCatalogList(item.noc))
       .map(cleanLine)
       .filter(Boolean),
   )];
@@ -1524,7 +1605,7 @@ function interventionMatchScore(catalogItem, sourceText) {
 }
 
 function savedDiagnosisInterventionRecords() {
-  const rows = state.diagnosisSavedRows || [];
+  const rows = (state.diagnosisSavedRows || []).length ? state.diagnosisSavedRows : state.diagnosisRows;
   return rows.flatMap((row) =>
     selectedDiagnosisRecords(row, { filterGoals: true }),
   );
@@ -1549,7 +1630,7 @@ function diagnosisBasedInterventionOptions() {
 function interventionDropdownOptions(value, mode) {
   const query = searchKey(value);
   const diagnosisOptions = diagnosisBasedInterventionOptions();
-  const source = query ? [...diagnosisOptions, ...interventionCatalogItems()] : (diagnosisOptions.length ? diagnosisOptions : interventionCatalogItems());
+  const source = diagnosisOptions.length ? diagnosisOptions : interventionCatalogItems();
   const grouped = new Map();
   for (const item of source) {
     const target = mode === "code" ? item.code : item.name;
@@ -1558,6 +1639,14 @@ function interventionDropdownOptions(value, mode) {
     if (grouped.size >= 40) break;
   }
   return [...grouped.values()].slice(0, 12);
+}
+
+function findSuggestedIntervention(value, mode) {
+  const key = searchKey(value);
+  if (!key) return null;
+  const diagnosisOptions = diagnosisBasedInterventionOptions();
+  const source = diagnosisOptions.length ? diagnosisOptions : interventionCatalogItems();
+  return source.find((item) => searchKey(mode === "code" ? item.code : item.name) === key) || null;
 }
 
 function isInterventionDraftSelected(item) {
@@ -1622,7 +1711,7 @@ function resetCareFormState({ resetChecklist = false } = {}) {
   }
   state.selectedAssessments = new Set();
   state.assessmentEdits = {};
-  state.diagnosisCatalogSource = "legacy";
+  state.diagnosisCatalogSource = "nanda";
   state.diagnosisRows = [createDiagnosisRow()];
   state.diagnosisSavedRows = [];
   state.interventionRows = [];
@@ -1631,7 +1720,7 @@ function resetCareFormState({ resetChecklist = false } = {}) {
   state.activeCauseSuggest = null;
   state.activeGoalSuggest = null;
   state.activeInterventionSuggest = null;
-  state.activeCareFormTab = "patient";
+  state.activeCareFormTab = document.body?.dataset.careFormEntry === "grouped-assessment" ? "assessment" : "patient";
   state.openAssessmentCards = new Set();
   state.handoverMedicineModalOpen = false;
   state.handoverMedicineDraft = createHandoverMedicineRow();
@@ -2047,7 +2136,7 @@ function paginatedNandaRows(rows) {
 }
 
 function nandaDepartmentLabel(row = {}) {
-  return cleanLine(row.khoa) || "Chua co khoa";
+  return cleanLine(row.khoa) || "Chưa có khoa";
 }
 
 function nandaDepartmentGroupKey(department) {
@@ -2070,7 +2159,7 @@ function nandaRowsGroupedByDepartment(rows = []) {
     const departmentGroup = grouped.get(key);
     departmentGroup.rows.push(row);
 
-    const problemGroup = cleanLine(row.nhom_van_de) || "Chua co nhom";
+    const problemGroup = cleanLine(row.nhom_van_de) || "Chưa có nhóm";
     const problemGroupKey = searchKey(problemGroup) || "__no_group__";
     if (!departmentGroup.groups.has(problemGroupKey)) {
       departmentGroup.groups.set(problemGroupKey, {
@@ -2277,17 +2366,17 @@ function renderNandaRowCard(row) {
     <article class="nanda-row">
       <div class="nanda-row-main">
         <div class="nanda-row-meta">
-          <span>Nhom: ${h(row.nhom_van_de || "Chua co nhom")}</span>
+          <span>Nhóm: ${h(row.nhom_van_de || "Chưa có nhóm")}</span>
         </div>
-        ${formatNandaDiagnosis(row) ? `<p><b>Chan doan dieu duong:</b> ${h(formatNandaDiagnosis(row))}</p>` : ""}
-        <p><b>Van de:</b> ${h(row.van_de)}</p>
-        ${row.nguyen_nhan ? `<p><b>Nguyen nhan:</b> ${h(row.nguyen_nhan)}</p>` : ""}
-        ${row.muc_tieu_can_thiep ? `<p><b>Muc tieu:</b> ${h(row.muc_tieu_can_thiep)}</p>` : ""}
+        ${formatNandaDiagnosis(row) ? `<p><b>Chẩn đoán điều dưỡng:</b> ${h(formatNandaDiagnosis(row))}</p>` : ""}
+        <p><b>Vấn đề:</b> ${h(row.van_de)}</p>
+        ${row.nguyen_nhan ? `<p><b>Nguyên nhân:</b> ${h(row.nguyen_nhan)}</p>` : ""}
+        ${row.muc_tieu_can_thiep ? `<p><b>Mục tiêu:</b> ${h(row.muc_tieu_can_thiep)}</p>` : ""}
         ${completedNandaInterventionRows(row).map((item) => `<p><b>Can thiep:</b> ${item.code ? `${h(item.code)}: ` : ""}${h(item.content)}</p>`).join("")}
       </div>
       <div class="nanda-row-actions">
-        <button type="button" class="btn" data-action="edit-nanda" data-nanda-id="${h(row.id)}">Sua</button>
-        <button type="button" class="btn danger" data-action="delete-nanda" data-nanda-id="${h(row.id)}">Xoa</button>
+        <button type="button" class="btn" data-action="edit-nanda" data-nanda-id="${h(row.id)}">Sửa</button>
+        <button type="button" class="btn danger" data-action="delete-nanda" data-nanda-id="${h(row.id)}">Xóa</button>
       </div>
     </article>
   `;
@@ -2321,7 +2410,7 @@ function renderNandaDepartmentGroupList(departmentGroups) {
                   <section class="nanda-problem-group">
                     <div class="nanda-problem-group-header">
                       <h3>${h(problemGroup.name)}</h3>
-                      <span>${h(problemGroup.rows.length)} dong</span>
+                      <span>${h(problemGroup.rows.length)} dòng</span>
                     </div>
                     <div class="nanda-row-list">
                       ${problemGroup.rows.map(renderNandaRowCard).join("")}
@@ -2352,13 +2441,13 @@ function syncNandaInterventionRow(rows, index, field) {
 
 function validateNandaInterventionSelection(rows = completedNandaInterventionRows()) {
   if (!rows.length) {
-    throw new Error("Vui long nhap it nhat mot Noi dung can thiep.");
+    throw new Error("Vui lòng nhập ít nhất một Nội dung can thiệp.");
   }
 
   for (const row of rows) {
     const content = cleanLine(row.content);
     if (!content) {
-      throw new Error("Moi dong can thiep phai co Noi dung can thiep.");
+      throw new Error("Mỗi dòng can thiệp phải có Nội dung can thiệp.");
     }
   }
 }
@@ -2372,7 +2461,10 @@ function careNandaRows() {
 }
 
 function careNandaDiagnosisOptions() {
-  return uniqueCleanValues(diagnosisCatalogRows().flatMap((row) => splitSuggestionLines(row.nanda)));
+  return uniqueCleanValues([
+    ...diagnosisCatalogRows().flatMap((row) => splitSuggestionLines(row.nanda)),
+    ...diagnosisCatalogRows().map((row) => row.department || row.raw?.khoa),
+  ]);
 }
 
 function careNandaCauseOptions() {
@@ -2495,10 +2587,10 @@ function nandaDuplicateRowDetail(row) {
     .filter(Boolean)
     .join("; ");
   return [
-    `Khoa: ${cleanLine(row.khoa) || "Chua co khoa"}`,
-    `Chan doan dieu duong: ${formatNandaDiagnosis(row) || cleanLine(row.van_de) || "Chua co"}`,
-    `Ma can thiep: ${cleanLine(row.ma_can_thiep) || "Chua co"}`,
-    `Can thiep: ${interventions || cleanLine(row.noi_dung_can_thiep) || "Chua co"}`,
+    `Khoa: ${cleanLine(row.khoa) || "Chưa có khoa"}`,
+    `Chẩn đoán điều dưỡng: ${formatNandaDiagnosis(row) || cleanLine(row.van_de) || "Chưa có"}`,
+    `Mã can thiệp: ${cleanLine(row.ma_can_thiep) || "Chưa có"}`,
+    `Can thiệp: ${interventions || cleanLine(row.noi_dung_can_thiep) || "Chưa có"}`,
   ].join("\n");
 }
 
@@ -2509,14 +2601,14 @@ function confirmDuplicateNandaSave(payload) {
     .slice(0, 3)
     .map((row, index) => `${index + 1}. ${nandaDuplicateRowDetail(row)}`)
     .join("\n\n");
-  const extra = duplicates.length > 3 ? `\n\nCon ${duplicates.length - 3} dong trung khac.` : "";
+  const extra = duplicates.length > 3 ? `\n\nCòn ${duplicates.length - 3} dòng trùng khác.` : "";
   return confirm([
-    `Van de "${payload.van_de}" va nguyen nhan "${payload.nguyen_nhan}" da duoc nhap boi:`,
+    `Vấn đề "${payload.van_de}" và nguyên nhân "${payload.nguyen_nhan}" đã được nhập bởi:`,
     "",
     details,
     extra,
     "",
-    "Co dong y them tiep vao bang du lieu khong?",
+    "Có đồng ý thêm tiếp vào bảng dữ liệu không?",
   ].join("\n"));
 }
 
@@ -2531,7 +2623,7 @@ async function loadNandaRows(force = false) {
     state.nandaLoading = false;
     state.nandaError = "Chưa cấu hình Supabase nên chưa tải được danh mục NANDA.";
     setTimeout(() => {
-      if (state.screen === "nanda") render();
+      if (shouldRenderNandaDataChange()) render();
     }, 0);
     return;
   }
@@ -2552,12 +2644,7 @@ async function loadNandaRows(force = false) {
     state.nandaLoaded = true;
   } finally {
     state.nandaLoading = false;
-    if (
-      state.screen === "nanda" ||
-      (state.screen === "careForm" && (state.activeCareFormTab === "diagnosis" || state.activeCareFormTab === "intervention"))
-    ) {
-      render();
-    }
+    if (shouldRenderNandaDataChange()) render();
   }
 }
 
@@ -2576,7 +2663,14 @@ async function syncNandaRows() {
 function shouldRenderNandaDataChange() {
   return (
     state.screen === "nanda" ||
-    (state.screen === "careForm" && (state.activeCareFormTab === "diagnosis" || state.activeCareFormTab === "intervention"))
+    (
+      state.screen === "careForm" &&
+      (
+        document.body?.dataset.careFormLayout === "all" ||
+        state.activeCareFormTab === "diagnosis" ||
+        state.activeCareFormTab === "intervention"
+      )
+    )
   );
 }
 
@@ -2585,36 +2679,36 @@ function setupNandaRealtimeSync() {
 
   try {
     const client = getSupabaseClient();
-    state.nandaRealtimeStatus = "Dang ket noi realtime";
+    state.nandaRealtimeStatus = "Đang kết nối realtime";
     state.nandaRealtimeChannel = client
       .channel("public:nanda:sync")
       .on("postgres_changes", { event: "*", schema: "public", table: "nanda" }, async () => {
         state.nandaLoaded = false;
-        state.nandaRealtimeStatus = "Dang dong bo thay doi moi";
+        state.nandaRealtimeStatus = "Đang đồng bộ thay đổi mới";
         await loadNandaRows(true);
-        state.nandaRealtimeStatus = "Realtime da cap nhat";
+        state.nandaRealtimeStatus = "Realtime đã cập nhật";
         if (shouldRenderNandaDataChange()) render();
       })
       .subscribe((status) => {
         if (status === "SUBSCRIBED") {
-          state.nandaRealtimeStatus = "Realtime dang bat";
+          state.nandaRealtimeStatus = "Realtime đang bật";
         } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
-          state.nandaRealtimeStatus = "Realtime chua ket noi";
+          state.nandaRealtimeStatus = "Realtime chưa kết nối";
         }
         if (shouldRenderNandaDataChange()) render();
       });
   } catch (error) {
-    state.nandaRealtimeStatus = `Realtime loi: ${error.message || error}`;
+    state.nandaRealtimeStatus = `Lỗi realtime: ${error.message || error}`;
   }
 }
 
 async function saveNandaForm() {
   const payload = normalizeNandaPayload(state.nandaForm);
   if (!payload.khoa || !payload.nhom_van_de || !payload.van_de || !payload.noi_dung_can_thiep) {
-    throw new Error("Vui long nhap Khoa, Nhom van de, Van de va Noi dung can thiep.");
+    throw new Error("Vui lòng nhập Khoa, Nhóm vấn đề, Vấn đề và Nội dung can thiệp.");
   }
   if (!isValidNandaDepartment(payload.khoa)) {
-    throw new Error("Khoa phai chon trong danh muc goi y tu dmkhoa.json.");
+    throw new Error("Khoa phải chọn trong danh mục gợi ý từ dmkhoa.json.");
   }
   payload.khoa = normalizeNandaDepartmentValue(payload.khoa);
   const interventionRows = completedNandaInterventionRows(payload);
@@ -2699,7 +2793,7 @@ function renderNandaFormScreen() {
             <div class="field-grid nanda-field-grid">
               <div class="field">
                 <label>Khoa *</label>
-                <input type="search" list="nanda-khoa-options" data-nanda-field="khoa" value="${h(form.khoa)}" placeholder="Chon khoa" />
+                <input type="search" list="nanda-khoa-options" data-nanda-field="khoa" value="${h(form.khoa)}" placeholder="Chọn khoa" />
               </div>
               <div class="field">
                 <label>Nhóm vấn đề *</label>
@@ -2732,11 +2826,11 @@ function renderNandaFormScreen() {
                     <div class="nanda-intervention-row">
                       <div class="field">
                         <label>Nội dung can thiệp</label>
-                        <input type="text" list="nanda-intervention-content-options" data-nanda-intervention-field="content" data-intervention-index="${index}" value="${h(item.content)}" placeholder="Chon hoac nhap noi dung can thiep" />
+                        <input type="text" list="nanda-intervention-content-options" data-nanda-intervention-field="content" data-intervention-index="${index}" value="${h(item.content)}" placeholder="Chọn hoặc nhập nội dung can thiệp" />
                       </div>
                       <div class="field">
                         <label>Mã can thiệp</label>
-                        <input type="text" list="nanda-intervention-code-options" data-nanda-intervention-field="code" data-intervention-index="${index}" value="${h(item.code)}" placeholder="Co the de trong" />
+                        <input type="text" list="nanda-intervention-code-options" data-nanda-intervention-field="code" data-intervention-index="${index}" value="${h(item.code)}" placeholder="Có thể để trống" />
                       </div>
                       ${interventionRows.length > 1 ? `<button type="button" class="remove-row-btn" data-action="remove-nanda-intervention" data-intervention-index="${index}" aria-label="Xóa can thiệp">Xóa</button>` : ""}
                     </div>
@@ -2746,8 +2840,8 @@ function renderNandaFormScreen() {
               </div>
             </div>
             <div class="nanda-actions">
-              <button type="button" class="btn ghost" data-action="sync-nanda" ${state.nandaLoading || state.nandaSyncing ? "disabled" : ""}>Dong bo</button>
-              <span class="nanda-sync-status">${h(state.nandaRealtimeStatus || "Realtime san sang")}</span>
+              <button type="button" class="btn ghost" data-action="sync-nanda" ${state.nandaLoading || state.nandaSyncing ? "disabled" : ""}>Đồng bộ</button>
+              <span class="nanda-sync-status">${h(state.nandaRealtimeStatus || "Realtime sẵn sàng")}</span>
               <button type="button" class="btn primary" data-action="save-nanda">${editing ? "Cập nhật" : "Lưu"}</button>
               <button type="button" class="btn" data-action="clear-nanda-form">Làm mới</button>
               <button type="button" class="btn ghost" data-action="refresh-nanda">Tải lại</button>
@@ -2779,32 +2873,32 @@ function renderNandaFormScreen() {
               </div>
             </div>
             <div class="field nanda-search-field">
-              <label>Tim kiem</label>
-              <input type="search" data-nanda-search value="${h(state.nandaSearch)}" placeholder="Tim theo khoa, nhom, van de, ma hoac noi dung" />
+              <label>Tìm kiếm</label>
+              <input type="search" data-nanda-search value="${h(state.nandaSearch)}" placeholder="Tìm theo khoa, nhóm, vấn đề, mã hoặc nội dung" />
             </div>
             <div class="nanda-filter-row">
               <div class="field nanda-department-filter-field">
-                <label>Loc theo khoa</label>
+                <label>Lọc theo khoa</label>
                 <select data-nanda-department-filter>
-                  <option value="">Tat ca khoa</option>
+                  <option value="">Tất cả khoa</option>
                   ${enteredDepartments.map((department) => `
                     <option value="${h(department)}" ${searchKey(state.nandaDepartmentFilter) === searchKey(department) ? "selected" : ""}>${h(department)}</option>
                   `).join("")}
                 </select>
               </div>
               <div class="field nanda-group-filter-field">
-                <label>Loc theo nhom van de</label>
+                <label>Lọc theo nhóm vấn đề</label>
                 <select data-nanda-group-filter>
-                  <option value="">Tat ca nhom van de</option>
+                  <option value="">Tất cả nhóm vấn đề</option>
                   ${enteredGroups.map((group) => `
                     <option value="${h(group)}" ${searchKey(state.nandaGroupFilter) === searchKey(group) ? "selected" : ""}>${h(group)}</option>
                   `).join("")}
                 </select>
               </div>
             </div>
-            ${state.nandaError ? `<div class="empty care-list-empty">Khong tai duoc du lieu: ${h(state.nandaError)}</div>` : ""}
-            ${!state.nandaError && state.nandaLoading ? `<div class="empty care-list-empty">Dang tai danh muc NANDA...</div>` : ""}
-            ${!state.nandaError && !state.nandaLoading && !rows.length ? `<div class="empty care-list-empty">Chua co du lieu phu hop.</div>` : ""}
+            ${state.nandaError ? `<div class="empty care-list-empty">Không tải được dữ liệu: ${h(state.nandaError)}</div>` : ""}
+            ${!state.nandaError && state.nandaLoading ? `<div class="empty care-list-empty">Đang tải danh mục NANDA...</div>` : ""}
+            ${!state.nandaError && !state.nandaLoading && !rows.length ? `<div class="empty care-list-empty">Chưa có dữ liệu phù hợp.</div>` : ""}
             ${!state.nandaError && rows.length ? renderNandaDepartmentGroupList(departmentGroups) : ""}
           </div>
         </section>
@@ -3246,14 +3340,14 @@ function renderHealthEducationListBody() {
 
 function renderHealthEducationDetailListBody() {
   if (state.careSheetsLoading) {
-    return `<div class="empty care-list-empty">Äang táº£i danh sÃ¡ch tÆ° váº¥n, giÃ¡o dá»¥c sá»©c khá»e...</div>`;
+    return `<div class="empty care-list-empty">Đang tải danh sách tư vấn, giáo dục sức khỏe...</div>`;
   }
   if (state.careSheetsError) {
     return `<div class="empty care-list-empty">${h(state.careSheetsError)}</div>`;
   }
   const latestSheetsByDate = latestHealthEducationSheetsByDate();
   if (!latestSheetsByDate.length) {
-    return `<div class="empty care-list-empty">ChÆ°a cÃ³ ná»™i dung tÆ° váº¥n, hÆ°á»›ng dáº«n, giÃ¡o dá»¥c sá»©c khá»e.</div>`;
+    return `<div class="empty care-list-empty">Chưa có nội dung tư vấn, hướng dẫn, giáo dục sức khỏe.</div>`;
   }
   const selected = gdskPatientContext(patients[state.selectedPatientIndex] || patients[0] || {});
   return `
@@ -3262,7 +3356,7 @@ function renderHealthEducationDetailListBody() {
         <section class="gdsk-list-day gdsk-detail-list-day">
           <div class="gdsk-list-day-header">
             <h3>${h(date)}</h3>
-            <span>${h(sheet.ma_phieu || `Phiáº¿u #${sheet.id}`)} - phiáº¿u má»›i nháº¥t trong ngÃ y</span>
+            <span>${h(sheet.ma_phieu || `Phiếu #${sheet.id}`)} - phiếu mới nhất trong ngày</span>
           </div>
           ${renderGdskDetailDocument(healthEducationFormsFromChecklist(sheet.nhan_dinh_json?.checklist || {}, sheet), {
             patient: selected,
@@ -3877,6 +3971,7 @@ function assessmentCardKey(card, index, heading) {
 }
 
 function hydrateAssessmentAccordions() {
+  if (document.body?.dataset.careFormLayout === "all") return;
   if (state.activeCareFormTab !== "assessment") return;
   const cards = [...app.querySelectorAll(".structured-assessment .panel-body > .assessment-section-card")];
   cards.forEach((card, index) => {
@@ -3981,13 +4076,14 @@ function render(focusSelector = "") {
       ${appBar("Phiếu Chăm Sóc", "careEmpty")}
       <div class="form-actions">
         <button class="btn ghost" data-action="save-care">${state.editingCareSheetId ? "Cập nhật phiếu" : "Lưu phiếu và ký"}</button>
+        ${document.body?.dataset.careFormLayout === "all" ? '<button type="button" class="btn primary" data-action="export-full-care-pdf">Xuất PDF đầy đủ form</button>' : ""}
       </div>
 
       <main class="layout">
         <section class="workspace care-tab-workspace">
-          ${renderCareFormTabs()}
+          ${document.body?.dataset.careFormLayout === "all" ? "" : renderCareFormTabs()}
           <div class="care-tab-content">
-            ${renderActiveCareFormTab(assessments)}
+            ${document.body?.dataset.careFormLayout === "all" ? renderAllCareFormSections(assessments) : renderActiveCareFormTab(assessments)}
           </div>
         </section>
       </main>
@@ -4063,6 +4159,21 @@ function renderActiveCareFormTab(assessments) {
     default:
       return renderPatientPanel();
   }
+}
+
+function renderAllCareFormSections(assessments) {
+  if (state.diagnosisCatalogSource === "nanda") setupNandaRealtimeSync();
+  loadNandaRows();
+  ensureDiagnosisCatalogLoaded({ renderOnComplete: true });
+  return [
+    renderPatientPanel(),
+    renderAssessmentPanel(assessments),
+    renderFluidBalancePanel(),
+    renderDiagnosisPanelV2(),
+    renderInterventionPanel(),
+    renderHandoverPanel(),
+    renderHealthEducationPanel(),
+  ].join("");
 }
 
 function renderPatientPanel() {
@@ -4345,6 +4456,8 @@ function renderAssessmentPanel(assessments) {
           </div>
         </div>
 
+        ${renderRemainingAssessmentGroups()}
+
         ${renderObgynAssessmentPanel()}
 
         <div class="disease-checklist" style="display: none;">
@@ -4375,6 +4488,40 @@ function renderAssessmentPanel(assessments) {
         </div>
       </div>
     </section>
+  `;
+}
+
+function renderRemainingAssessmentGroups() {
+  const excludedIds = new Set([
+    "respiratory",
+    "cardiovascular",
+    "neurological",
+    "digestive",
+    "fall_risk_score",
+    "fall_risk",
+    "other_assessment_scales",
+  ]);
+  const sections = Array.isArray(state.assessmentTemplate?.assessment)
+    ? state.assessmentTemplate.assessment
+    : [];
+  return sections
+    .filter((section) => !excludedIds.has(section.id))
+    .map(renderAssessmentTemplateSectionCard)
+    .join("");
+}
+
+function renderAssessmentTemplateSectionCard(section) {
+  if (section.type === "group" || section.type === "object") {
+    return renderAssessmentTemplateField(section, true);
+  }
+  const idClass = templateFieldClass(section.id);
+  return `
+    <div class="assessment-section-card ${idClass}">
+      <h3>${h(section.label)}</h3>
+      <div class="assessment-form compact-form template-field-grid ${idClass}-grid">
+        ${renderAssessmentTemplateField(section)}
+      </div>
+    </div>
   `;
 }
 
@@ -5433,15 +5580,17 @@ function renderDiagnosisRowV2(row, index) {
   const causeInputValue = state.activeCauseSuggest === index ? causeQuery : (causeQuery || (row.causes || []).join("; "));
   const goalQuery = row.goalQuery || "";
   const goalInputValue = state.activeGoalSuggest === `goal:${index}` ? goalQuery : (goalQuery || (row.goals || []).join("; "));
-  const diagnosisOptions = state.activeDiagnosisSuggest === index ? nandaCatalogOptions(query) : [];
+  const diagnosisOptions = state.activeDiagnosisSuggest === index
+    ? nandaCatalogOptions(query, { department: row.diagnosisDepartment })
+    : [];
   const hasExactDiagnosisOption = diagnosisOptions.some((item) => searchKey(item.nanda) === searchKey(query));
   const diagnosisLoading = state.activeDiagnosisSuggest === index && (
     state.diagnosisCatalogSource === "nanda" ? state.nandaLoading : state.diagnosisCatalogLoading
   );
-  const showAddDiagnosisOption = state.activeDiagnosisSuggest === index && !diagnosisLoading && cleanLine(query) && !hasExactDiagnosisOption;
+  const showAddDiagnosisOption = state.activeDiagnosisSuggest === index && !diagnosisLoading && cleanLine(query) && !hasExactDiagnosisOption && !row.diagnosisDepartment;
   const hasExactGoalOption = goals.some((goal) => searchKey(goal) === searchKey(goalQuery));
   const showAddGoalOption = state.activeGoalSuggest === `goal:${index}` && cleanLine(goalQuery) && !hasExactGoalOption;
-  const selectedNandas = new Set(selectedNandasForRow(row));
+  const selectedIds = new Set((row.diagnosisIds || []).map(String));
   const customSelected = cleanLine(row.diagnosis) && !row.diagnosisIds?.length && searchKey(row.diagnosis) === searchKey(query);
   return `
     <div class="diagnosis-item">
@@ -5455,15 +5604,22 @@ function renderDiagnosisRowV2(row, index) {
           ${state.activeDiagnosisSuggest === index && (diagnosisLoading || diagnosisOptions.length || showAddDiagnosisOption) ? `
             <div class="suggestion-list diagnosis-dropdown-list" data-dx-list="${index}">
               ${diagnosisLoading ? renderDiagnosisCatalogStatus() : ""}
-              ${diagnosisOptions.slice(0, 10).map((item) => `
+              ${row.diagnosisDepartment && !row.diagnosisIds?.length ? `
+                <div class="diagnosis-dropdown-empty">Dang loc theo khoa: ${h(row.diagnosisDepartment)}. Chon van de ben duoi de lap chan doan.</div>
+              ` : ""}
+              ${diagnosisOptions.slice(0, 20).map((item) => {
+                const checked = item.type === "department"
+                  ? (!row.diagnosisIds?.length && searchKey(row.diagnosisDepartment) === searchKey(item.department))
+                  : item.ids.some((id) => selectedIds.has(String(id)));
+                return `
                 <label class="diagnosis-dropdown-option">
-                  <input type="checkbox" ${selectedNandas.has(item.nanda) ? "checked" : ""} data-dx-catalog-check="${index}" data-nanda="${h(item.nanda)}" />
+                  <input type="checkbox" ${checked ? "checked" : ""} data-dx-catalog-check="${index}" data-nanda="${h(item.nanda)}" data-department="${h(item.department)}" data-match-type="${h(item.type || "problem")}" />
                   <span>
                     ${renderSuggestionLines(item.nanda, "strong")}
-                    <em>${h(item.ids.length)} gợi ý</em>
+                    <em>${h(item.department || "Chưa có khoa")} · ${h(item.ids.length)} gợi ý</em>
                   </span>
                 </label>
-              `).join("")}
+              `;}).join("")}
               ${showAddDiagnosisOption ? `
                 <label class="diagnosis-dropdown-option suggestion-add-new">
                   <input type="checkbox" ${customSelected ? "checked" : ""} data-dx-custom-check="${index}" data-value="${h(query)}" />
@@ -5539,7 +5695,9 @@ function renderDiagnosisPickerModal() {
   const rowIndex = state.diagnosisPicker.rowIndex;
   const row = state.diagnosisRows[rowIndex] || createDiagnosisRow();
   const selectedIds = new Set((row.diagnosisIds || []).map(String));
-  const options = nandaCatalogOptions(state.diagnosisPicker.query || row.diagnosisQuery || "");
+  const options = nandaCatalogOptions(state.diagnosisPicker.query || row.diagnosisQuery || "", {
+    department: row.diagnosisDepartment,
+  });
   const pickerLoading = state.diagnosisCatalogLoading;
   return `
     <div class="scale-modal-overlay" data-action="close-diagnosis-picker-overlay">
@@ -5560,8 +5718,8 @@ function renderDiagnosisPickerModal() {
               const checked = item.ids.some((id) => selectedIds.has(String(id)));
               return `
                 <label class="diagnosis-picker-option">
-                  <span>${h(item.nanda)} <em>(${h(firstId)})</em></span>
-                  <input type="checkbox" value="${h(firstId)}" ${checked ? "checked" : ""} data-dx-picker-option="${rowIndex}" data-nanda="${h(item.nanda)}" />
+                  <span>${h(item.nanda)} <em>${h(item.department || "Chưa có khoa")} · ${h(firstId)}</em></span>
+                  <input type="checkbox" value="${h(firstId)}" ${checked ? "checked" : ""} data-dx-picker-option="${rowIndex}" data-nanda="${h(item.nanda)}" data-department="${h(item.department)}" data-match-type="${h(item.type || "problem")}" />
                 </label>
               `;
             }).join("")}
@@ -5604,7 +5762,7 @@ function renderInterventionPanel() {
             <div class="field intervention-search-field intervention-code-field">
               <label>Mã can thiệp</label>
               <div class="diagnosis-combobox">
-                <input list="care-nanda-intervention-code-options" value="${h(draft.codeQuery)}" placeholder="Nhập mã..." data-iv-code-query="draft" ${inputNextAttrs()} />
+                <input value="${h(draft.codeQuery)}" placeholder="Nhập mã..." data-iv-code-query="draft" ${inputNextAttrs()} />
                 <button type="button" class="diagnosis-dropdown-toggle" data-action="toggle-iv-code-dropdown" aria-label="Hiển thị danh sách mã can thiệp">▼</button>
               </div>
               ${codeLoading || codeOptions.length ? `
@@ -5625,7 +5783,7 @@ function renderInterventionPanel() {
             <div class="field intervention-search-field">
               <label>Nội dung can thiệp</label>
               <div class="diagnosis-combobox">
-                <input list="care-nanda-intervention-content-options" value="${h(draft.contentQuery)}" placeholder="Nhập nội dung..." data-iv-content-query="draft" ${inputNextAttrs()} />
+                <input value="${h(draft.contentQuery)}" placeholder="Nhập nội dung..." data-iv-content-query="draft" ${inputNextAttrs()} />
                 <button type="button" class="diagnosis-dropdown-toggle" data-action="toggle-iv-content-dropdown" aria-label="Hiển thị danh sách nội dung can thiệp">▼</button>
               </div>
               ${contentLoading || contentOptions.length ? `
@@ -7293,8 +7451,9 @@ app.addEventListener("click", (event) => {
 
   if (target.dataset.dxCatalogSuggestion !== undefined) {
     const row = state.diagnosisRows[Number(target.dataset.dxCatalogSuggestion)];
-    applyNandaCatalogSelection(row, target.dataset.nanda || "");
-    state.activeDiagnosisSuggest = null;
+    const matchType = target.dataset.matchType || "problem";
+    applyNandaCatalogSelection(row, target.dataset.nanda || "", target.dataset.department || "", matchType);
+    state.activeDiagnosisSuggest = matchType === "department" ? Number(target.dataset.dxCatalogSuggestion) : null;
     state.activeGoalSuggest = null;
     render();
     return;
@@ -7544,7 +7703,7 @@ app.addEventListener("click", (event) => {
   if (target.dataset.action === "apply-nanda-autofill") {
     const rows = parseNandaAutoFillText(state.nandaAutoFillText);
     state.nandaAutoFillRows = rows;
-    state.nandaAutoFillError = rows.length ? "" : "Khong tim thay dong du lieu hop le. Hay dan bang co cot ngan cach bang dau |.";
+    state.nandaAutoFillError = rows.length ? "" : "Không tìm thấy dòng dữ liệu hợp lệ. Hãy dán bảng có cột ngăn cách bằng dấu |.";
     if (rows.length) applyNandaAutoFillRow(rows[0]);
     render();
     return;
@@ -7672,6 +7831,11 @@ app.addEventListener("click", (event) => {
   }
 
   if (target.dataset.action === "print") {
+    window.print();
+    return;
+  }
+
+  if (target.dataset.action === "export-full-care-pdf") {
     window.print();
     return;
   }
@@ -8005,7 +8169,7 @@ app.addEventListener("input", (event) => {
     if (row) {
       row.code = target.value;
       row.selected = true;
-      const matched = findInterventionByCode(target.value);
+      const matched = findSuggestedIntervention(target.value, "code");
       if (matched) row.content = matched.name;
       state.activeInterventionSuggest = matched ? null : `code:${target.dataset.ivCodeQuery}`;
       render(`[data-iv-code-query="${target.dataset.ivCodeQuery}"]`);
@@ -8025,7 +8189,7 @@ app.addEventListener("input", (event) => {
     if (row) {
       row.content = target.value;
       row.selected = true;
-      const matched = findInterventionByName(target.value);
+      const matched = findSuggestedIntervention(target.value, "content");
       if (matched) row.code = matched.code;
       state.activeInterventionSuggest = matched ? null : `content:${target.dataset.ivContentQuery}`;
       render(`[data-iv-content-query="${target.dataset.ivContentQuery}"]`);
@@ -8072,6 +8236,20 @@ app.addEventListener("input", (event) => {
 
 app.addEventListener("change", (event) => {
   const target = event.target;
+  if (target.dataset.dxQuery) {
+    const rowIndex = Number(target.dataset.dxQuery);
+    const row = state.diagnosisRows[rowIndex];
+    const option = exactNandaCatalogOption(target.value);
+    if (row && option) {
+      applyNandaCatalogSelection(row, option.nanda, option.department, option.type || "problem");
+      state.activeDiagnosisSuggest = option.type === "department" ? rowIndex : null;
+      state.activeCauseSuggest = null;
+      state.activeGoalSuggest = null;
+      render();
+    }
+    return;
+  }
+
   if (target.dataset.dxCauseQuery !== undefined) {
     const row = state.diagnosisRows[Number(target.dataset.dxCauseQuery)];
     const value = cleanLine(target.value);
@@ -8098,7 +8276,7 @@ app.addEventListener("change", (event) => {
   }
 
   if (target.dataset.ivCodeQuery === "draft") {
-    const matched = findInterventionByCode(target.value);
+    const matched = findSuggestedIntervention(target.value, "code");
     if (matched) {
       state.interventionDraft.codeQuery = matched.code;
       state.interventionDraft.contentQuery = matched.name;
@@ -8109,7 +8287,7 @@ app.addEventListener("change", (event) => {
   }
 
   if (target.dataset.ivContentQuery === "draft") {
-    const matched = findInterventionByName(target.value);
+    const matched = findSuggestedIntervention(target.value, "content");
     if (matched) {
       state.interventionDraft.codeQuery = matched.code;
       state.interventionDraft.contentQuery = matched.name;
@@ -8276,8 +8454,10 @@ app.addEventListener("change", (event) => {
 
   if (target.dataset.dxCatalogCheck !== undefined) {
     const row = state.diagnosisRows[Number(target.dataset.dxCatalogCheck)];
-    toggleNandaCatalogSelection(row, target.dataset.nanda || "", target.checked);
-    state.activeDiagnosisSuggest = null;
+    const rowIndex = Number(target.dataset.dxCatalogCheck);
+    const matchType = target.dataset.matchType || "problem";
+    toggleNandaCatalogSelection(row, target.dataset.nanda || "", target.dataset.department || "", target.checked, matchType);
+    state.activeDiagnosisSuggest = matchType === "department" && target.checked ? rowIndex : null;
     state.activeCauseSuggest = null;
     state.activeGoalSuggest = null;
     render();
@@ -8322,27 +8502,7 @@ app.addEventListener("change", (event) => {
   if (target.dataset.dxPickerOption !== undefined) {
     const row = state.diagnosisRows[Number(target.dataset.dxPickerOption)];
     if (row) {
-      const nanda = target.dataset.nanda || "";
-      const ids = diagnosisCatalogRows()
-        .filter((item) => cleanLine(item.nanda) === nanda)
-        .map((item) => String(item.id));
-      const current = new Set((row.diagnosisIds || []).map(String));
-      if (target.checked) ids.forEach((id) => current.add(id));
-      if (!target.checked) ids.forEach((id) => current.delete(id));
-      row.diagnosisIds = [...current];
-      const selectedNandas = [...new Set(
-        diagnosisCatalogRows()
-          .filter((item) => row.diagnosisIds.includes(String(item.id)))
-          .map((item) => cleanLine(item.nanda)),
-      )];
-      row.diagnosis = selectedNandas.join("; ");
-      row.diagnosisQuery = row.diagnosis;
-      row.causes = (row.causes || []).filter((cause) =>
-        causeOptionsForDiagnosis(row).some((item) => item.cause === cause),
-      );
-      row.goals = (row.goals || []).filter((goal) =>
-        goalOptionsForDiagnosisRow(row).includes(goal),
-      );
+      toggleNandaCatalogSelection(row, target.dataset.nanda || "", target.dataset.department || "", target.checked, target.dataset.matchType || "problem");
     }
     render();
     return;
@@ -8551,7 +8711,7 @@ async function init() {
       fetch("./vande.json"),
       fetch("./dmkhoa.json"),
     ]);
-    if (!response.ok) throw new Error(`Khong tai duoc cd_deu_duong.json (${response.status})`);
+    if (!response.ok) throw new Error(`Không tải được cd_deu_duong.json (${response.status})`);
     state.raw = await response.json();
     state.data = deepFix(state.raw);
     if (scaleResponse.ok) {
@@ -8577,7 +8737,9 @@ async function init() {
     state.conditionId = state.data.categories[0].khoa[0].mat_benh[0].id;
     const params = new URLSearchParams(window.location.search);
     const path = window.location.pathname.replace(/\/+$/, "") || "/";
-    if (path === "/admin") {
+    if (window.location.hostname === "demo.nurse103.pro.vn") {
+      state.screen = "careForm";
+    } else if (path === "/admin") {
       state.screen = "nanda";
     } else if (params.get("screen")) {
       state.screen = params.get("screen");

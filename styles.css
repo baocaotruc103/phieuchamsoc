@@ -575,12 +575,20 @@ button {
 
 .intervention-row-fields {
   display: grid;
-  grid-template-columns: minmax(140px, 180px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(140px, 180px);
   gap: 10px;
 }
 
 .intervention-search-field {
   position: relative;
+}
+
+.intervention-row-fields .intervention-search-field {
+  order: 1;
+}
+
+.intervention-row-fields .intervention-code-field {
+  order: 2;
 }
 
 .two-col {
@@ -735,6 +743,47 @@ button {
   .panel {
     border: 0;
     box-shadow: none;
+  }
+
+  body[data-care-form-layout="all"] .app-bar,
+  body[data-care-form-layout="all"] .form-actions {
+    display: none !important;
+  }
+
+  body[data-care-form-layout="all"] .mobile-app,
+  body[data-care-form-layout="all"] .layout,
+  body[data-care-form-layout="all"] .workspace,
+  body[data-care-form-layout="all"] .care-tab-content {
+    display: block;
+    max-width: none;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    background: #fff;
+  }
+
+  body[data-care-form-layout="all"] .care-tab-content > .panel {
+    display: block !important;
+    margin: 0 0 12pt;
+    border: 1px solid #cbd5e1;
+    border-radius: 0;
+    box-shadow: none;
+    break-inside: auto;
+  }
+
+  body[data-care-form-layout="all"] .panel-header,
+  body[data-care-form-layout="all"] .assessment-section-card,
+  body[data-care-form-layout="all"] .field,
+  body[data-care-form-layout="all"] .check-group,
+  body[data-care-form-layout="all"] .radio-group {
+    break-inside: avoid;
+  }
+
+  body[data-care-form-layout="all"] input,
+  body[data-care-form-layout="all"] textarea,
+  body[data-care-form-layout="all"] select {
+    color: #000;
+    background: #fff;
   }
 }
 

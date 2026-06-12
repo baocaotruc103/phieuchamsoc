@@ -229,7 +229,7 @@
           "id": "tang_sinh_mon_sau_sinh",
           "label": "Tầng sinh môn",
           "type": "checkbox",
-          "options": ["Cắt", "Rách", "Khô, liền tốt", "Sưng đỏ", "Đau", "Chảy máu", "Khác"]
+          "options": ["Cắt", "Rạch", "Khô, liền tốt", "Sưng đỏ", "Đau", "Chảy máu", "Khác"]
         },
         {
           "id": "be",

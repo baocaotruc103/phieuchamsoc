@@ -126,13 +126,13 @@
 
   function renderLineList(value) {
     const lines = splitLines(value);
-    if (!lines.length) return '<span class="nanda-public-muted">Chua co</span>';
+    if (!lines.length) return '<span class="nanda-public-muted">Chưa có</span>';
     return `<ul>${lines.map((line) => `<li>${h(line)}</li>`).join("")}</ul>`;
   }
 
   function renderRows(rows) {
     if (!rows.length) {
-      return '<div class="nanda-public-empty">Khong tim thay dong NANDA phu hop.</div>';
+      return '<div class="nanda-public-empty">Không tìm thấy dòng NANDA phù hợp.</div>';
     }
 
     return `
@@ -141,18 +141,18 @@
           <thead>
             <tr>
               <th>Khoa</th>
-              <th>Nhom van de</th>
-              <th>Van de</th>
-              <th>Nguyen nhan</th>
-              <th>Muc tieu</th>
-              <th>Ma can thiep</th>
-              <th>Noi dung can thiep</th>
+              <th>Nhóm vấn đề</th>
+              <th>Vấn đề</th>
+              <th>Nguyên nhân</th>
+              <th>Mục tiêu</th>
+              <th>Mã can thiệp</th>
+              <th>Nội dung can thiệp</th>
             </tr>
           </thead>
           <tbody>
             ${rows.map((row) => `
               <tr>
-                <td>${h(clean(row.khoa) || "Chua co khoa")}</td>
+                <td>${h(clean(row.khoa) || "Chưa có khoa")}</td>
                 <td>${h(row.nhom_van_de)}</td>
                 <td><strong>${h(row.van_de)}</strong></td>
                 <td>${renderLineList(row.nguyen_nhan)}</td>
@@ -175,42 +175,42 @@
     root.innerHTML = `
       <section class="nanda-public-hero">
         <div>
-          <p class="nanda-public-eyebrow">Danh muc can thiep</p>
-          <h1>Bang NANDA</h1>
-          <p>${state.loading ? "Dang tai du lieu..." : `${rows.length}/${state.rows.length} dong du lieu tu bang public.nanda`}</p>
+          <p class="nanda-public-eyebrow">Danh mục can thiệp</p>
+          <h1>Bảng NANDA</h1>
+          <p>${state.loading ? "Đang tải dữ liệu..." : `${rows.length}/${state.rows.length} dòng dữ liệu từ bảng public.nanda`}</p>
         </div>
-        <a class="btn ghost nanda-public-home" href="/">Ve trang chinh</a>
+        <a class="btn ghost nanda-public-home" href="/">Về trang chính</a>
       </section>
       <section class="nanda-public-card">
         <div class="nanda-public-toolbar">
           <label>
-            <span>Tim kiem</span>
-            <input type="search" data-public-nanda-search value="${h(state.search)}" placeholder="Tim theo khoa, van de, ma, can thiep" />
+            <span>Tìm kiếm</span>
+            <input type="search" data-public-nanda-search value="${h(state.search)}" placeholder="Tìm theo khoa, vấn đề, mã, can thiệp" />
           </label>
           <label>
             <span>Khoa</span>
             <select data-public-nanda-department>
-              <option value="">Tat ca khoa</option>
+              <option value="">Tất cả khoa</option>
               ${departments.map((department) => `
                 <option value="${h(department)}" ${searchKey(state.department) === searchKey(department) ? "selected" : ""}>${h(department)}</option>
               `).join("")}
             </select>
           </label>
           <label>
-            <span>Nhom van de</span>
+            <span>Nhóm vấn đề</span>
             <select data-public-nanda-group>
-              <option value="">Tat ca nhom</option>
+              <option value="">Tất cả nhóm</option>
               ${groups.map((group) => `
                 <option value="${h(group)}" ${searchKey(state.group) === searchKey(group) ? "selected" : ""}>${h(group)}</option>
               `).join("")}
             </select>
           </label>
-          <button type="button" class="btn" data-public-nanda-refresh ${state.loading || state.syncing ? "disabled" : ""}>Dong bo</button>
+          <button type="button" class="btn" data-public-nanda-refresh ${state.loading || state.syncing ? "disabled" : ""}>Đồng bộ</button>
           <button type="button" class="btn primary" data-public-nanda-export ${state.loading || !rows.length ? "disabled" : ""}>Xuất Excel</button>
-          <span class="nanda-public-sync-status">${h(state.realtimeStatus || "Realtime san sang")}</span>
+          <span class="nanda-public-sync-status">${h(state.realtimeStatus || "Realtime sẵn sàng")}</span>
         </div>
-        ${state.error ? `<div class="nanda-public-error">Khong tai duoc bang NANDA: ${h(state.error)}</div>` : ""}
-        ${state.loading ? '<div class="nanda-public-loading">Dang tai du lieu NANDA...</div>' : renderRows(rows)}
+        ${state.error ? `<div class="nanda-public-error">Không tải được bảng NANDA: ${h(state.error)}</div>` : ""}
+        ${state.loading ? '<div class="nanda-public-loading">Đang tải dữ liệu NANDA...</div>' : renderRows(rows)}
       </section>
     `;
   }
@@ -218,7 +218,7 @@
   function getClient() {
     const config = window.SUPABASE_CONFIG || {};
     if (!window.supabase || !config.url || !config.anonKey) {
-      throw new Error("Chua cau hinh Supabase.");
+      throw new Error("Chưa cấu hình Supabase.");
     }
     return window.supabase.createClient(config.url, config.anonKey);
   }
@@ -279,25 +279,25 @@
     if (state.realtimeChannel) return;
     try {
       const client = getClient();
-      state.realtimeStatus = "Dang ket noi realtime";
+      state.realtimeStatus = "Đang kết nối realtime";
       state.realtimeChannel = client
         .channel("public:nanda:public-sync")
         .on("postgres_changes", { event: "*", schema: "public", table: "nanda" }, async () => {
-          state.realtimeStatus = "Dang dong bo thay doi moi";
+          state.realtimeStatus = "Đang đồng bộ thay đổi mới";
           await loadRows();
-          state.realtimeStatus = "Realtime da cap nhat";
+          state.realtimeStatus = "Realtime đã cập nhật";
           render();
         })
         .subscribe((status) => {
           if (status === "SUBSCRIBED") {
-            state.realtimeStatus = "Realtime dang bat";
+            state.realtimeStatus = "Realtime đang bật";
           } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
-            state.realtimeStatus = "Realtime chua ket noi";
+            state.realtimeStatus = "Realtime chưa kết nối";
           }
           render();
         });
     } catch (error) {
-      state.realtimeStatus = `Realtime loi: ${error.message || error}`;
+      state.realtimeStatus = `Lỗi realtime: ${error.message || error}`;
     }
   }
 
