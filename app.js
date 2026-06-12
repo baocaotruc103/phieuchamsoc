@@ -2,6 +2,11 @@ const app = document.querySelector("#app");
 let supabaseClient = null;
 const VIETNAM_TIME_ZONE = "Asia/Ho_Chi_Minh";
 const NANDA_LAST_DEPARTMENT_STORAGE_KEY = "nanda:lastDepartment";
+const CARE_FORM_HOSTS = new Set(["demo.nurse103.pro.vn"]);
+
+function isCareFormHost() {
+  return typeof window !== "undefined" && CARE_FORM_HOSTS.has(window.location.hostname);
+}
 
 function readStoredNandaDepartment() {
   try {
@@ -1720,7 +1725,7 @@ function resetCareFormState({ resetChecklist = false } = {}) {
   state.activeCauseSuggest = null;
   state.activeGoalSuggest = null;
   state.activeInterventionSuggest = null;
-  state.activeCareFormTab = document.body?.dataset.careFormEntry === "grouped-assessment" ? "assessment" : "patient";
+  state.activeCareFormTab = isCareFormHost() || document.body?.dataset.careFormEntry === "grouped-assessment" ? "assessment" : "patient";
   state.openAssessmentCards = new Set();
   state.handoverMedicineModalOpen = false;
   state.handoverMedicineDraft = createHandoverMedicineRow();
@@ -8737,7 +8742,9 @@ async function init() {
     state.conditionId = state.data.categories[0].khoa[0].mat_benh[0].id;
     const params = new URLSearchParams(window.location.search);
     const path = window.location.pathname.replace(/\/+$/, "") || "/";
-    if (window.location.hostname === "demo.nurse103.pro.vn") {
+    if (isCareFormHost()) {
+      document.body.dataset.careFormEntry = "grouped-assessment";
+      delete document.body.dataset.careFormLayout;
       state.screen = "careForm";
     } else if (path === "/admin") {
       state.screen = "nanda";

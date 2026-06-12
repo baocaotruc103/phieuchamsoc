@@ -12,6 +12,10 @@
     </div>
 
     <script>
+      if (window.location.hostname === "demo.nurse103.pro.vn") {
+        document.body.dataset.careFormEntry = "grouped-assessment";
+        delete document.body.dataset.careFormLayout;
+      }
       const params = new URLSearchParams(window.location.search);
       if (!params.has("screen")) {
         params.set("screen", "careForm");
