@@ -186,11 +186,13 @@ const state = {
   careListTab: "care",
   selectedCareSheetId: null,
   editingCareSheetId: null,
+  recordMenuSearch: "",
   careGoalEvaluations: [],
   careGoalEvaluationsLoadedFor: "",
   careGoalEvaluationsLoading: false,
   careGoalEvaluationsError: "",
   selectedPatientIndex: 0,
+  openRecordSections: new Set(),
   categoryId: "",
   departmentId: "",
   conditionId: "",
@@ -1725,7 +1727,7 @@ function resetCareFormState({ resetChecklist = false } = {}) {
   state.activeCauseSuggest = null;
   state.activeGoalSuggest = null;
   state.activeInterventionSuggest = null;
-  state.activeCareFormTab = isCareFormHost() || document.body?.dataset.careFormEntry === "grouped-assessment" ? "assessment" : "patient";
+  state.activeCareFormTab = document.body?.dataset.careFormEntry === "grouped-assessment" ? "assessment" : "patient";
   state.openAssessmentCards = new Set();
   state.handoverMedicineModalOpen = false;
   state.handoverMedicineDraft = createHandoverMedicineRow();
@@ -3018,7 +3020,7 @@ function homeCardTitle(card) {
   return card.title;
 }
 
-function renderPatientListScreen() {
+function renderExperienceHomeScreen() {
   const visibleCards = homeExperienceCards.filter((card) => !hiddenHomeActions.has(card.action));
   return `
     <div class="mobile-app patient-list-screen home-screen">
@@ -3038,6 +3040,37 @@ function renderPatientListScreen() {
           </button>
         `).join("")}
       </section>
+    </div>
+  `;
+}
+
+function renderPatientListScreen() {
+  return `
+    <div class="mobile-app patient-list-screen">
+      ${patientHomeAppBar()}
+      <section class="search-bar" aria-label="T&#236;m ki&#7871;m ng&#432;&#7901;i b&#7879;nh">
+        <span class="search-icon">⌕</span>
+        <input type="search" placeholder="T&#236;m ki&#7871;m ng&#432;&#7901;i b&#7879;nh" aria-label="T&#236;m ki&#7871;m ng&#432;&#7901;i b&#7879;nh" />
+        <button type="button" class="filter-icon" aria-label="L&#7885;c danh s&#225;ch">☰</button>
+        <button type="button" class="qr-icon" aria-label="Qu&#233;t m&#227;">▣</button>
+      </section>
+      <div class="patient-table-head" aria-hidden="true">
+        <span>Ng&#432;&#7901;i b&#7879;nh</span>
+        <span>&#272;&#7889;i t&#432;&#7907;ng</span>
+        <span>Tu&#7893;i</span>
+        <span>Bu&#7891;ng/Gi&#432;&#7901;ng</span>
+        <span>Ng&#224;y v&#224;o</span>
+        <span>S&#7889; ng&#224;y</span>
+      </div>
+      <section class="patient-list" aria-label="Danh s&#225;ch ng&#432;&#7901;i b&#7879;nh">
+        ${patients.map(renderPatientRow).join("")}
+      </section>
+      <nav class="bottom-filter" aria-label="B&#7897; l&#7885;c danh s&#225;ch">
+        <span>T&#7845;t c&#7843; <b>${patients.length}</b></span>
+        <span>&#272;ang &#273;i&#7873;u tr&#7883; <b>${patients.length}</b></span>
+        <span>BHYT <b>${patients.filter((patient) => patient.object !== "VP").length}</b></span>
+        <span>Vi&#7879;n ph&#237; <b>${patients.filter((patient) => patient.object === "VP").length}</b></span>
+      </nav>
     </div>
   `;
 }
@@ -3128,32 +3161,45 @@ function renderRecordScreen() {
           <em><b>${patient.day}</b> ngày nằm viện</em>
         </div>
         <div class="record-columns">
-          <div>
-            <h3>THÔNG TIN CHUNG</h3>
+          ${renderRecordSection("general", "THÔNG TIN CHUNG", `
             ${infoLine("NGHỀ NGHIỆP:", "Hưu trí và trên 60 tuổi")}
             ${infoLine("ĐỊA CHỈ:", "Bảo hiểm | BHYT Thường")}
             ${infoLine("ĐỐI TƯỢNG:", "BHYT", "blue")}
             ${infoLine("BẢO HIỂM:", "VP: 2479334 | BH: HT-2-25-262000 1734 | Còn 1689 ngày", "red")}
-          </div>
-          <div>
-            <h3>THÔNG TIN ĐÓN TIẾP</h3>
+          `)}
+          ${renderRecordSection("reception", "THÔNG TIN ĐÓN TIẾP", `
             ${infoLine("THỜI GIAN:", "05:31 18-05-2026")}
             ${infoLine("HÌNH THỨC:", "Cấp cứu")}
             ${infoLine("LÝ DO KHÁM:", "1")}
             ${infoLine("MỨC HƯỞNG:", "40%", "blue")}
-          </div>
-          <div>
-            <h3>LÂM SÀNG & ĐIỀU TRỊ</h3>
+          `)}
+          ${renderRecordSection("clinical", "LÂM SÀNG & ĐIỀU TRỊ", `
             ${infoLine("SỐ VÀO VIỆN:", "032119/26", "blue")}
             ${infoLine("SỐ VÀO KHOA:", "B11/00712/26", "blue")}
             ${infoLine("BỆNH ÁN:", "Ngoại khoa", "red")}
             ${infoLine("KHOA PHÒNG:", "Khoa Hồi Sức Ngoại > PĐT B11", "red")}
             ${infoLine("NGÀY VÀO:", patient.date.replace(", ngày\n", " "))}
             ${infoLine("BUỒNG/GIƯỜNG:", patient.room === "--" ? "---" : patient.room.replace(/\n/g, " "))}
-          </div>
+          `)}
         </div>
       </section>
       <section class="module-grid">${modules.map(renderModule).join("")}</section>
+    </div>
+  `;
+}
+
+function renderRecordSection(key, title, content) {
+  const isMobile = window.matchMedia("(max-width: 820px)").matches;
+  const isOpen = !isMobile || state.openRecordSections.has(key);
+  return `
+    <div class="record-section ${isOpen ? "is-open" : "is-collapsed"}">
+      <h3>
+        <button type="button" data-action="toggle-record-section" data-record-section="${key}" aria-expanded="${isOpen}">
+          <span class="record-section-toggle-icon" aria-hidden="true">${isOpen ? "−" : "+"}</span>
+          <span>${h(title)}</span>
+        </button>
+      </h3>
+      <div class="record-section-content">${content}</div>
     </div>
   `;
 }
@@ -3175,21 +3221,114 @@ function renderModule(item) {
 }
 
 function renderRecordMenuScreen() {
-  const items = ["Phiếu Chăm Sóc", "Phiếu Truyền dịch", "Phiếu chăm sóc kế hoạch", "Quản lý y lệnh"];
+  const query = searchKey(state.recordMenuSearch);
+  const items = [
+    {
+      key: "care",
+      title: "Phiếu Chăm Sóc",
+      description: "Theo dõi quá trình chăm sóc người bệnh",
+      tone: "green",
+      icon: recordMenuIcon("care"),
+      screen: "careEmpty",
+    },
+    {
+      key: "level-care",
+      title: "Phiếu Chăm Sóc Cấp 2, 3",
+      description: "Theo dõi chăm sóc cấp 2, 3",
+      tone: "teal",
+      icon: recordMenuIcon("level-care"),
+    },
+    {
+      key: "infusion",
+      title: "Phiếu Truyền Dịch",
+      description: "Quản lý phiếu truyền dịch hằng ngày",
+      tone: "cyan",
+      icon: recordMenuIcon("infusion"),
+    },
+    {
+      key: "care-plan",
+      title: "Phiếu Chăm Sóc Kế Hoạch",
+      description: "Lập kế hoạch chăm sóc người bệnh",
+      tone: "purple",
+      icon: recordMenuIcon("care-plan"),
+    },
+    {
+      key: "transfer",
+      title: "Phiếu Bàn Giao Chuyển Khoa",
+      description: "Bàn giao bệnh nhân khi chuyển khoa",
+      tone: "amber",
+      icon: recordMenuIcon("transfer"),
+    },
+    {
+      key: "nursing-handover",
+      title: "Phiếu Bàn Giao Điều Dưỡng",
+      description: "Bàn giao ca trực điều dưỡng",
+      tone: "pink",
+      icon: recordMenuIcon("nursing-handover"),
+    },
+    {
+      key: "orders",
+      title: "Quản Lý Y Lệnh",
+      description: "Theo dõi và xử lý y lệnh của bác sĩ",
+      tone: "blue",
+      icon: recordMenuIcon("orders"),
+    },
+  ];
+  const visibleItems = items.filter((item) => !query || searchKey(`${item.title} ${item.description}`).includes(query));
   return `
-    <div class="mobile-app menu-screen">
+    <div class="mobile-app menu-screen record-menu-screen">
       ${appBar("Hồ Sơ Bệnh Án", "record")}
+      <section class="record-menu-search" aria-label="Tìm kiếm phiếu">
+        <span aria-hidden="true">${recordMenuIcon("search")}</span>
+        <input type="search" value="${h(state.recordMenuSearch)}" data-record-menu-search placeholder="Tìm kiếm tên phiếu..." aria-label="Tìm kiếm tên phiếu" />
+        <button type="button" aria-label="Quét mã">${recordMenuIcon("scan")}</button>
+      </section>
       <section class="record-menu">
-        ${items.map((item, index) => `
-          <button class="menu-row" ${index === 0 ? 'data-screen="careEmpty"' : ""}>
-            <span class="mini-doc">+</span>
-            <strong>${h(item)}</strong>
-            <em>›</em>
-          </button>
-        `).join("")}
+        <header class="record-menu-heading">
+          <span class="record-menu-folder" aria-hidden="true">${recordMenuIcon("folder")}</span>
+          <div>
+            <h2>Danh sách phiếu</h2>
+            <p>Chọn loại phiếu cần xem hoặc thao tác</p>
+          </div>
+          <b>${visibleItems.length}</b>
+        </header>
+        <div class="record-menu-list">
+          ${visibleItems.length ? visibleItems.map((item) => `
+            <button class="record-menu-row" ${item.screen ? `data-screen="${item.screen}"` : ""}>
+              <span class="record-menu-item-icon ${item.tone}" aria-hidden="true">${item.icon}</span>
+              <span class="record-menu-item-copy">
+                <strong>${h(item.title)}</strong>
+                <small>${h(item.description)}</small>
+              </span>
+              <span class="record-menu-chevron" aria-hidden="true">${recordMenuIcon("chevron")}</span>
+            </button>
+          `).join("") : `
+            <div class="record-menu-empty">
+              <strong>Không tìm thấy phiếu</strong>
+              <span>Thử tìm bằng tên phiếu khác.</span>
+            </div>
+          `}
+        </div>
       </section>
     </div>
   `;
+}
+
+function recordMenuIcon(name) {
+  const icons = {
+    search: '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg>',
+    scan: '<svg viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"></path><rect x="8" y="8" width="3" height="3" rx=".5"></rect><rect x="13" y="8" width="3" height="3" rx=".5"></rect><rect x="8" y="13" width="3" height="3" rx=".5"></rect><path d="M14 13h2v3h-3v-2"></path></svg>',
+    folder: '<svg viewBox="0 0 24 24"><path d="M3.5 7.5h6l2-2h9v13h-17z"></path><path d="M3.5 9.5h17"></path></svg>',
+    care: '<svg viewBox="0 0 24 24"><path d="M8 11h8M12 7v8"></path><path d="M3.5 19c2-2 4-3 7-3h4.5c2 0 3.5 1 5.5 3"></path></svg>',
+    "level-care": '<svg viewBox="0 0 24 24"><path d="M3 12h4l2-4 3 8 2-4h7"></path><path d="M19 7.5a4.5 4.5 0 0 0-7-1 4.5 4.5 0 0 0-7 1"></path></svg>',
+    infusion: '<svg viewBox="0 0 24 24"><path d="M12 3s5 6 5 11a5 5 0 0 1-10 0c0-5 5-11 5-11Z"></path><path d="M10 16c.5.7 1.2 1 2 1"></path></svg>',
+    "care-plan": '<svg viewBox="0 0 24 24"><rect x="6" y="5" width="12" height="16" rx="2"></rect><path d="M9 5V3h6v2M9 10h6M9 14h6M9 18h4"></path></svg>',
+    transfer: '<svg viewBox="0 0 24 24"><path d="M5 8h14l-3-3M19 16H5l3 3"></path></svg>',
+    "nursing-handover": '<svg viewBox="0 0 24 24"><path d="M8 9a4 4 0 1 1 8 0c0 2-1 3-1 3H9s-1-1-1-3Z"></path><path d="M10 5h4M12 3v4M6 21c.5-5 3-7 6-7s5.5 2 6 7"></path></svg>',
+    orders: '<svg viewBox="0 0 24 24"><path d="M7 3h8l4 4v14H7z"></path><path d="M15 3v5h5M10 12h6M10 16h3"></path><path d="m15 15 3 3m0-3-3 3"></path></svg>',
+    chevron: '<svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"></path></svg>',
+  };
+  return icons[name] || "";
 }
 
 function renderCareSheetListScreen() {
@@ -3207,12 +3346,12 @@ function renderCareSheetListScreen() {
         </div>
         <div class="panel-body">
           <div class="care-list-actions">
-            <button class="btn primary" data-action="create-care">Thêm phiếu chăm sóc</button>
-            <button class="btn" data-action="evaluate-results">Đánh giá kết quả</button>
+            <button class="btn primary care-list-btn care-list-btn-create" data-action="create-care">Thêm phiếu chăm sóc</button>
+            <button class="btn care-list-btn care-list-btn-evaluate" data-action="evaluate-results">Đánh giá kết quả</button>
           </div>
           <div class="care-list-tabs">
-            <button type="button" class="btn ${state.careListTab === "care" ? "primary" : ""}" data-care-list-tab="care">Phiếu chăm sóc</button>
-            <button type="button" class="btn ${state.careListTab === "education" ? "primary" : ""}" data-care-list-tab="education">Tư vấn, Hướng dẫn, GDSK</button>
+            <button type="button" class="btn care-list-btn care-list-btn-care ${state.careListTab === "care" ? "primary" : ""}" data-care-list-tab="care">Phiếu chăm sóc</button>
+            <button type="button" class="btn care-list-btn care-list-btn-education ${state.careListTab === "education" ? "primary" : ""}" data-care-list-tab="education">Tư vấn, Hướng dẫn, GDSK</button>
           </div>
           ${state.careListTab === "education" ? renderHealthEducationDetailListBodyV2() : renderCareSheetListBody()}
         </div>
@@ -4052,6 +4191,14 @@ function render(focusSelector = "") {
   }
   if (state.screen === "recordMenu") {
     app.innerHTML = renderRecordMenuScreen();
+    if (focusSelector) {
+      const focusTarget = app.querySelector(focusSelector);
+      if (focusTarget) {
+        focusTarget.focus();
+        const end = focusTarget.value?.length || 0;
+        if (typeof focusTarget.setSelectionRange === "function") focusTarget.setSelectionRange(end, end);
+      }
+    }
     return;
   }
   if (state.screen === "careEmpty") {
@@ -7123,6 +7270,7 @@ app.addEventListener("click", (event) => {
 
   if (target.dataset.patientIndex) {
     state.selectedPatientIndex = Number(target.dataset.patientIndex);
+    state.openRecordSections.clear();
     state.careSheets = [];
     state.careSheetsPatient = null;
     state.careSheetsLoadedFor = "";
@@ -7134,6 +7282,17 @@ app.addEventListener("click", (event) => {
     state.selectedCareSheetId = null;
     resetCareFormState({ resetChecklist: true });
     state.screen = "record";
+    render();
+    return;
+  }
+
+  if (target.dataset.action === "toggle-record-section") {
+    const key = target.dataset.recordSection;
+    if (state.openRecordSections.has(key)) {
+      state.openRecordSections.delete(key);
+    } else {
+      state.openRecordSections.add(key);
+    }
     render();
     return;
   }
@@ -7992,6 +8151,12 @@ app.addEventListener("focusin", (event) => {
 
 app.addEventListener("input", (event) => {
   const target = event.target;
+  if (target.dataset.recordMenuSearch !== undefined) {
+    state.recordMenuSearch = target.value;
+    render("[data-record-menu-search]");
+    return;
+  }
+
   if (target.dataset.input === "search") {
     state.search = target.value;
     render('[data-input="search"]');
@@ -8746,11 +8911,7 @@ async function init() {
     state.conditionId = state.data.categories[0].khoa[0].mat_benh[0].id;
     const params = new URLSearchParams(window.location.search);
     const path = window.location.pathname.replace(/\/+$/, "") || "/";
-    if (isCareFormHost()) {
-      document.body.dataset.careFormEntry = "grouped-assessment";
-      delete document.body.dataset.careFormLayout;
-      state.screen = "careForm";
-    } else if (path === "/admin") {
+    if (path === "/admin") {
       state.screen = "nanda";
     } else if (params.get("screen")) {
       state.screen = params.get("screen");
