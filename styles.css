@@ -1669,18 +1669,56 @@ button {
   margin: 18px;
 }
 
-.care-list-actions {
-  display: flex;
-  flex-wrap: wrap;
+.care-list-toolbar {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
   margin-bottom: 18px;
 }
 
-.care-list-actions .btn {
-  min-height: 44px;
-  padding: 0 16px;
+.care-list-toolbar .care-list-btn {
+  display: grid;
+  min-height: 54px;
+  place-items: center;
+  border-width: 1px;
+  padding: 8px 12px;
   font-size: 14px;
   font-weight: 800;
+  line-height: 1.25;
+  text-align: center;
+  white-space: normal;
+}
+
+.care-list-btn-create,
+.care-list-btn-create.primary {
+  border-color: #0f8f83;
+  background: #0f8f83;
+  color: #fff;
+}
+
+.care-list-btn-evaluate {
+  border-color: #b9d6f7;
+  background: #eaf4ff;
+  color: #185c9d;
+}
+
+.care-list-btn-care,
+.care-list-btn-care.primary {
+  border-color: #b9aaee;
+  background: #eeeaff;
+  color: #5637a8;
+}
+
+.care-list-btn-education,
+.care-list-btn-education.primary {
+  border-color: #f2cc91;
+  background: #fff3df;
+  color: #9a5b08;
+}
+
+.care-list-btn-care.primary,
+.care-list-btn-education.primary {
+  box-shadow: inset 0 0 0 1px currentColor;
 }
 
 .compact-empty-care {
@@ -3446,63 +3484,15 @@ button {
     margin: 10px;
   }
 
-  .care-list-actions {
-    display: grid;
+  .care-list-toolbar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
-    margin-bottom: 8px;
+    margin-bottom: 12px;
   }
 
-  .care-list-screen .care-list-tabs {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-    margin: 0 0 12px;
-  }
-
-  .care-list-actions .care-list-btn,
-  .care-list-tabs .care-list-btn {
-    display: grid;
-    min-height: 54px;
-    place-items: center;
-    border-width: 1px;
+  .care-list-toolbar .care-list-btn {
     padding: 8px 9px;
     font-size: 12px;
-    line-height: 1.25;
-    text-align: center;
-    white-space: normal;
-  }
-
-  .care-list-btn-create,
-  .care-list-btn-create.primary {
-    border-color: #0f8f83;
-    background: #0f8f83;
-    color: #fff;
-  }
-
-  .care-list-btn-evaluate {
-    border-color: #b9d6f7;
-    background: #eaf4ff;
-    color: #185c9d;
-  }
-
-  .care-list-btn-care,
-  .care-list-btn-care.primary {
-    border-color: #b9aaee;
-    background: #eeeaff;
-    color: #5637a8;
-  }
-
-  .care-list-btn-education,
-  .care-list-btn-education.primary {
-    border-color: #f2cc91;
-    background: #fff3df;
-    color: #9a5b08;
-  }
-
-  .care-list-btn-care.primary,
-  .care-list-btn-education.primary {
-    box-shadow: inset 0 0 0 1px currentColor;
   }
 
   .care-sheet-list {

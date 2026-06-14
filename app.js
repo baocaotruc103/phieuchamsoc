@@ -3345,11 +3345,9 @@ function renderCareSheetListScreen() {
           </div>
         </div>
         <div class="panel-body">
-          <div class="care-list-actions">
+          <div class="care-list-toolbar">
             <button class="btn primary care-list-btn care-list-btn-create" data-action="create-care">Thêm phiếu chăm sóc</button>
             <button class="btn care-list-btn care-list-btn-evaluate" data-action="evaluate-results">Đánh giá kết quả</button>
-          </div>
-          <div class="care-list-tabs">
             <button type="button" class="btn care-list-btn care-list-btn-care ${state.careListTab === "care" ? "primary" : ""}" data-care-list-tab="care">Phiếu chăm sóc</button>
             <button type="button" class="btn care-list-btn care-list-btn-education ${state.careListTab === "education" ? "primary" : ""}" data-care-list-tab="education">Tư vấn, Hướng dẫn, GDSK</button>
           </div>
