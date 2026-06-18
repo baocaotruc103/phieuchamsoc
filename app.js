@@ -2963,12 +2963,6 @@ const homeExperienceCards = [
     note: "Thêm, sửa và tra cứu nhóm vấn đề, nguyên nhân, mục tiêu và can thiệp.",
   },
   {
-    title: "Test chức năng Tư vấn, hướng dẫn GDSK",
-    action: "start-education-test",
-    icon: "TV",
-    note: "Mở phần tư vấn, hướng dẫn, giáo dục sức khỏe.",
-  },
-  {
     title: "Test chức năng đánh giá nguy cơ (theo thang điểm)",
     action: "start-scale-test",
     icon: "Đ",
@@ -3009,7 +3003,6 @@ const hiddenHomeActions = new Set([
   "show-experience-guide",
   "start-diagnosis-test",
   "start-nanda-diagnosis-test",
-  "start-education-test",
   "start-scale-test",
   "open-sample-evaluation",
   "show-update-info",
@@ -3348,10 +3341,9 @@ function renderCareSheetListScreen() {
           <div class="care-list-toolbar">
             <button class="btn primary care-list-btn care-list-btn-create" data-action="create-care">Thêm phiếu chăm sóc</button>
             <button class="btn care-list-btn care-list-btn-evaluate" data-action="evaluate-results">Đánh giá kết quả</button>
-            <button type="button" class="btn care-list-btn care-list-btn-care ${state.careListTab === "care" ? "primary" : ""}" data-care-list-tab="care">Phiếu chăm sóc</button>
-            <button type="button" class="btn care-list-btn care-list-btn-education ${state.careListTab === "education" ? "primary" : ""}" data-care-list-tab="education">Tư vấn, Hướng dẫn, GDSK</button>
+            <button type="button" class="btn care-list-btn care-list-btn-care primary" data-care-list-tab="care">Phiếu chăm sóc</button>
           </div>
-          ${state.careListTab === "education" ? renderHealthEducationDetailListBodyV2() : renderCareSheetListBody()}
+          ${renderCareSheetListBody()}
         </div>
       </section>
     </div>
@@ -3993,8 +3985,6 @@ function renderCareSheetDetailScreen() {
   const scaleRows = scaleDetailRows(sheet.thang_diem_json || {});
   const handoverItems = handoverDetailItems(handover);
   const medicines = handoverMedicineRows(handover);
-  const educationForms = healthEducationFormsFromChecklist(check, sheet);
-
   return `
     <div class="mobile-app care-detail-screen">
       ${appBar("Chi tiết phiếu chăm sóc", "careEmpty")}
@@ -4055,11 +4045,6 @@ function renderCareSheetDetailScreen() {
         ${detailSection("XI. Bàn giao", handoverItems.length || medicines.length
           ? `${detailCheckGroup("Việc cần tiếp tục theo dõi/thực hiện", handoverItems)}${detailHandoverMedicines(medicines)}`
           : `<div class="empty">Chưa có nội dung bàn giao.</div>`)}
-
-        ${detailSection("XII. Tư vấn - hướng dẫn - giáo dục sức khỏe", renderGdskDetailDocument(educationForms, {
-          patient: gdskPatientContext(selected),
-          sheet,
-        }), "report-health-education-section")}
 
         <footer class="report-signatures">
           <div><strong>Điều dưỡng ghi phiếu</strong><span>Ký, ghi rõ họ tên</span></div>
@@ -4244,7 +4229,6 @@ function render(focusSelector = "") {
     </div>
     ${state.activeScale ? renderScaleModal() : ""}
     ${state.activeFallRiskScalePicker ? renderFallRiskScalePickerModal() : ""}
-    ${state.activeHealthEducationStage ? renderHealthEducationModal() : ""}
     ${state.handoverMedicineModalOpen ? renderHandoverMedicineModal() : ""}
     ${renderCareNandaDatalists()}
   `;
@@ -4270,7 +4254,6 @@ function careFormTabs() {
     { id: "diagnosis", label: "Chẩn đoán" },
     { id: "intervention", label: "Can thiệp" },
     { id: "handover", label: "Bàn giao" },
-    { id: "education", label: "TVHD GDSK" },
   ];
 }
 
@@ -4293,20 +4276,21 @@ function renderCareFormTabs() {
 }
 
 function renderActiveCareFormTab(assessments) {
-  if (state.activeCareFormTab === "diagnosis" || state.activeCareFormTab === "intervention") {
+  const activeTab = careFormTabs().some((tab) => tab.id === state.activeCareFormTab)
+    ? state.activeCareFormTab
+    : "patient";
+  if (activeTab === "diagnosis" || activeTab === "intervention") {
     if (state.diagnosisCatalogSource === "nanda") setupNandaRealtimeSync();
     loadNandaRows();
     ensureDiagnosisCatalogLoaded({ renderOnComplete: true });
   }
-  switch (state.activeCareFormTab) {
+  switch (activeTab) {
     case "assessment":
       return `${renderAssessmentPanel(assessments)}${renderFluidBalancePanel()}`;
     case "diagnosis":
       return renderDiagnosisPanelV2();
     case "intervention":
       return renderInterventionPanel();
-    case "education":
-      return renderHealthEducationPanel();
     case "handover":
       return renderHandoverPanel();
     case "patient":
@@ -4326,7 +4310,6 @@ function renderAllCareFormSections(assessments) {
     renderDiagnosisPanelV2(),
     renderInterventionPanel(),
     renderHandoverPanel(),
-    renderHealthEducationPanel(),
   ].join("");
 }
 
@@ -6600,7 +6583,6 @@ function missingCareFormTabs() {
   if (!selectedCareDiagnoses().length) missing.push({ id: "diagnosis", label: "Chẩn đoán" });
   if (!selectedCareInterventions().length) missing.push({ id: "intervention", label: "Can thiệp" });
   if (!hasAnyFilledValue(Object.values(handover))) missing.push({ id: "handover", label: "Bàn giao" });
-  if (!hasHealthEducationTabContent()) missing.push({ id: "education", label: "TVHD GDSK" });
   return missing;
 }
 
@@ -7244,12 +7226,6 @@ app.addEventListener("click", (event) => {
     return;
   }
 
-  if (event.target.dataset.action === "close-health-education-overlay") {
-    state.activeHealthEducationStage = null;
-    render();
-    return;
-  }
-
   if (event.target.dataset.action === "close-diagnosis-picker-overlay") {
     state.diagnosisPicker = null;
     render();
@@ -7370,11 +7346,6 @@ app.addEventListener("click", (event) => {
 
   if (target.dataset.action === "start-nanda-diagnosis-test") {
     startNandaDiagnosisTest();
-    return;
-  }
-
-  if (target.dataset.action === "start-education-test") {
-    startHomeCareTest("education");
     return;
   }
 
@@ -8011,23 +7982,9 @@ app.addEventListener("click", (event) => {
     return;
   }
 
-  if (target.dataset.healthEducationStage) {
-    state.healthEducationStage = target.dataset.healthEducationStage;
-    state.activeHealthEducationStage = target.dataset.healthEducationStage;
-    render();
-    return;
-  }
-
-  if (target.dataset.action === "close-health-education") {
-    state.activeHealthEducationStage = null;
-    render();
-    return;
-  }
-
   if (target.dataset.careListTab) {
     state.careListTab = target.dataset.careListTab;
     render();
-    if (state.careListTab === "education") loadCareSheetsForSelectedPatient(true);
     return;
   }
 
