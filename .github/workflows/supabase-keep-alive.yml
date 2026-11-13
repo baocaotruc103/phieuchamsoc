@@ -1,0 +1,30 @@
+name: Supabase keep-alive
+
+# Gói Free của Supabase tự tạm dừng project sau ~7 ngày không có truy cập.
+# Workflow này gọi REST API mỗi ngày để project luôn được tính là đang dùng.
+on:
+  schedule:
+    - cron: "0 1 * * *" # 08:00 giờ Việt Nam mỗi ngày
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ping Supabase
+        run: |
+          set -euo pipefail
+          URL=$(grep -oE 'https://[a-z0-9]+\.supabase\.co' supabase-config.js | head -1)
+          KEY=$(grep -oE 'eyJ[A-Za-z0-9._-]+' supabase-config.js | head -1)
+          for table in nanda nanda_nic_noc_dataset; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" \
+              -H "apikey: $KEY" -H "Authorization: Bearer $KEY" \
+              "$URL/rest/v1/$table?select=id&limit=1")
+            echo "$table: HTTP $code"
+            if [ "$code" != "200" ]; then
+              echo "::error::Supabase trả về HTTP $code cho bảng $table"
+              exit 1
+            fi
+          done
