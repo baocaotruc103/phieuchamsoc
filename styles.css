@@ -6237,3 +6237,128 @@ body {
     grid-column: auto;
   }
 }
+
+/* ===== Danh mục chẩn đoán điều dưỡng ===== */
+.dxcat-layout {
+  width: min(1100px, 100%);
+  margin: 0 auto;
+  padding: 14px 16px 32px;
+  box-sizing: border-box;
+}
+
+.dxcat-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dxcat-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1.3fr) minmax(110px, 0.5fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.dxcat-filters .field {
+  min-width: 0;
+}
+
+.dxcat-list {
+  display: grid;
+  gap: 10px;
+  transition: opacity 0.15s ease;
+}
+
+.dxcat-list.is-loading {
+  opacity: 0.5;
+}
+
+.dxcat-row {
+  padding: 12px 14px;
+  border: 1px solid #dbe4ee;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.dxcat-row-head {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.dxcat-index {
+  flex: none;
+  min-width: 34px;
+  padding: 4px 6px;
+  border-radius: 999px;
+  background: #e7f4f1;
+  color: #0f766e;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.dxcat-group {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.dxcat-row-head h3 {
+  margin: 2px 0 0;
+  color: #0f172a;
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.dxcat-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 16px;
+  margin: 0;
+}
+
+.dxcat-fields dt {
+  margin-bottom: 2px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.dxcat-fields dd {
+  margin: 0;
+  color: #334155;
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.dxcat-fields ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.dxcat-muted {
+  color: #94a3b8;
+}
+
+.dxcat-pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 14px;
+  font-size: 13px;
+  color: #334155;
+}
+
+@media (max-width: 720px) {
+  .dxcat-filters,
+  .dxcat-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -2862,7 +2862,10 @@ function renderNandaFormScreen() {
               <h2 class="panel-title">Danh sách đã nhập</h2>
               <p class="panel-subtitle">${state.nandaLoading ? "Đang tải dữ liệu..." : `${rows.length}/${state.nandaRows.length} dòng`}</p>
             </div>
-            <button type="button" class="btn primary" data-action="export-nanda-excel" ${state.nandaLoading || !rows.length ? "disabled" : ""}>Xuất Excel</button>
+            <div class="dxcat-actions">
+              <button type="button" class="btn ghost" data-action="open-dx-catalog">Danh mục chẩn đoán (CSDL)</button>
+              <button type="button" class="btn primary" data-action="export-nanda-excel" ${state.nandaLoading || !rows.length ? "disabled" : ""}>Xuất Excel</button>
+            </div>
           </div>
           <div class="panel-body">
             <div class="nanda-department-summary">
@@ -2955,6 +2958,12 @@ const homeExperienceCards = [
     action: "start-nanda-diagnosis-test",
     icon: "ND",
     note: "Goi y chan doan, nguyen nhan va muc tieu tu bang public.nanda.",
+  },
+  {
+    title: "Xem & xuất danh mục chẩn đoán điều dưỡng",
+    action: "open-dx-catalog",
+    icon: "DM",
+    note: "Tra cứu, lọc theo nhóm bệnh và xuất Excel từ bảng nanda_nic_noc_dataset.",
   },
   {
     title: "Danh mục NANDA",
@@ -4161,6 +4170,16 @@ function render(focusSelector = "") {
     app.innerHTML = renderRiskScaleHomeScreen();
     return;
   }
+  if (state.screen === "diagnosisCatalog") {
+    app.innerHTML = renderDxCatalogScreen();
+    const focusTarget = focusSelector ? app.querySelector(focusSelector) : null;
+    if (focusTarget) {
+      focusTarget.focus();
+      const end = focusTarget.value?.length || 0;
+      if (typeof focusTarget.setSelectionRange === "function") focusTarget.setSelectionRange(end, end);
+    }
+    return;
+  }
   if (state.screen === "nanda") {
     const focusSnapshot = focusSelector ? { selector: focusSelector, start: null, end: null } : captureNandaFocus();
     app.innerHTML = renderNandaFormScreen();
@@ -4630,6 +4649,8 @@ function renderAssessmentPanel(assessments) {
 
 function renderRemainingAssessmentGroups() {
   const excludedIds = new Set([
+    "allergy",
+    "skin_mucosa",
     "respiratory",
     "cardiovascular",
     "neurological",
@@ -7242,6 +7263,8 @@ app.addEventListener("click", (event) => {
   const target = event.target.closest("button");
   if (!target) return;
 
+  if (handleDxCatalogClick(target)) return;
+
   if (target.dataset.patientIndex) {
     state.selectedPatientIndex = Number(target.dataset.patientIndex);
     state.openRecordSections.clear();
@@ -8106,6 +8129,7 @@ app.addEventListener("focusin", (event) => {
 
 app.addEventListener("input", (event) => {
   const target = event.target;
+  if (handleDxCatalogInput(target)) return;
   if (target.dataset.recordMenuSearch !== undefined) {
     state.recordMenuSearch = target.value;
     render("[data-record-menu-search]");
@@ -8365,6 +8389,7 @@ app.addEventListener("input", (event) => {
 
 app.addEventListener("change", (event) => {
   const target = event.target;
+  if (handleDxCatalogChange(target)) return;
   if (target.dataset.dxQuery) {
     const rowIndex = Number(target.dataset.dxQuery);
     const row = state.diagnosisRows[rowIndex];
@@ -8868,6 +8893,8 @@ async function init() {
     const path = window.location.pathname.replace(/\/+$/, "") || "/";
     if (path === "/admin") {
       state.screen = "nanda";
+    } else if (path === "/danh-muc-chan-doan") {
+      state.screen = "diagnosisCatalog";
     } else if (params.get("screen")) {
       state.screen = params.get("screen");
     }
@@ -8886,6 +8913,361 @@ async function init() {
       </div>
     `;
   }
+}
+
+// ===== Danh mục chẩn đoán điều dưỡng (bảng nanda_nic_noc_dataset): xem & xuất Excel =====
+const DX_CATALOG_TABLE = "nanda_nic_noc_dataset";
+const DX_CATALOG_FETCH_SIZE = 1000;
+const DX_CATALOG_PAGE_SIZES = [20, 50, 100];
+
+const dxCatalogState = {
+  rows: [],
+  total: 0,
+  page: 1,
+  pageSize: 20,
+  search: "",
+  group: "",
+  groups: [],
+  groupsLoading: false,
+  groupsLoaded: false,
+  loading: false,
+  loaded: false,
+  error: "",
+  exporting: false,
+  exportProgress: "",
+  requestId: 0,
+  searchTimer: null,
+  backScreen: "patients",
+};
+
+function dxCatalogSearchFilter(value) {
+  const text = supabaseSearchValue(value);
+  if (!text) return "";
+  const pattern = `*${text}*`;
+  return ["nhom_benh", "chan_doan", "nguyen_nhan", "muc_tieu", "ma_can_thiep", "can_thiep"]
+    .map((column) => `${column}.ilike.${pattern}`)
+    .join(",");
+}
+
+function dxCatalogQuery(columns = "*", options = {}) {
+  let query = getSupabaseClient().from(DX_CATALOG_TABLE).select(columns, options);
+  const filter = dxCatalogSearchFilter(dxCatalogState.search);
+  if (filter) query = query.or(filter);
+  if (dxCatalogState.group) query = query.eq("nhom_benh", dxCatalogState.group);
+  return query.order("id", { ascending: true });
+}
+
+async function loadDxCatalogPage() {
+  const requestId = ++dxCatalogState.requestId;
+  dxCatalogState.loading = true;
+  dxCatalogState.error = "";
+  if (state.screen === "diagnosisCatalog") render(dxCatalogFocusSelector());
+  try {
+    const from = (dxCatalogState.page - 1) * dxCatalogState.pageSize;
+    const { data, error, count } = await dxCatalogQuery("*", { count: "exact" })
+      .range(from, from + dxCatalogState.pageSize - 1);
+    if (requestId !== dxCatalogState.requestId) return;
+    if (error) throw new Error(error.message);
+    dxCatalogState.rows = deepFix(Array.isArray(data) ? data : []);
+    dxCatalogState.total = Number(count) || 0;
+    dxCatalogState.loaded = true;
+  } catch (error) {
+    if (requestId !== dxCatalogState.requestId) return;
+    dxCatalogState.rows = [];
+    dxCatalogState.total = 0;
+    dxCatalogState.error = `Không tải được bảng ${DX_CATALOG_TABLE}: ${error.message || error}`;
+  } finally {
+    if (requestId === dxCatalogState.requestId) {
+      dxCatalogState.loading = false;
+      if (state.screen === "diagnosisCatalog") render(dxCatalogFocusSelector());
+    }
+  }
+}
+
+async function loadDxCatalogGroups() {
+  if (dxCatalogState.groupsLoaded || dxCatalogState.groupsLoading) return;
+  dxCatalogState.groupsLoading = true;
+  try {
+    const client = getSupabaseClient();
+    const { count, error: countError } = await client
+      .from(DX_CATALOG_TABLE)
+      .select("id", { count: "exact", head: true });
+    if (countError) throw countError;
+    const pages = Math.ceil((Number(count) || 0) / DX_CATALOG_FETCH_SIZE);
+    const groups = new Set();
+    const concurrency = 6;
+    for (let start = 0; start < pages; start += concurrency) {
+      const batch = [];
+      for (let page = start; page < Math.min(start + concurrency, pages); page += 1) {
+        const from = page * DX_CATALOG_FETCH_SIZE;
+        batch.push(client.from(DX_CATALOG_TABLE).select("nhom_benh").order("id").range(from, from + DX_CATALOG_FETCH_SIZE - 1));
+      }
+      const results = await Promise.all(batch);
+      for (const { data, error } of results) {
+        if (error) throw error;
+        for (const row of data || []) {
+          const group = cleanLine(row.nhom_benh);
+          if (group) groups.add(group);
+        }
+      }
+    }
+    dxCatalogState.groups = [...groups].sort((a, b) => a.localeCompare(b, "vi"));
+    dxCatalogState.groupsLoaded = true;
+  } catch (error) {
+    console.warn("Không tải được danh sách nhóm bệnh", error);
+  } finally {
+    dxCatalogState.groupsLoading = false;
+    if (state.screen === "diagnosisCatalog") render(dxCatalogFocusSelector());
+  }
+}
+
+function openDxCatalogScreen() {
+  if (state.screen !== "diagnosisCatalog") dxCatalogState.backScreen = state.screen;
+  state.screen = "diagnosisCatalog";
+  render();
+}
+
+function ensureDxCatalogLoaded() {
+  if (!dxCatalogState.loaded && !dxCatalogState.loading && !dxCatalogState.error) {
+    queueMicrotask(loadDxCatalogPage);
+  }
+  if (!dxCatalogState.groupsLoaded && !dxCatalogState.groupsLoading) queueMicrotask(loadDxCatalogGroups);
+}
+
+function dxCatalogFocusSelector() {
+  return document.activeElement?.dataset?.dxcatSearch !== undefined ? "[data-dxcat-search]" : "";
+}
+
+function dxCatalogLooksLikeCodes(value) {
+  const parts = String(value || "").split(/[;,\n]+/).map(cleanLine).filter(Boolean);
+  return parts.length > 0 && parts.every((part) => /^[A-ZĐ]{1,4}\.?\s?\d+[A-Za-z0-9.]*$/.test(part));
+}
+
+// Một số dòng trong bảng lưu ngược cột mã / nội dung can thiệp, nên tự nhận diện.
+function dxCatalogInterventions(row) {
+  const first = cleanLine(row?.ma_can_thiep);
+  const second = cleanLine(row?.can_thiep);
+  if (dxCatalogLooksLikeCodes(second) && !dxCatalogLooksLikeCodes(first)) {
+    return { codes: second, contents: first };
+  }
+  return { codes: first, contents: second };
+}
+
+function dxCatalogLines(value) {
+  return String(value || "").split(/[;\n]+/).map(cleanLine).filter(Boolean);
+}
+
+function renderDxCatalogList(value) {
+  const lines = dxCatalogLines(value);
+  if (!lines.length) return `<span class="dxcat-muted">—</span>`;
+  if (lines.length === 1) return h(lines[0]);
+  return `<ul>${lines.map((line) => `<li>${h(line)}</li>`).join("")}</ul>`;
+}
+
+function renderDxCatalogRow(row, index) {
+  const { codes, contents } = dxCatalogInterventions(row);
+  return `
+    <article class="dxcat-row">
+      <header class="dxcat-row-head">
+        <span class="dxcat-index">${h(index)}</span>
+        <div>
+          <span class="dxcat-group">${h(cleanLine(row.nhom_benh) || "Chưa phân nhóm")}</span>
+          <h3>${h(cleanLine(row.chan_doan) || "—")}</h3>
+        </div>
+      </header>
+      <dl class="dxcat-fields">
+        <div><dt>Nguyên nhân</dt><dd>${renderDxCatalogList(row.nguyen_nhan)}</dd></div>
+        <div><dt>Mục tiêu</dt><dd>${renderDxCatalogList(row.muc_tieu)}</dd></div>
+        <div><dt>Can thiệp</dt><dd>${renderDxCatalogList(contents)}</dd></div>
+        <div><dt>Mã can thiệp</dt><dd>${codes ? h(codes) : `<span class="dxcat-muted">—</span>`}</dd></div>
+      </dl>
+    </article>
+  `;
+}
+
+function renderDxCatalogPager(pageCount) {
+  if (pageCount <= 1) return "";
+  const page = dxCatalogState.page;
+  const disabled = dxCatalogState.loading ? "disabled" : "";
+  return `
+    <nav class="dxcat-pager" aria-label="Phân trang">
+      <button type="button" class="btn ghost" data-action="dxcat-page" data-page="1" ${page <= 1 ? "disabled" : disabled}>«</button>
+      <button type="button" class="btn ghost" data-action="dxcat-page" data-page="${page - 1}" ${page <= 1 ? "disabled" : disabled}>‹ Trước</button>
+      <span>Trang <strong>${h(page.toLocaleString("vi-VN"))}</strong> / ${h(pageCount.toLocaleString("vi-VN"))}</span>
+      <button type="button" class="btn ghost" data-action="dxcat-page" data-page="${page + 1}" ${page >= pageCount ? "disabled" : disabled}>Sau ›</button>
+      <button type="button" class="btn ghost" data-action="dxcat-page" data-page="${pageCount}" ${page >= pageCount ? "disabled" : disabled}>»</button>
+    </nav>
+  `;
+}
+
+function renderDxCatalogScreen() {
+  ensureDxCatalogLoaded();
+  const s = dxCatalogState;
+  const pageCount = Math.max(1, Math.ceil(s.total / s.pageSize));
+  const firstIndex = (s.page - 1) * s.pageSize;
+  const status = s.loading
+    ? "Đang tải dữ liệu..."
+    : s.loaded
+      ? `${s.total.toLocaleString("vi-VN")} dòng phù hợp`
+      : "";
+  return `
+    <div class="mobile-app dxcat-screen">
+      ${appBar("Danh mục chẩn đoán điều dưỡng", dxCatalogState.backScreen || "patients")}
+      <main class="dxcat-layout">
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Tra cứu danh mục</h2>
+              <p class="panel-subtitle">Bảng ${h(DX_CATALOG_TABLE)} · ${h(status)}</p>
+            </div>
+            <div class="dxcat-actions">
+              <button type="button" class="btn ghost" data-action="dxcat-reload" ${s.loading ? "disabled" : ""}>Tải lại</button>
+              <button type="button" class="btn primary" data-action="export-dx-catalog" ${s.exporting || s.loading || !s.total ? "disabled" : ""}>
+                ${s.exporting ? h(s.exportProgress || "Đang xuất...") : "Xuất Excel"}
+              </button>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="dxcat-filters">
+              <div class="field dxcat-search">
+                <label>Tìm kiếm</label>
+                <input type="search" data-dxcat-search value="${h(s.search)}" placeholder="Chẩn đoán, nhóm bệnh, nguyên nhân, mục tiêu, can thiệp..." />
+              </div>
+              <div class="field">
+                <label>Nhóm bệnh</label>
+                <select data-dxcat-group>
+                  <option value="">${s.groupsLoading ? "Đang tải nhóm bệnh..." : "Tất cả nhóm bệnh"}</option>
+                  ${s.groups.map((group) => `<option value="${h(group)}" ${s.group === group ? "selected" : ""}>${h(group)}</option>`).join("")}
+                </select>
+              </div>
+              <div class="field dxcat-size">
+                <label>Số dòng/trang</label>
+                <select data-dxcat-page-size>
+                  ${DX_CATALOG_PAGE_SIZES.map((size) => `<option value="${size}" ${s.pageSize === size ? "selected" : ""}>${size}</option>`).join("")}
+                </select>
+              </div>
+            </div>
+            ${s.error ? `<div class="empty care-list-empty">${h(s.error)}</div>` : ""}
+            ${!s.error && s.loading && !s.rows.length ? `<div class="empty care-list-empty">Đang tải danh mục chẩn đoán...</div>` : ""}
+            ${!s.error && !s.loading && s.loaded && !s.rows.length ? `<div class="empty care-list-empty">Không có dòng nào phù hợp.</div>` : ""}
+            <div class="dxcat-list ${s.loading ? "is-loading" : ""}">
+              ${s.rows.map((row, index) => renderDxCatalogRow(row, firstIndex + index + 1)).join("")}
+            </div>
+            ${renderDxCatalogPager(pageCount)}
+          </div>
+        </section>
+      </main>
+    </div>
+  `;
+}
+
+async function exportDxCatalogToExcel() {
+  const s = dxCatalogState;
+  if (s.exporting) return;
+  if (!window.XLSX) {
+    alert("Không tải được công cụ xuất Excel. Vui lòng kiểm tra kết nối mạng và thử lại.");
+    return;
+  }
+  if (!s.total) {
+    alert("Không có dữ liệu phù hợp để xuất Excel.");
+    return;
+  }
+  if (s.total > 20000 && !confirm(`Sẽ xuất ${s.total.toLocaleString("vi-VN")} dòng, có thể mất vài phút. Tiếp tục?\n(Mẹo: dùng ô tìm kiếm hoặc lọc nhóm bệnh để xuất ít dòng hơn.)`)) {
+    return;
+  }
+
+  s.exporting = true;
+  s.exportProgress = "Đang xuất 0%";
+  render();
+  try {
+    const rows = [];
+    for (let from = 0; from < s.total; from += DX_CATALOG_FETCH_SIZE) {
+      const { data, error } = await dxCatalogQuery("*").range(from, from + DX_CATALOG_FETCH_SIZE - 1);
+      if (error) throw new Error(error.message);
+      const page = deepFix(Array.isArray(data) ? data : []);
+      rows.push(...page);
+      s.exportProgress = `Đang xuất ${Math.min(99, Math.round((rows.length / s.total) * 100))}%`;
+      render(dxCatalogFocusSelector());
+      if (page.length < DX_CATALOG_FETCH_SIZE) break;
+    }
+
+    const exportRows = rows.map((row, index) => {
+      const { codes, contents } = dxCatalogInterventions(row);
+      return {
+        STT: index + 1,
+        "Nhóm bệnh": cleanLine(row.nhom_benh),
+        "Chẩn đoán điều dưỡng": cleanLine(row.chan_doan),
+        "Nguyên nhân": cleanLine(row.nguyen_nhan),
+        "Mục tiêu": cleanLine(row.muc_tieu),
+        "Can thiệp": contents,
+        "Mã can thiệp": codes,
+      };
+    });
+    const worksheet = window.XLSX.utils.json_to_sheet(exportRows);
+    worksheet["!autofilter"] = { ref: worksheet["!ref"] };
+    worksheet["!cols"] = [{ wch: 7 }, { wch: 28 }, { wch: 40 }, { wch: 40 }, { wch: 44 }, { wch: 60 }, { wch: 24 }];
+    const workbook = window.XLSX.utils.book_new();
+    window.XLSX.utils.book_append_sheet(workbook, worksheet, "Chan doan dieu duong");
+
+    const date = new Date();
+    const datePart = [date.getFullYear(), String(date.getMonth() + 1).padStart(2, "0"), String(date.getDate()).padStart(2, "0")].join("-");
+    window.XLSX.writeFile(workbook, `danh-muc-chan-doan-dieu-duong-${datePart}.xlsx`);
+  } catch (error) {
+    alert(`Xuất Excel thất bại: ${error.message || error}`);
+  } finally {
+    s.exporting = false;
+    s.exportProgress = "";
+    render(dxCatalogFocusSelector());
+  }
+}
+
+function handleDxCatalogClick(target) {
+  const action = target.dataset.action;
+  if (action === "open-dx-catalog") {
+    openDxCatalogScreen();
+    return true;
+  }
+  if (action === "dxcat-page") {
+    const pageCount = Math.max(1, Math.ceil(dxCatalogState.total / dxCatalogState.pageSize));
+    dxCatalogState.page = Math.min(Math.max(Number(target.dataset.page) || 1, 1), pageCount);
+    loadDxCatalogPage();
+    app.querySelector(".dxcat-layout")?.scrollIntoView({ block: "start" });
+    return true;
+  }
+  if (action === "dxcat-reload") {
+    loadDxCatalogPage();
+    return true;
+  }
+  if (action === "export-dx-catalog") {
+    exportDxCatalogToExcel();
+    return true;
+  }
+  return false;
+}
+
+function handleDxCatalogInput(target) {
+  if (target.dataset.dxcatSearch === undefined) return false;
+  dxCatalogState.search = target.value;
+  dxCatalogState.page = 1;
+  clearTimeout(dxCatalogState.searchTimer);
+  dxCatalogState.searchTimer = setTimeout(loadDxCatalogPage, 400);
+  return true;
+}
+
+function handleDxCatalogChange(target) {
+  if (target.dataset.dxcatGroup !== undefined) {
+    dxCatalogState.group = target.value;
+    dxCatalogState.page = 1;
+    loadDxCatalogPage();
+    return true;
+  }
+  if (target.dataset.dxcatPageSize !== undefined) {
+    dxCatalogState.pageSize = Number(target.value) || 20;
+    dxCatalogState.page = 1;
+    loadDxCatalogPage();
+    return true;
+  }
+  return false;
 }
 
 init();
