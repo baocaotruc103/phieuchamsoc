@@ -1,7 +1,7 @@
-/danh-muc-chan-doan /index.html 200
-/danh-muc-chan-doan/ /index.html 200
-/admin /index.html 200
-/admin/ /index.html 200
+/danh-muc-chan-doan / 200
+/danh-muc-chan-doan/ /danh-muc-chan-doan 301
+/admin / 200
+/admin/ /admin 301
 /nanda /nanda/index.html 200
 /nanda/ /nanda/index.html 200
 /phieu-cham-soc /phieu-cham-soc.html 200
