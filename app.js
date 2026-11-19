@@ -4597,7 +4597,7 @@ function level23SheetSectionGroups() {
     "A. Thông tin người bệnh": ["evalTime", "evaluator", "height", "weight", "bmi", "allergy", "allergyDrug", "allergyFood", "allergyOther", "allergySymptoms", "allergy_note"],
     "B. Chỉ số sinh tồn, sinh trắc": ["pulse", "temperature", "bloodPressure", "respiratoryRate", "spo2"],
     "C. Toàn thân": ["mucosa", "consciousness", "edema", "systemicNote"],
-    "D. Hô hấp": ["breathingMode", "oxygenFlow", "ventilationAirway", "ventilatorMode", "fio2", "peep", "vt", "coughStatus", "respiratoryNote"],
+    "D. Hô hấp": ["breathingMode", "oxygenFlow", "coughStatus", "respiratoryNote"],
     "E. Tuần hoàn": ["circulationSymptoms", "peripheralPerfusion", "heartRhythm", "heartRateStatus", "heartSounds", "circulationOther"],
     "F. Dinh dưỡng": ["nutritionRoute", "nutritionRegimen", "nutritionRegimenOther", "pathologicalDiet", "pathologicalDietTypes", "pathologicalDietOther"],
     "G. Giấc ngủ, nghỉ ngơi": ["sleepStatus", "sleepStatusOther"],
@@ -4605,11 +4605,22 @@ function level23SheetSectionGroups() {
     "I. Tinh thần": ["mentalStatus", "mentalStatusOther"],
     "J. Vận động, PHCN": ["mobilityAbility", "mobilityAbilityOther", "muscleStrength", "muscleStrengthOther", "movementStatus", "movementStatusOther"],
     "K. GDSK": ["healthKnowledge", "healthEducationNeeds", "healthEducationNeedsOther"],
-    "L. Theo dõi khác": ["painAssessment", "pressureUlcerRiskAssessment", "fallRiskAssessment", "vteRiskAssessment", "earlyWarningScore", "earlyWarningLevel"],
+    "L. Thang điểm đánh giá": ["fallRiskAssessment", "vteRiskAssessment", "painAssessment", "pressureUlcerRiskAssessment", "glasgowAssessment"],
+    "L2. Theo dõi khác": ["earlyWarningScore", "earlyWarningLevel"],
+    "O. Sản phụ khoa": [],
     "M. Thực hiện theo chỉ định": ["ivMedication", "ivMedicationRoutes", "ivMedicationOther", "ivLabOrders", "ivLabOrderTypes", "ivLabOrderOther"],
     "N. Tư vấn, giáo dục sức khỏe": ["ivHealthEducation", "ivHealthEducationOther"],
     "P. Bàn giao": ["handoverMedicineHalf", "handoverLab", "handoverWaitLab", "handoverFilm", "handoverWaitFilm", "handoverDressing", "handoverDrain", "handoverVitals", "handoverUrine", "handoverTube", "handoverOther"],
   };
+}
+
+function renderAssessmentTemplateSectionsById(ids) {
+  const sections = Array.isArray(state.assessmentTemplate?.assessment) ? state.assessmentTemplate.assessment : [];
+  return ids
+    .map((id) => sections.find((section) => section.id === id))
+    .filter(Boolean)
+    .map(renderAssessmentTemplateSectionCard)
+    .join("");
 }
 
 function includesOther(value) {
@@ -4650,7 +4661,7 @@ function renderLevel23AssessmentPanel() {
         <div class="assessment-section-card respiratory-section">
           <h3>Hô hấp</h3>
           <div class="assessment-form compact-form respiratory-form">
-            ${radioGroup("breathingMode", "Tình trạng thở", ["Tự thở", "Thở oxy", "HFNC", "NIV", "Thở máy"], check.breathingMode)}
+            ${radioGroup("breathingMode", "Tình trạng thở", ["Tự thở", "Thở oxy"], check.breathingMode)}
             ${renderRespiratoryDetails(check)}
             ${multiCheckGroup("coughStatus", "Ho", ["Không ho", "Ho khan", "Ho có đờm", "Ho từng cơn", "Ho thường xuyên", "Ho có máu", "Ho yếu / không hiệu quả", "Không đánh giá được"], check.coughStatus)}
             ${checkArea("respiratoryNote", "Khác", check.respiratoryNote, "respiratory-note-field")}
@@ -4698,16 +4709,27 @@ ${renderMobilityCard(check)}
         </div>
 
         <div class="assessment-section-card">
+          <h3>Thang điểm đánh giá</h3>
+          <div class="assessment-form compact-form">
+            ${renderScaleCheckItem("fallRiskAssessment", "Đánh giá nguy cơ té ngã (Morse)", check.fallRiskAssessment)}
+            ${renderScaleCheckItem("vteRiskAssessment", "Đánh giá mức độ viêm tĩnh mạch (VIP)", check.vteRiskAssessment)}
+            ${renderScaleCheckItem("painAssessment", "Đánh giá đau (VAS)", check.painAssessment)}
+            ${renderScaleCheckItem("pressureUlcerRiskAssessment", "Đánh giá nguy cơ loét tỳ đè (Braden)", check.pressureUlcerRiskAssessment)}
+            ${renderScaleCheckItem("glasgowAssessment", "Đánh giá Glasgow (GCS)", check.glasgowAssessment)}
+          </div>
+        </div>
+
+        <div class="assessment-section-card">
           <h3>Theo dõi khác</h3>
           <div class="assessment-form compact-form">
-            ${renderScaleCheckItem("painAssessment", "Đau (VAS)", check.painAssessment)}
-            ${renderScaleCheckItem("pressureUlcerRiskAssessment", "Loét do tỳ đè (Braden)", check.pressureUlcerRiskAssessment)}
-            ${renderScaleCheckItem("fallRiskAssessment", "Nguy cơ ngã (Morse)", check.fallRiskAssessment)}
-            ${renderScaleCheckItem("vteRiskAssessment", "Viêm tĩnh mạch (VIP)", check.vteRiskAssessment)}
             ${checkField("earlyWarningScore", "Cảnh báo sớm - điểm NEWS2", check.earlyWarningScore, "number")}
             ${radioGroup("earlyWarningLevel", "Mức cảnh báo", ["Thấp (0-4)", "Trung bình (5-6)", "Cao (≥7)"], check.earlyWarningLevel)}
           </div>
         </div>
+
+        ${renderAssessmentTemplateSectionsById(["female_only"])}
+
+        ${renderObgynAssessmentPanel()}
       </div>
     </section>
   `;
