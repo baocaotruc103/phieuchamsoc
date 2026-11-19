@@ -4603,6 +4603,9 @@ function level23SheetSectionGroups() {
     "G. Giấc ngủ, nghỉ ngơi": ["sleepStatus", "sleepStatusOther"],
     "H. Vệ sinh cá nhân": ["hygieneAbility", "hygieneCondition", "hygieneOther"],
     "I. Tinh thần": ["mentalStatus", "mentalStatusOther"],
+    "I2. Thần kinh cảm giác": ["neuroConsciousness", "neuroConsciousnessOther", "neuroOrientation", "neuroOrientationOther", "neuroBehaviorStatus", "neuroBehavior", "neuroBehaviorOther", "neuroFocalSigns", "neuroFocalSignsOther"],
+    "I3. Tiêu hóa": ["abdomen", "painLocation", "painLocationOther", "painCharacter", "painCharacterOther", "nauseaVomiting", "nauseaVomitingOther", "flatus", "flatusOther", "stool", "stoolOther"],
+    "I4. Bài tiết": ["urinary", "urineAmount"],
     "J. Vận động, PHCN": ["mobilityAbility", "mobilityAbilityOther", "muscleStrength", "muscleStrengthOther", "movementStatus", "movementStatusOther"],
     "K. GDSK": ["healthKnowledge", "healthEducationNeeds", "healthEducationNeedsOther"],
     "L. Thang điểm đánh giá": ["fallRiskAssessment", "vteRiskAssessment", "painAssessment", "pressureUlcerRiskAssessment", "glasgowAssessment"],
@@ -4625,6 +4628,82 @@ function renderAssessmentTemplateSectionsById(ids) {
 
 function includesOther(value) {
   return Array.isArray(value) && value.includes("Khác");
+}
+
+function renderNeuroCard(check = state.assessmentChecklist) {
+  return `
+        <div class="assessment-section-card">
+          <h3>Thần kinh cảm giác</h3>
+          <div class="assessment-form compact-form">
+            ${multiCheckGroup("neuroConsciousness", "Ý thức", ["Bình thường", "Lơ mơ", "Ngủ gà", "Kích thích", "Hôn mê", "Khác"], check.neuroConsciousness)}
+            ${Array.isArray(check.neuroConsciousness) && check.neuroConsciousness.includes("Khác") ? checkField("neuroConsciousnessOther", "Ý thức khác", check.neuroConsciousnessOther) : ""}
+            ${radioGroup("neuroOrientation", "Định hướng", ["Bình thường", "Rối loạn định hướng thời gian", "Rối loạn định hướng không gian", "Rối loạn định hướng bản thân", "Khác"], check.neuroOrientation)}
+            ${check.neuroOrientation === "Khác" ? checkField("neuroOrientationOther", "Định hướng khác", check.neuroOrientationOther) : ""}
+            ${normalOrMultiCheckGroup("neuroBehaviorStatus", "neuroBehavior", "Tri giác - hành vi", ["Kích thích", "Vật vã", "Lo âu", "Không hợp tác", "Rối loạn hành vi", "Ảo giác", "Lú lẫn", "Khác"], check.neuroBehaviorStatus, check.neuroBehavior)}
+            ${Array.isArray(check.neuroBehavior) && check.neuroBehavior.includes("Khác") ? checkField("neuroBehaviorOther", "Tri giác - hành vi khác", check.neuroBehaviorOther) : ""}
+            ${multiCheckGroup("neuroFocalSigns", "Dấu hiệu thần kinh khu trú", ["Bình thường", "Méo miệng", "Nói khó", "Nuốt khó", "Liệt dây thần kinh sọ", "Giảm phản xạ", "Tăng phản xạ gân xương", "Co giật", "Đồng tử bất thường", "Khác"], check.neuroFocalSigns)}
+            ${Array.isArray(check.neuroFocalSigns) && check.neuroFocalSigns.includes("Khác") ? checkField("neuroFocalSignsOther", "Dấu hiệu thần kinh khu trú khác", check.neuroFocalSignsOther) : ""}
+          </div>
+        </div>
+  `;
+}
+
+function renderDigestiveCard(check = state.assessmentChecklist) {
+  return `
+        <div class="assessment-section-card">
+          <h3>Tiêu hóa</h3>
+          <div class="assessment-form compact-form digestive-form">
+            ${radioGroup("abdomen", "Bụng", ["Mềm", "Chướng", "Có dẫn lưu"], check.abdomen)}
+            ${multiCheckGroup("painLocation", "Vị trí đau", ["Không đau", "Thượng vị", "Quanh rốn", "Hạ vị", "Hố chậu phải", "Hố chậu trái", "Hạ sườn phải", "Hạ sườn trái", "Mạng sườn phải", "Mạng sườn trái", "Đau toàn bụng", "Đau vị trí vết mổ", "Khác"], check.painLocation)}
+            ${Array.isArray(check.painLocation) && check.painLocation.includes("Khác") ? checkField("painLocationOther", "Vị trí đau khác", check.painLocationOther) : ""}
+            ${multiCheckGroup("painCharacter", "Tính chất đau", ["Âm ỉ", "Dữ dội", "Quặn từng cơn", "Đau liên tục", "Đau tăng khi ho/vận động", "Đau sau ăn", "Đau khi ấn", "Phản ứng thành bụng", "Đau lan ra sau lưng", "Đau lan lên vai phải", "Khác"], check.painCharacter)}
+            ${Array.isArray(check.painCharacter) && check.painCharacter.includes("Khác") ? checkField("painCharacterOther", "Tính chất đau khác", check.painCharacterOther) : ""}
+            ${multiCheckGroup("nauseaVomiting", "Nôn/Buồn nôn", ["Không", "Buồn nôn", "Nôn khan", "Nôn ra thức ăn", "Nôn dịch vàng/xanh", "Nôn máu", "Nôn nhiều lần", "Khác"], check.nauseaVomiting)}
+            ${Array.isArray(check.nauseaVomiting) && check.nauseaVomiting.includes("Khác") ? checkField("nauseaVomitingOther", "Nôn/Buồn nôn khác", check.nauseaVomitingOther) : ""}
+            ${multiCheckGroup("flatus", "Trung tiện", ["Có", "Chưa", "Bí trung tiện", "Trung tiện ít", "Trung tiện nhiều", "Khác"], check.flatus)}
+            ${Array.isArray(check.flatus) && check.flatus.includes("Khác") ? checkField("flatusOther", "Trung tiện khác", check.flatusOther) : ""}
+            ${multiCheckGroup("stool", "Đại tiện", ["Bình thường", "Chưa đại tiện", "Táo bón", "Tiêu chảy", "Phân lỏng", "Phân đen", "Phân máu", "Khác"], check.stool)}
+            ${Array.isArray(check.stool) && check.stool.includes("Khác") ? checkField("stoolOther", "Đại tiện khác", check.stoolOther) : ""}
+          </div>
+        </div>
+  `;
+}
+
+function renderUrinaryCard(check = state.assessmentChecklist) {
+  return `
+        <div class="assessment-section-card">
+          <h3>Bài tiết</h3>
+          <div class="assessment-form compact-form">
+            ${multiCheckGroup("urinary", "Bài tiết nước tiểu", ["Tự đi tiểu", "Tiểu qua sonde", "Thiểu niệu", "Đa niệu", "Vô niệu"], check.urinary)}
+            ${checkField("urineAmount", "Số lượng nước tiểu (ml)", check.urineAmount)}
+          </div>
+        </div>
+  `;
+}
+
+function renderHygieneCard(check = state.assessmentChecklist) {
+  return `
+        <div class="assessment-section-card">
+          <h3>Vệ sinh cá nhân</h3>
+          <div class="assessment-form compact-form">
+            ${radioGroup("hygieneAbility", "Khả năng tự vệ sinh", ["Tự vệ sinh", "Cần hỗ trợ một phần", "Phụ thuộc hoàn toàn"], check.hygieneAbility)}
+            ${radioGroup("hygieneCondition", "Tình trạng vệ sinh", ["Sạch sẽ", "Chưa sạch"], check.hygieneCondition)}
+            ${checkArea("hygieneOther", "Khác", check.hygieneOther)}
+          </div>
+        </div>
+  `;
+}
+
+function renderMentalCard(check = state.assessmentChecklist) {
+  return `
+        <div class="assessment-section-card">
+          <h3>Tinh thần</h3>
+          <div class="assessment-form compact-form">
+            ${multiCheckGroup("mentalStatus", "Tinh thần", ["Ổn định", "Lo lắng", "Bồn chồn", "Buồn chán", "Sợ hãi", "Không hợp tác", "Khác"], check.mentalStatus)}
+            ${includesOther(check.mentalStatus) ? checkField("mentalStatusOther", "Tinh thần khác", check.mentalStatusOther) : ""}
+          </div>
+        </div>
+  `;
 }
 
 function renderLevel23AssessmentPanel() {
@@ -4670,6 +4749,12 @@ function renderLevel23AssessmentPanel() {
 
 ${renderCirculationCard(check)}
 
+${renderNeuroCard(check)}
+
+${renderDigestiveCard(check)}
+
+${renderUrinaryCard(check)}
+
 ${renderNutritionCard(check)}
 
         <div class="assessment-section-card">
@@ -4680,22 +4765,9 @@ ${renderNutritionCard(check)}
           </div>
         </div>
 
-        <div class="assessment-section-card">
-          <h3>Vệ sinh cá nhân</h3>
-          <div class="assessment-form compact-form">
-            ${radioGroup("hygieneAbility", "Khả năng tự vệ sinh", ["Tự vệ sinh", "Cần hỗ trợ một phần", "Phụ thuộc hoàn toàn"], check.hygieneAbility)}
-            ${radioGroup("hygieneCondition", "Tình trạng vệ sinh", ["Sạch sẽ", "Chưa sạch"], check.hygieneCondition)}
-            ${checkArea("hygieneOther", "Khác", check.hygieneOther)}
-          </div>
-        </div>
+${renderHygieneCard(check)}
 
-        <div class="assessment-section-card">
-          <h3>Tinh thần</h3>
-          <div class="assessment-form compact-form">
-            ${multiCheckGroup("mentalStatus", "Tinh thần", ["Ổn định", "Lo lắng", "Bồn chồn", "Buồn chán", "Sợ hãi", "Không hợp tác", "Khác"], check.mentalStatus)}
-            ${includesOther(check.mentalStatus) ? checkField("mentalStatusOther", "Tinh thần khác", check.mentalStatusOther) : ""}
-          </div>
-        </div>
+${renderMentalCard(check)}
 
 ${renderMobilityCard(check)}
 
@@ -4828,48 +4900,19 @@ function renderAssessmentPanel(assessments) {
 
         ${renderCirculationCard(check)}
 
-        <div class="assessment-section-card">
-          <h3>Thần kinh cảm giác</h3>
-          <div class="assessment-form compact-form">
-            ${multiCheckGroup("neuroConsciousness", "Ý thức", ["Bình thường", "Lơ mơ", "Ngủ gà", "Kích thích", "Hôn mê", "Khác"], check.neuroConsciousness)}
-            ${Array.isArray(check.neuroConsciousness) && check.neuroConsciousness.includes("Khác") ? checkField("neuroConsciousnessOther", "Ý thức khác", check.neuroConsciousnessOther) : ""}
-            ${radioGroup("neuroOrientation", "Định hướng", ["Bình thường", "Rối loạn định hướng thời gian", "Rối loạn định hướng không gian", "Rối loạn định hướng bản thân", "Khác"], check.neuroOrientation)}
-            ${check.neuroOrientation === "Khác" ? checkField("neuroOrientationOther", "Định hướng khác", check.neuroOrientationOther) : ""}
-            ${normalOrMultiCheckGroup("neuroBehaviorStatus", "neuroBehavior", "Tri giác - hành vi", ["Kích thích", "Vật vã", "Lo âu", "Không hợp tác", "Rối loạn hành vi", "Ảo giác", "Lú lẫn", "Khác"], check.neuroBehaviorStatus, check.neuroBehavior)}
-            ${Array.isArray(check.neuroBehavior) && check.neuroBehavior.includes("Khác") ? checkField("neuroBehaviorOther", "Tri giác - hành vi khác", check.neuroBehaviorOther) : ""}
-            ${multiCheckGroup("neuroFocalSigns", "Dấu hiệu thần kinh khu trú", ["Bình thường", "Méo miệng", "Nói khó", "Nuốt khó", "Liệt dây thần kinh sọ", "Giảm phản xạ", "Tăng phản xạ gân xương", "Co giật", "Đồng tử bất thường", "Khác"], check.neuroFocalSigns)}
-            ${Array.isArray(check.neuroFocalSigns) && check.neuroFocalSigns.includes("Khác") ? checkField("neuroFocalSignsOther", "Dấu hiệu thần kinh khu trú khác", check.neuroFocalSignsOther) : ""}
-          </div>
-        </div>
+        ${renderNeuroCard(check)}
 
-        <div class="assessment-section-card">
-          <h3>Tiêu hóa</h3>
-          <div class="assessment-form compact-form digestive-form">
-            ${radioGroup("abdomen", "Bụng", ["Mềm", "Chướng", "Có dẫn lưu"], check.abdomen)}
-            ${multiCheckGroup("painLocation", "Vị trí đau", ["Không đau", "Thượng vị", "Quanh rốn", "Hạ vị", "Hố chậu phải", "Hố chậu trái", "Hạ sườn phải", "Hạ sườn trái", "Mạng sườn phải", "Mạng sườn trái", "Đau toàn bụng", "Đau vị trí vết mổ", "Khác"], check.painLocation)}
-            ${Array.isArray(check.painLocation) && check.painLocation.includes("Khác") ? checkField("painLocationOther", "Vị trí đau khác", check.painLocationOther) : ""}
-            ${multiCheckGroup("painCharacter", "Tính chất đau", ["Âm ỉ", "Dữ dội", "Quặn từng cơn", "Đau liên tục", "Đau tăng khi ho/vận động", "Đau sau ăn", "Đau khi ấn", "Phản ứng thành bụng", "Đau lan ra sau lưng", "Đau lan lên vai phải", "Khác"], check.painCharacter)}
-            ${Array.isArray(check.painCharacter) && check.painCharacter.includes("Khác") ? checkField("painCharacterOther", "Tính chất đau khác", check.painCharacterOther) : ""}
-            ${multiCheckGroup("nauseaVomiting", "Nôn/Buồn nôn", ["Không", "Buồn nôn", "Nôn khan", "Nôn ra thức ăn", "Nôn dịch vàng/xanh", "Nôn máu", "Nôn nhiều lần", "Khác"], check.nauseaVomiting)}
-            ${Array.isArray(check.nauseaVomiting) && check.nauseaVomiting.includes("Khác") ? checkField("nauseaVomitingOther", "Nôn/Buồn nôn khác", check.nauseaVomitingOther) : ""}
-            ${multiCheckGroup("flatus", "Trung tiện", ["Có", "Chưa", "Bí trung tiện", "Trung tiện ít", "Trung tiện nhiều", "Khác"], check.flatus)}
-            ${Array.isArray(check.flatus) && check.flatus.includes("Khác") ? checkField("flatusOther", "Trung tiện khác", check.flatusOther) : ""}
-            ${multiCheckGroup("stool", "Đại tiện", ["Bình thường", "Chưa đại tiện", "Táo bón", "Tiêu chảy", "Phân lỏng", "Phân đen", "Phân máu", "Khác"], check.stool)}
-            ${Array.isArray(check.stool) && check.stool.includes("Khác") ? checkField("stoolOther", "Đại tiện khác", check.stoolOther) : ""}
-          </div>
-        </div>
+        ${renderDigestiveCard(check)}
 
-        <div class="assessment-section-card">
-          <h3>Bài tiết</h3>
-          <div class="assessment-form compact-form">
-            ${multiCheckGroup("urinary", "Bài tiết nước tiểu", ["Tự đi tiểu", "Tiểu qua sonde", "Thiểu niệu", "Đa niệu", "Vô niệu"], check.urinary)}
-            ${checkField("urineAmount", "Số lượng nước tiểu (ml)", check.urineAmount)}
-          </div>
-        </div>
+        ${renderUrinaryCard(check)}
 
         ${renderNutritionCard(check)}
 
         ${renderMobilityCard(check)}
+
+        ${renderHygieneCard(check)}
+
+        ${renderMentalCard(check)}
 
         <div class="assessment-section-card">
           <h3>Cơ quan bị bệnh</h3>
@@ -6854,7 +6897,7 @@ function hasAssessmentTabContent() {
     "obgynEnabled",
   ];
   if (state.careLevel === "1") {
-    assessmentFields.push("fluidIn", "fluidOut", "fluidBalance");
+    assessmentFields.push("fluidIn", "fluidOut", "fluidBalance", "hygieneAbility", "hygieneCondition", "hygieneOther", "mentalStatus", "mentalStatusOther");
   } else {
     assessmentFields.push(...LEVEL23_EXTRA_ASSESSMENT_KEYS);
   }
@@ -7315,6 +7358,8 @@ function buildAssessmentSectionsForSheet() {
     "I. Bài tiết": ["urinary", "urineAmount"],
     "J. Dinh dưỡng": ["nutritionRoute", "nutritionRegimen", "nutritionRegimenOther", "pathologicalDiet", "pathologicalDietTypes", "pathologicalDietOther"],
     "K. Vận động/Phục hồi chức năng": ["mobilityAbility", "mobilityAbilityOther", "muscleStrength", "muscleStrengthOther", "movementStatus", "movementStatusOther"],
+    "K2. Vệ sinh cá nhân": ["hygieneAbility", "hygieneCondition", "hygieneOther"],
+    "K3. Tinh thần": ["mentalStatus", "mentalStatusOther"],
     "L. Tư vấn, giáo dục sức khỏe": ["treatmentEducation", "careEducation", "preventionEducation"],
     "M. Cơ quan bị bệnh": ["diseasedOrgan"],
     "N. Thang điểm đánh giá": ["fallRiskAssessment", "vteRiskAssessment", "painAssessment", "pressureUlcerRiskAssessment", "glasgowAssessment"],
@@ -7341,7 +7386,8 @@ function buildAssessmentSectionsForSheet() {
     painAssessment: "Đánh giá đau",
     pressureUlcerRiskAssessment: "Đánh giá nguy cơ loét tỳ đè",
     glasgowAssessment: "Đánh giá Glasgow",
-    ...(state.careLevel !== "1" ? LEVEL23_SHEET_LABELS : {}),
+    ...LEVEL23_SHEET_LABELS,
+    ...(state.careLevel === "1" ? { consciousness: "Ý thức" } : {}),
   };
   
   for (const [section, fields] of Object.entries(sectionGroups)) {
