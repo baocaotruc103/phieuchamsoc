@@ -1,0 +1,450 @@
+<title>Mẫu phiếu chăm sóc A4</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Noto+Serif:wght@600;700&display=swap">
+<style>
+/* Layout: grey desk, A4 portrait sheets (210×297mm) stacked; toolbar above switches Sản khoa / Phụ khoa.
+   Deliberately single-theme: a paper form always reads as white paper. */
+:root {
+  --desk: #e4e7ea;
+  --paper: #ffffff;
+  --ink: #15202b;
+  --ink-soft: #4a5866;
+  --rule: #93a1ad;
+  --accent: #0f5b74;
+  --accent-tint: #e6f0f3;
+  --font-body: "Be Vietnam Pro", "Segoe UI", Arial, sans-serif;
+  --font-title: "Noto Serif", "Times New Roman", serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { background: var(--desk); color: var(--ink); font-family: var(--font-body); }
+
+.toolbar {
+  max-width: 210mm; margin: 0 auto; padding-block: 18px 12px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between;
+}
+.toolbar h1 { font-family: var(--font-title); font-size: 18px; margin: 0; text-wrap: balance; }
+.toolbar p { margin: 2px 0 0; color: var(--ink-soft); font-size: 13px; }
+.switch { display: inline-flex; background: var(--paper); border: 1px solid var(--rule); border-radius: 8px; padding: 3px; gap: 3px; }
+.switch button {
+  font: 600 13px var(--font-body); border: 0; background: transparent; color: var(--ink-soft);
+  padding: 8px 14px; border-radius: 6px; cursor: pointer;
+}
+.switch button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.switch button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.desk {
+  overflow-x: auto; padding-block: 4px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.sheet {
+  width: 210mm; min-height: 297mm; margin: 0 auto 18px; background: var(--paper);
+  padding: 11mm 11mm 10mm 14mm; box-shadow: 0 1px 3px rgba(20,32,43,.18), 0 8px 24px rgba(20,32,43,.08);
+  font-size: 9pt; line-height: 1.35; position: relative; display: flex; flex-direction: column; gap: 1.7mm;
+}
+.sheet-foot {
+  margin-top: auto; display: flex; justify-content: space-between; color: var(--ink-soft);
+  font-size: 7.5pt; border-top: 0.5pt solid var(--rule); padding-top: 1.5mm;
+}
+
+/* header */
+.head { display: grid; grid-template-columns: 1fr auto 1fr; gap: 4mm; align-items: start; }
+.head .org { font-size: 8.5pt; display: grid; gap: 1mm; }
+.head .org b { font-weight: 600; }
+.head .title { text-align: center; }
+.head .title h2 { font-family: var(--font-title); font-size: 15pt; margin: 0; letter-spacing: .02em; }
+.head .title .sub { font-size: 9pt; color: var(--accent); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; margin-top: .6mm; }
+.head .meta { font-size: 8.5pt; display: grid; gap: 1mm; justify-items: end; }
+.legend { font-size: 7.5pt; color: var(--ink-soft); text-align: center; }
+
+/* section blocks */
+.part {
+  font-family: var(--font-title); font-size: 10pt; color: var(--accent); margin: 0;
+  border-bottom: 1pt solid var(--accent); padding-bottom: .6mm; letter-spacing: .02em;
+}
+.block { border: 0.6pt solid var(--rule); border-radius: 1.2mm; padding: 1.6mm 2.4mm 1.8mm; break-inside: avoid; }
+.block > h3 {
+  font-size: 8.6pt; font-weight: 700; margin: 0 0 1mm; text-transform: uppercase; letter-spacing: .04em;
+  display: flex; gap: 1.5mm; align-items: baseline;
+}
+.block > h3 .n { color: var(--accent); font-variant-numeric: tabular-nums; }
+.block > h3 small { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--ink-soft); font-size: 7.5pt; }
+.cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 2mm; align-items: start; }
+
+/* field rows */
+.row { display: flex; flex-wrap: wrap; align-items: baseline; gap: .4mm 3mm; padding: .25mm 0; }
+.row + .row { border-top: 0.4pt dotted #c9d1d8; }
+.lbl { font-weight: 600; min-width: 27mm; }
+.lbl.wide { min-width: 36mm; }
+.opts { display: flex; flex-wrap: wrap; gap: .4mm 3.2mm; flex: 1; min-width: 0; }
+.opt { display: inline-flex; align-items: center; gap: 1.1mm; white-space: nowrap; cursor: pointer; }
+.opt input {
+  appearance: none; -webkit-appearance: none; margin: 0; width: 3mm; height: 3mm; flex: none;
+  border: 0.8pt solid var(--ink); background: var(--paper); display: inline-grid; place-content: center; cursor: pointer;
+}
+.opt input[type="radio"] { border-radius: 50%; }
+.opt input[type="checkbox"]::after { content: ""; width: 1.7mm; height: 1.7mm; background: var(--ink); transform: scale(0); clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%); }
+.opt input[type="radio"]::after { content: ""; width: 1.5mm; height: 1.5mm; border-radius: 50%; background: var(--ink); transform: scale(0); }
+.opt input:checked::after { transform: scale(1); }
+.opt input:focus-visible { outline: 1.5pt solid var(--accent); outline-offset: 1pt; }
+
+.fill { display: inline-flex; align-items: baseline; gap: 1.2mm; flex: 1 1 32mm; min-width: 26mm; }
+.fill.s { flex: 0 1 30mm; min-width: 22mm; }
+.fill.xs { flex: 0 1 20mm; min-width: 15mm; }
+.fill.full { flex: 1 1 100%; }
+.fill > span { white-space: nowrap; }
+.fill .lbl { min-width: 0; }
+/* a fill never shrinks below its label + unit + a short writing line, so it wraps to the next row instead of spilling past the margin */
+.fill, .fill.s, .fill.xs { min-width: fit-content; max-width: 100%; }
+.line {
+  flex: 1; width: 0; min-width: 10mm; border: 0; border-bottom: 0.7pt dotted var(--ink-soft); background: transparent;
+  font: inherit; color: var(--ink); padding: 0 .5mm; height: 4.4mm;
+}
+.line:focus { outline: none; border-bottom: 1pt solid var(--accent); background: var(--accent-tint); }
+.unit { color: var(--ink-soft); font-size: 8pt; }
+.note { font-size: 7.5pt; color: var(--ink-soft); font-style: italic; }
+/* ruled writing lines live on a wrapper div: browsers drop a textarea's own background when printing */
+.ruled {
+  background: linear-gradient(to top, #9aa7b2 0, #9aa7b2 0.8pt, transparent 0.8pt) 0 0 / 100% 5.2mm repeat-y;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+textarea.area {
+  width: 100%; border: 0; resize: none; font: inherit; color: var(--ink); background: transparent;
+  line-height: 5.2mm; padding: 0 1mm; display: block;
+}
+textarea.area:focus { outline: none; background-color: rgba(15, 91, 116, .08); }
+.sub-h { font-weight: 700; color: var(--accent); font-size: 8.3pt; margin: 1mm 0 .2mm; }
+
+/* tables */
+table.grid { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
+table.grid th, table.grid td { border: 0.6pt solid var(--rule); padding: .8mm 1.4mm; vertical-align: middle; }
+table.grid th { background: var(--accent-tint); font-weight: 600; text-align: center; font-size: 8pt; }
+table.grid td.c { text-align: center; }
+table.grid td.na { background: repeating-linear-gradient(45deg, #fff 0 1.2mm, #eef1f3 1.2mm 2.4mm); }
+table.grid td.num { text-align: center; color: var(--ink-soft); font-variant-numeric: tabular-nums; width: 7mm; }
+table.grid .line { width: 100%; border-bottom: 0; height: 5.2mm; }
+table.grid .ruled { background: none; }
+table.grid textarea.area { line-height: 4.4mm; }
+table.tall td { height: 15mm; vertical-align: top; }
+table.med td { height: 6.6mm; }
+
+.sign { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; text-align: center; margin-top: 2mm; }
+.sign b { display: block; }
+.sign .when { font-style: italic; color: var(--ink-soft); font-size: 8pt; }
+.sign .space { height: 15mm; }
+
+@media (max-width: 600px) { .toolbar h1 { font-size: 16px; } }
+@media print {
+  @page { size: A4 portrait; margin: 0; }
+  body { background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .toolbar { display: none; }
+  .desk { padding: 0; overflow: visible; }
+  .sheet { margin: 0; box-shadow: none; break-after: page; height: 297mm; overflow: hidden; }
+  .line, textarea.area { background-color: transparent !important; }
+}
+</style>
+
+<div class="toolbar">
+  <div>
+    <h1>Mẫu phiếu chăm sóc điều dưỡng · A4 dọc</h1>
+    <p>Đủ các trường như form nhập trên webapp. Có thể tích chọn, gõ trực tiếp hoặc in ra để ghi tay.</p>
+  </div>
+  <div class="switch" role="group" aria-label="Chọn bản">
+    <button type="button" id="btn-san" data-version="san" aria-pressed="true">Bản Sản khoa</button>
+    <button type="button" id="btn-phu" data-version="phu" aria-pressed="false">Bản Phụ khoa</button>
+  </div>
+</div>
+<div class="desk" id="desk"></div>
+
+<script>
+(() => {
+  let uid = 0;
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  let V = "san";
+  const id = (k) => `${V}-${k}-${++uid}`;
+
+  // --- primitives
+  const line = (k = "f") => `<input class="line" id="${id(k)}" aria-label="${esc(k)}">`;
+  const fill = (label, opt = {}) => `<span class="fill ${opt.size || ""}"><span class="${opt.bold ? "lbl" : ""}">${esc(label)}${label ? ":" : ""}</span>${line(label || "ghi")}${opt.unit ? `<span class="unit">${esc(opt.unit)}</span>` : ""}</span>`;
+  const choice = (type, name, options) => {
+    const nm = id(name);
+    return `<span class="opts">${options.map((o) => {
+      const other = /^Khác$/.test(o) || o.endsWith("…");
+      const label = o.replace(/…$/, "");
+      const box = `<label class="opt"><input type="${type}" name="${nm}" id="${id(name)}"><span>${esc(label)}</span></label>`;
+      return other ? `<span class="fill" style="flex:1 1 34mm">${box}${line(label)}</span>` : box;
+    }).join("")}</span>`;
+  };
+  const row = (label, inner, wide) => `<div class="row"><span class="lbl ${wide ? "wide" : ""}">${esc(label)}</span>${inner}</div>`;
+  const R = (label, options, wide) => row(label, choice("radio", label, options), wide);   // chọn một
+  const C = (label, options, wide) => row(label, choice("checkbox", label, options), wide); // chọn nhiều
+  const F = (...fills) => `<div class="row">${fills.join("")}</div>`;
+  const area = (rows = 2, k = "ghi chú") => `<div class="ruled"><textarea class="area" rows="${rows}" id="${id(k)}" aria-label="${esc(k)}"></textarea></div>`;
+  const block = (n, title, body, note = "") => `<section class="block"><h3><span class="n">${n}</span>${esc(title)}${note ? `<small>${esc(note)}</small>` : ""}</h3>${body}</section>`;
+  const sheet = (num, total, body) => `<article class="sheet">${body}<div class="sheet-foot"><span>Phiếu chăm sóc điều dưỡng · ${V === "san" ? "Bản Sản khoa" : "Bản Phụ khoa"}</span><span>Trang ${num}/${total}</span></div></article>`;
+
+  // --- page 1: header, patient, level, vitals → circulation
+  const header = () => `
+    <header class="head">
+      <div class="org">
+        <span><b>Bệnh viện:</b> ${line("Bệnh viện")}</span>
+        <span><b>Khoa:</b> ${line("Khoa")}</span>
+      </div>
+      <div class="title">
+        <h2>PHIẾU CHĂM SÓC</h2>
+        <div class="sub">${V === "san" ? "Có nhận định sản khoa" : "Có nhận định phụ khoa"}</div>
+      </div>
+      <div class="meta">
+        <span>Số vào viện: <input class="line" style="width:26mm" id="${id("svv")}" aria-label="Số vào viện"></span>
+        <span>Tờ số: <input class="line" style="width:12mm" id="${id("to")}" aria-label="Tờ số"></span>
+      </div>
+    </header>
+    <div class="legend">○ chọn một &nbsp;·&nbsp; □ chọn nhiều &nbsp;·&nbsp; …… ghi rõ</div>`;
+
+  const patient = () => `
+    <h2 class="part">I. THÔNG TIN NGƯỜI BỆNH</h2>
+    <section class="block">
+      ${F(fill("Họ và tên", { bold: true }), fill("Mã y tế", { size: "s" }), fill("Tuổi", { size: "xs" }))}
+      ${row("Giới", choice("radio", "Giới", ["Nam", "Nữ"]) + fill("Ngày vào viện", { size: "s" }) + fill("Phòng", { size: "xs" }) + fill("Giường", { size: "xs" }))}
+      ${F(fill("Khoa", { size: "s" }), fill("Chẩn đoán y khoa", { bold: true }))}
+      ${F(`<span class="fill"><span class="lbl">Thời gian đánh giá:</span>${line("giờ")}<span>giờ</span>${line("phút")}<span>phút, ngày</span>${line("ngày")}<span>/</span>${line("tháng")}<span>/</span>${line("năm")}</span>`, fill("Người đánh giá", { size: "s" }))}
+      ${F(fill("Chiều cao", { unit: "cm", size: "s" }), fill("Cân nặng", { unit: "kg", size: "s" }), fill("BMI", { unit: "kg/m²", size: "s" }))}
+      ${row("Dị ứng", choice("radio", "Dị ứng", ["Không", "Có"]) + `<span class="note">Nếu có, ghi rõ:</span>`)}
+      ${F(fill("Thuốc"), fill("Thức ăn"))}
+      ${F(fill("Khác"), fill("Biểu hiện"))}
+    </section>
+    <div class="cols-2">
+      ${block("", "Phân cấp chăm sóc", R("Cấp", ["CS cấp 1", "CS cấp 2", "CS cấp 3"]))}
+      ${block("", "Theo dõi dịch", F(fill("Dịch vào", { unit: "ml", size: "s" }), fill("Dịch ra", { unit: "ml", size: "s" })) + F(fill("Bilance (vào − ra)", { unit: "ml" })), "khi CS cấp 1")}
+    </div>`;
+
+  const p1 = () => `
+    <h2 class="part">II. NHẬN ĐỊNH ĐIỀU DƯỠNG</h2>
+    ${block("1.", "Dấu hiệu sinh tồn", F(fill("Mạch", { unit: "lần/phút", bold: true }), fill("Nhiệt độ", { unit: "°C", bold: true, size: "s" }), fill("Huyết áp", { unit: "mmHg", bold: true }), fill("SpO2", { unit: "%", bold: true, size: "s" })))}
+    ${block("2.", "Toàn thân",
+      R("Thể trạng", ["Gầy", "Trung bình", "Béo"]) +
+      C("Ý thức", ["Tỉnh", "Lơ mơ", "Hôn mê", "Kích thích", "An thần"]) +
+      C("Da niêm mạc", ["Hồng", "Nhợt", "Vàng da", "Ngứa ngoài da"]) +
+      R("Phù", ["Có", "Không"]) +
+      F(fill("Khác", { bold: true, size: "full" })))}
+    ${block("3.", "Hô hấp",
+      R("Tình trạng thở", ["Tự thở", "Thở oxy", "HFNC", "NIV", "Thở máy"]) +
+      F(fill("Nhịp thở", { unit: "lần/phút", bold: true, size: "s" }), fill("Lưu lượng oxy / HFNC", { unit: "L/phút" }), fill("FiO2", { size: "s" })) +
+      row("Thở máy / NIV", choice("checkbox", "Đường thở", ["NKQ", "MKQ"]) + fill("Mode", { size: "s" }) + fill("PEEP", { size: "xs" }) + fill("VT", { size: "xs" })) +
+      C("Ho", ["Không ho", "Ho khan", "Ho có đờm", "Ho từng cơn", "Ho thường xuyên", "Ho có máu", "Ho yếu / không hiệu quả", "Không đánh giá được"]) +
+      F(fill("Khác", { bold: true, size: "full" })))}
+    ${block("4.", "Tuần hoàn",
+      C("Triệu chứng cơ năng", ["Không triệu chứng", "Hồi hộp/đánh trống ngực", "Đau ngực", "Chóng mặt", "Ngất", "Không đánh giá được"], true) +
+      R("Tưới máu ngoại vi", ["Bình thường", "Giảm tưới máu ngoại vi"], true) +
+      `<div class="row">${`<span class="lbl">Nhịp tim</span>` + choice("radio", "Nhịp tim", ["Đều", "Không đều"])}<span class="lbl">Mạch</span>${choice("radio", "Mạch", ["Bình thường", "Nhanh", "Chậm"])}</div>` +
+      R("Tiếng tim", ["Nghe rõ", "Mờ", "Không đánh giá được"]) +
+      row("", choice("checkbox", "Tuần hoàn khác", ["Khác"])))}`;
+
+  // --- page 2: neuro → ADL
+  const p2 = () => `
+    ${block("5.", "Thần kinh cảm giác",
+      C("Ý thức", ["Bình thường", "Lơ mơ", "Ngủ gà", "Kích thích", "Hôn mê", "Khác"], true) +
+      R("Định hướng", ["Bình thường", "Rối loạn định hướng thời gian", "Rối loạn định hướng không gian", "Rối loạn định hướng bản thân", "Khác"], true) +
+      row("Tri giác - hành vi", choice("radio", "Tri giác", ["Bình thường"]).replace('<span class="opts">', '<span class="opts" style="flex:none">') + choice("checkbox", "Tri giác - hành vi", ["Kích thích", "Vật vã", "Lo âu", "Không hợp tác", "Rối loạn hành vi", "Ảo giác", "Lú lẫn", "Khác"]), true) +
+      C("Dấu hiệu thần kinh khu trú", ["Bình thường", "Méo miệng", "Nói khó", "Nuốt khó", "Liệt dây thần kinh sọ", "Giảm phản xạ", "Tăng phản xạ gân xương", "Co giật", "Đồng tử bất thường", "Khác"], true))}
+    ${block("6.", "Tiêu hóa",
+      R("Bụng", ["Mềm", "Chướng", "Có dẫn lưu"]) +
+      C("Vị trí đau", ["Không đau", "Thượng vị", "Quanh rốn", "Hạ vị", "Hố chậu phải", "Hố chậu trái", "Hạ sườn phải", "Hạ sườn trái", "Mạng sườn phải", "Mạng sườn trái", "Đau toàn bụng", "Đau vị trí vết mổ", "Khác"]) +
+      C("Tính chất đau", ["Âm ỉ", "Dữ dội", "Quặn từng cơn", "Đau liên tục", "Đau tăng khi ho/vận động", "Đau sau ăn", "Đau khi ấn", "Phản ứng thành bụng", "Đau lan ra sau lưng", "Đau lan lên vai phải", "Khác"]) +
+      C("Nôn/Buồn nôn", ["Không", "Buồn nôn", "Nôn khan", "Nôn ra thức ăn", "Nôn dịch vàng/xanh", "Nôn máu", "Nôn nhiều lần", "Khác"]) +
+      C("Trung tiện", ["Có", "Chưa", "Bí trung tiện", "Trung tiện ít", "Trung tiện nhiều", "Khác"]) +
+      C("Đại tiện", ["Bình thường", "Chưa đại tiện", "Táo bón", "Tiêu chảy", "Phân lỏng", "Phân đen", "Phân máu", "Khác"]))}
+    <div class="cols-2">
+      ${block("7.", "Bài tiết",
+        C("Nước tiểu", ["Tự đi tiểu", "Tiểu qua sonde", "Thiểu niệu", "Đa niệu", "Vô niệu"]) +
+        F(fill("Số lượng nước tiểu", { unit: "ml", bold: true })))}
+      ${block("8.", "Hệ cơ - xương - khớp",
+        R("Tình trạng", ["Bình thường", "Bất thường…"]))}
+    </div>
+    ${block("9.", "Dinh dưỡng",
+      C("Đường nuôi dưỡng", ["Đường miệng", "Sonde dạ dày", "Sonde hỗng tràng", "Tĩnh mạch", "Kết hợp", "Nhịn ăn"], true) +
+      C("Chế độ dinh dưỡng", ["Cơm", "Cháo", "Soup", "Sữa", "Khác"], true) +
+      row("", choice("checkbox", "Chế độ bệnh lý", ["Chế độ bệnh lý:"]).replace('<span class="opts">', '<span class="opts" style="flex:none;font-weight:600">') + choice("checkbox", "Loại chế độ bệnh lý", ["Tim mạch", "Đái tháo đường (kiểm soát đường)", "Suy thận", "Gan mật", "Giảm mỡ / tim mạch", "Theo chỉ định riêng", "Khác"]), false))}
+    ${block("10.", "Vận động / Phục hồi chức năng",
+      C("Khả năng vận động", ["Tự đi lại bình thường", "Đi lại cần hỗ trợ", "Đi lại bằng dụng cụ hỗ trợ", "Không tự đi lại được", "Nằm bất động tại giường", "Khác"], true) +
+      C("Tình trạng cơ lực", ["Cơ lực bình thường", "Yếu nhẹ", "Yếu 1 chi", "Yếu 2 chi", "Liệt nửa người", "Liệt tứ chi", "Khác"], true) +
+      C("Tình trạng vận động", ["Bình thường", "Hạn chế vận động", "Đau khi vận động", "Co cứng cơ", "Run tay chân", "Giảm thăng bằng", "Khác"], true))}
+    ${block("11.", "Đánh giá đau",
+      `<div class="row"><span class="lbl">Hiện đang đau</span>${choice("radio", "Hiện đang đau", ["Không", "Có"])}${fill("Thang điểm đau", { unit: "điểm", size: "s" })}</div>` +
+      F(fill("Thời gian bắt đầu đau"), fill("Vị trí")) +
+      R("Dùng thuốc giảm đau", ["Không", "Có"], true) +
+      C("Tần suất", ["Đau từng cơn", "Đau liên tục", "Đau khi kích thích", "Khác"], true))}`;
+
+  const adl = () => {
+    const rows = [
+      ["Ăn, uống", 3], ["Đi lại", "liet"], ["Thay đổi tư thế tại giường", 2], ["Tắm", 3],
+      ["Chăm sóc răng miệng", 3], ["Thay quần áo", 3], ["Đi vệ sinh", 3],
+    ];
+    const cell = (name) => `<td class="c"><label class="opt" style="justify-content:center"><input type="radio" name="${name}" id="${id("adl")}" aria-label="${esc(name)}"></label></td>`;
+    return block("12.", "Khả năng thực hiện hoạt động sinh hoạt hằng ngày", `
+      <table class="grid">
+        <thead><tr><th style="text-align:left">Hoạt động</th><th>Độc lập</th><th>Cần hỗ trợ</th><th>Phụ thuộc hoàn toàn</th></tr></thead>
+        <tbody>${rows.map(([n, k]) => {
+          const nm = id("adl-" + n);
+          const third = k === 2 ? `<td class="na"></td>` : k === "liet"
+            ? `<td class="c"><label class="opt" style="justify-content:center"><input type="radio" name="${nm}" id="${id("adl")}"><span>Nằm liệt giường</span></label></td>`
+            : cell(nm);
+          return `<tr><td>${esc(n)}</td>${cell(nm)}${cell(nm)}${third}</tr>`;
+        }).join("")}</tbody>
+      </table>`);
+  };
+
+  // --- page 3: urogenital, female, organ, scales, OB/GYN
+  const p3common = () => `
+    ${adl()}
+    ${block("13.", "Hệ tiết niệu - sinh dục",
+      C("Tiểu tiện", ["Bình thường", "Tiểu đêm", "Thường xuyên", "Khó tiểu", "Không tự chủ"]) +
+      row("Ống thông", `<span class="opts" style="display:grid;gap:.8mm">
+        <span class="row" style="padding:0">${choice("checkbox", "Ống thông tiểu ngắt quãng", ["Ống thông tiểu ngắt quãng"])}${fill("", { unit: "lần/ngày", size: "xs" })}${fill("Bắt đầu từ ngày", { size: "s" })}</span>
+        <span class="row" style="padding:0">${choice("checkbox", "Ống thông tiểu lưu", ["Ống thông tiểu lưu"])}${fill("Kích cỡ", { size: "xs" })}${fill("Ngày thay cuối cùng", { size: "s" })}</span>
+        <span class="row" style="padding:0">${choice("checkbox", "Ống thông bàng quang qua da", ["Ống thông bàng quang qua da"])}${fill("Kích cỡ", { size: "xs" })}${fill("Ngày thay cuối cùng", { size: "s" })}</span>
+      </span>`))}
+    ${block("14.", "Dành cho người bệnh nữ",
+      R("Kinh nguyệt", ["Có", "Mãn kinh", "Vô kinh"]) +
+      `<div class="row"><span class="lbl">Mang thai</span>${choice("radio", "Mang thai", ["Không", "Có…"])}<span class="lbl" style="min-width:0">Tránh thai</span>${choice("radio", "Tránh thai", ["Không", "Có"])}</div>`)}
+    ${block("15.", "Cơ quan bị bệnh", `<div class="row"><span class="lbl wide">Nhận định cơ quan bị bệnh</span></div>${area(2, "Nhận định cơ quan bị bệnh")}`)}
+    ${block("16.", "Thang điểm đánh giá", `
+      <table class="grid">
+        <thead><tr><th style="text-align:left">Thang điểm</th><th style="width:16mm">Có đánh giá</th><th style="width:20mm">Tổng điểm</th><th style="width:44mm">Mức độ / nguy cơ</th></tr></thead>
+        <tbody>
+          ${[
+            ["Nguy cơ té ngã", choice("radio", "Thang té ngã", V === "san" ? ["OFRAS (sản khoa)", "Morse", "Humpty Dumpty"] : ["Morse", "Humpty Dumpty", "OFRAS (sản khoa)"])],
+            ["Mức độ viêm tĩnh mạch (VIP)", ""],
+            ["Đánh giá đau (VAS)", ""],
+            ["Nguy cơ loét tỳ đè (Braden)", ""],
+            ["Glasgow (GCS)", ""],
+          ].map(([n, extra]) => `<tr><td><div style="display:flex;flex-wrap:wrap;gap:.5mm 3mm;align-items:center"><span>${esc(n)}</span>${extra}</div></td>
+            <td class="c"><label class="opt" style="justify-content:center"><input type="checkbox" id="${id("sc")}" aria-label="${esc(n)}"></label></td>
+            <td>${line(n + " điểm")}</td><td>${line(n + " mức độ")}</td></tr>`).join("")}
+        </tbody>
+      </table>`)}`;
+
+  const obstetric = () => `
+    <h2 class="part">NHẬN ĐỊNH SẢN KHOA</h2>
+    ${block("17.", "Trước sinh",
+      `<div class="row"><span class="lbl">Para</span>${line("Para")}<span class="note">VD: 1001</span><span class="lbl" style="min-width:0">Số lần sinh</span>${choice("checkbox", "Số lần sinh", ["Con so", "Con rạ"])}</div>` +
+      C("Tuổi thai", ["< 37 tuần", "38 tuần", "39 tuần", "40 tuần", "> 40 tuần"]) +
+      C("Đau bụng/cơn co", ["Không đau", "Âm ỉ", "Từng cơn", "Cơn co tăng dần", "Khác"]) +
+      C("Ra huyết âm đạo", ["Không", "Hồng", "Đỏ tươi", "Máu cục", "Khác"]) +
+      C("Ối", ["Chưa vỡ ối", "Vỡ ối", "Dẹt", "Phồng", "Quả lê"]) +
+      `<div class="row"><span class="lbl">Số lượng nước ối</span>${choice("checkbox", "Số lượng nước ối", ["Bình thường", "Ít", "Nhiều"])}</div>` +
+      C("Màu sắc nước ối", ["Trong", "Vàng", "Xanh", "Bẩn", "Có lẫn máu"]) +
+      C("Tử cung", ["Hình trứng", "Bè ngang", "Khác"]) +
+      C("Ngôi thai", ["Ngôi đầu", "Ngôi mông", "Ngôi ngang", "Khác"]) +
+      `<div class="row"><span class="lbl">Kiểu thế</span>${choice("checkbox", "Kiểu thế", ["Trước", "Sau", "Khác"])}</div>` +
+      `<div class="row"><span class="lbl">Thế thai</span>${choice("checkbox", "Thế thai", ["Trái", "Phải"])}<span class="lbl" style="min-width:0">Độ lọt</span>${choice("checkbox", "Độ lọt", ["Cao", "Chúc", "Chặt", "Lọt"])}</div>` +
+      `<div class="row"><span class="lbl">Cơn co tử cung</span>${choice("checkbox", "Có cơn co tử cung", ["Không", "Có"])}${fill("Tần số", { size: "s" })}<span class="lbl" style="min-width:0">Dấu hiệu dọa vỡ tử cung</span>${choice("checkbox", "Dọa vỡ tử cung", ["Không", "Có"])}</div>` +
+      `<div class="row"><span class="lbl">Tim thai</span>${choice("checkbox", "Tình trạng tim thai", ["Bình thường", "Nhanh", "Chậm", "Không đều"])}${fill("Tần số tim thai", { unit: "l/p", size: "s" })}</div>` +
+      `<div class="row"><span class="lbl">Cổ tử cung</span>${fill("Mở", { unit: "cm", size: "xs" })}${fill("Xóa", { unit: "%", size: "xs" })}<span class="lbl" style="min-width:0">Vị trí</span>${choice("checkbox", "Vị trí cổ tử cung", ["Trung gian", "Ngả trước", "Ngả sau"])}</div>` +
+      C("Mật độ cổ tử cung", ["Mềm", "Trung bình", "Rắn"], true) +
+      C("Âm hộ", ["Bình thường", "Viêm đỏ", "Sưng tấy"]) +
+      C("Âm đạo", ["Bình thường", "Viêm đỏ", "Sưng tấy"]) +
+      C("Tầng sinh môn", ["Bình thường", "Viêm đỏ", "Sưng tấy"]) +
+      C("Khung chậu", ["Không sờ thấy mỏm nhô", "Sờ thấy mỏm nhô"]) +
+      C("Sẹo mổ cũ", ["Không có", "Sẹo dọc", "Sẹo ngang", "Sẹo đường trắng giữa dưới rốn", "Sẹo đường Pfannenstiel"]))}
+    ${block("18.", "Trong và sau khi sinh",
+      `<div class="sub-h">Mẹ</div>` +
+      C("Toàn trạng", ["Tốt", "Trung bình", "Kém"]) +
+      C("Sản dịch", ["Ít", "Vừa", "Nhiều", "Có sữa non", "Chưa có sữa non"]) +
+      C("Tử cung/co hồi", ["Co hồi tốt", "Co hồi kém", "Tử cung mềm", "Tử cung gò chắc"]) +
+      C("Tầng sinh môn", ["Cắt", "Rạch", "Khô, liền tốt", "Sưng đỏ", "Đau", "Chảy máu", "Khác"]) +
+      `<div class="sub-h">Bé</div>` +
+      `<div class="row"><span class="lbl">Trương lực cơ</span>${choice("checkbox", "Trương lực cơ", ["Tốt", "Kém"])}<span class="lbl" style="min-width:0">Khóc</span>${choice("checkbox", "Khóc", ["Có", "Không"])}<span class="lbl" style="min-width:0">Tắm bé</span>${choice("checkbox", "Tắm bé", ["Có", "Không"])}</div>` +
+      C("Nhịp tim", ["Bình thường", "Nhanh", "Chậm"]) +
+      C("Nhịp thở", ["Bình thường", "Nhanh", "Chậm", "Khó thở"]) +
+      C("Màu da", ["Hồng hào", "Tím đầu chi", "Tím toàn thân", "Vàng da", "Viêm da"]) +
+      `<div class="row"><span class="lbl">Phản xạ</span>${choice("checkbox", "Phản xạ", ["Bình thường", "Bất thường"])}<span class="lbl" style="min-width:0">Ăn</span>${choice("checkbox", "Ăn", ["Bú mẹ tốt", "Bú kém", "Chưa bú"])}</div>` +
+      C("Đại tiểu tiện", ["Bình thường", "Chưa đại tiện", "Chưa tiểu tiện", "Khác"]))}`;
+
+  const gynecology = () => `
+    <h2 class="part">NHẬN ĐỊNH PHỤ KHOA</h2>
+    ${block("17.", "Người bệnh phụ khoa",
+      `<div class="row"><span class="lbl">Chậm kinh</span>${choice("checkbox", "Chậm kinh", ["Có", "Không"])}<span class="lbl" style="min-width:0">Rong kinh</span>${choice("checkbox", "Rong kinh", ["Có", "Không"])}<span class="lbl" style="min-width:0">Cường kinh</span>${choice("checkbox", "Cường kinh", ["Có", "Không"])}</div>` +
+      C("Đại tiểu tiện", ["Bình thường", "Không bình thường"]) +
+      C("Đau", ["Không đau", "Đau âm ỉ", "Đau từng cơn", "Đau vùng hạ vị", "Đau khi ấn", "Khác"]) +
+      C("Test HCG", ["Âm tính", "Dương tính", "Chưa làm"]) +
+      `<div class="row"><span class="lbl wide">Nhận định khác</span></div>${area(3, "Nhận định phụ khoa khác")}`)}`;
+
+  // --- final page: diagnosis, intervention, handover, signatures
+  const plan = (n) => `
+    <h2 class="part">III. CHẨN ĐOÁN ĐIỀU DƯỠNG &amp; MỤC TIÊU</h2>
+    <table class="grid tall">
+      <thead><tr><th>TT</th><th>Chẩn đoán điều dưỡng</th><th>Liên quan tới</th><th>Mục tiêu can thiệp</th><th style="width:21mm">Đánh giá</th></tr></thead>
+      <tbody>${Array.from({ length: n }, (_, i) => {
+        const nm = id("dg");
+        return `<tr><td class="num">${i + 1}</td><td>${area(3, "Chẩn đoán " + (i + 1))}</td><td>${area(3, "Liên quan " + (i + 1))}</td><td>${area(3, "Mục tiêu " + (i + 1))}</td>
+        <td><span style="display:grid;gap:1mm"><label class="opt"><input type="radio" name="${nm}" id="${id("dat")}"><span>Đạt</span></label><label class="opt"><input type="radio" name="${nm}" id="${id("kdat")}"><span>Không đạt</span></label></span></td></tr>`;
+      }).join("")}</tbody>
+    </table>
+    <h2 class="part">IV. CAN THIỆP CHĂM SÓC</h2>
+    <table class="grid med">
+      <thead><tr><th>TT</th><th style="width:30mm">Mã can thiệp</th><th>Nội dung can thiệp</th><th style="width:20mm">Thời gian</th></tr></thead>
+      <tbody>${Array.from({ length: 9 }, (_, i) => `<tr><td class="num">${i + 1}</td><td>${line("Mã " + (i + 1))}</td><td>${line("Nội dung " + (i + 1))}</td><td>${line("Giờ " + (i + 1))}</td></tr>`).join("")}</tbody>
+    </table>
+    <h2 class="part">V. BÀN GIAO</h2>
+    <section class="block">
+      ${row("Nội dung", choice("checkbox", "Bàn giao", ["Thuốc", "Lấy xét nghiệm", "Lấy phim", "Chờ kết quả xét nghiệm", "Chờ phim", "Thay băng", "Theo dõi dẫn lưu", "Theo dõi DHST", "Theo dõi nước tiểu", "Chăm sóc sonde"]))}
+      <div class="sub-h">Nội dung bàn giao thuốc</div>
+      <table class="grid med">
+        <thead><tr><th>Tên thuốc / Hàm lượng</th><th style="width:20mm">Liều dùng</th><th style="width:20mm">Đường dùng</th><th style="width:22mm">Thời gian</th><th style="width:34mm">Y lệnh</th></tr></thead>
+        <tbody>${Array.from({ length: 4 }, (_, i) => `<tr>${["Tên thuốc", "Liều", "Đường dùng", "Thời gian", "Y lệnh"].map((k) => `<td>${line(k + " " + (i + 1))}</td>`).join("")}</tr>`).join("")}</tbody>
+      </table>
+      <div class="row" style="margin-top:1mm"><span class="lbl">Khác</span></div>
+      ${area(2, "Bàn giao khác")}
+    </section>
+    <div class="sign">
+      <div><span class="when">…… giờ …… ngày …… / …… / ……</span><b>Điều dưỡng bàn giao</b><div class="space"></div><span class="note">(Ký, ghi rõ họ tên)</span></div>
+      <div><span class="when">…… giờ …… ngày …… / …… / ……</span><b>Điều dưỡng nhận bàn giao</b><div class="space"></div><span class="note">(Ký, ghi rõ họ tên)</span></div>
+    </div>`;
+
+  function build(version) {
+    V = version;
+    if (version === "san") {
+      return [
+        sheet(1, 5, header() + patient() + p1()),
+        sheet(2, 5, p2()),
+        sheet(3, 5, p3common()),
+        sheet(4, 5, obstetric()),
+        sheet(5, 5, plan(4)),
+      ].join("");
+    }
+    return [
+      sheet(1, 4, header() + patient() + p1()),
+      sheet(2, 4, p2()),
+      sheet(3, 4, p3common() + gynecology()),
+      sheet(4, 4, plan(4)),
+    ].join("");
+  }
+
+  const desk = document.getElementById("desk");
+  const views = {};
+  ["san", "phu"].forEach((v) => {
+    const wrap = document.createElement("div");
+    wrap.dataset.view = v;
+    wrap.innerHTML = build(v);
+    desk.appendChild(wrap);
+    views[v] = wrap;
+  });
+
+  function show(v) {
+    Object.entries(views).forEach(([k, el]) => { el.hidden = k !== v; });
+    document.querySelectorAll(".switch button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.version === v)));
+    try { localStorage.setItem("pcs-a4-version", v); } catch (e) {}
+    if (location.hash !== "#" + v) history.replaceState(null, "", "#" + v);
+  }
+  document.querySelectorAll(".switch button").forEach((b) => b.addEventListener("click", () => show(b.dataset.version)));
+  let start = (location.hash || "").slice(1);
+  if (!views[start]) { try { start = localStorage.getItem("pcs-a4-version") || "san"; } catch (e) { start = "san"; } }
+  show(views[start] ? start : "san");
+  window.addEventListener("hashchange", () => { const h = location.hash.slice(1); if (views[h]) show(h); });
+})();
+</script>
