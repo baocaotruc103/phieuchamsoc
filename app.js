@@ -197,6 +197,7 @@ const state = {
   departmentId: "",
   conditionId: "",
   careLevel: "1",
+  careSheetType: "1",
   search: "",
   patient: {
     name: "",
@@ -325,6 +326,26 @@ const state = {
     handoverUrine: false,
     handoverTube: false,
     handoverOther: "",
+    sleepStatus: [],
+    sleepStatusOther: "",
+    hygieneAbility: "",
+    hygieneCondition: "",
+    hygieneOther: "",
+    mentalStatus: [],
+    mentalStatusOther: "",
+    healthKnowledge: "",
+    healthEducationNeeds: [],
+    healthEducationNeedsOther: "",
+    earlyWarningScore: "",
+    earlyWarningLevel: "",
+    ivMedication: false,
+    ivMedicationRoutes: [],
+    ivMedicationOther: "",
+    ivLabOrders: false,
+    ivLabOrderTypes: [],
+    ivLabOrderOther: "",
+    ivHealthEducation: [],
+    ivHealthEducationOther: "",
   },
   diagnosisRows: [],
   diagnosisSavedRows: [],
@@ -1708,7 +1729,7 @@ function interventionSuggestions(condition) {
 
 function resetCareFormState({ resetChecklist = false } = {}) {
   if (resetChecklist) {
-    state.careLevel = "1";
+    state.careLevel = careSheetTypeLevel();
     state.assessmentChecklist = applyPreviousVitalsToChecklist(createDefaultAssessmentChecklist());
     state.patient = defaultCarePatientState();
   state.scaleScores = {};
@@ -2012,6 +2033,27 @@ function focusNextCareInput(current) {
 function textPreview(text, max = 92) {
   const value = cleanLine(text).replace(/\s+/g, " ");
   return value.length > max ? `${value.slice(0, max)}...` : value;
+}
+
+function careSheetTypeLevel(type = state.careSheetType) {
+  return type === "2,3" ? "2,3" : "1";
+}
+
+function careSheetTypeTitle(type = state.careSheetType) {
+  return careSheetTypeLevel(type) === "1" ? "Phiếu Theo Dõi Và Chăm Sóc Cấp 1" : "Phiếu Theo Dõi Và Chăm Sóc Cấp 2, 3";
+}
+
+function careLevelLabel(level = state.careLevel) {
+  return String(level) === "1" ? "1" : String(level) === "2,3" ? "2, 3" : String(level || "-");
+}
+
+function sheetMatchesCareSheetType(sheet, type = state.careSheetType) {
+  const isLevelOne = String(sheet?.cap_cham_soc || "1") === "1";
+  return careSheetTypeLevel(type) === "1" ? isLevelOne : !isLevelOne;
+}
+
+function careSheetsForCurrentType() {
+  return (state.careSheets || []).filter((sheet) => sheetMatchesCareSheetType(sheet));
 }
 
 function appBar(title, backTarget = "") {
@@ -3227,18 +3269,21 @@ function renderRecordMenuScreen() {
   const items = [
     {
       key: "care",
-      title: "Phiếu Chăm Sóc",
+      title: "Phiếu Theo Dõi Và Chăm Sóc Cấp 1",
       description: "Theo dõi quá trình chăm sóc người bệnh",
       tone: "green",
       icon: recordMenuIcon("care"),
       screen: "careEmpty",
+      careSheetType: "1",
     },
     {
       key: "level-care",
-      title: "Phiếu Chăm Sóc Cấp 2, 3",
+      title: "Phiếu Theo Dõi Và Chăm Sóc Cấp 2, 3",
       description: "Theo dõi chăm sóc cấp 2, 3",
       tone: "teal",
       icon: recordMenuIcon("level-care"),
+      screen: "careEmpty",
+      careSheetType: "2,3",
     },
     {
       key: "infusion",
@@ -3296,7 +3341,7 @@ function renderRecordMenuScreen() {
         </header>
         <div class="record-menu-list">
           ${visibleItems.length ? visibleItems.map((item) => `
-            <button class="record-menu-row" ${item.screen ? `data-screen="${item.screen}"` : ""}>
+            <button class="record-menu-row" ${item.screen ? `data-screen="${item.screen}"` : ""} ${item.careSheetType ? `data-care-sheet-type="${item.careSheetType}"` : ""}>
               <span class="record-menu-item-icon ${item.tone}" aria-hidden="true">${item.icon}</span>
               <span class="record-menu-item-copy">
                 <strong>${h(item.title)}</strong>
@@ -3338,19 +3383,19 @@ function renderCareSheetListScreen() {
   const subtitle = `${selected.name} | Mã y tế: ${selected.code} | ${selected.age} tuổi`;
   return `
     <div class="mobile-app care-list-screen">
-      ${appBar("Phiếu Chăm Sóc", "patients")}
+      ${appBar(careSheetTypeTitle(), "patients")}
       <section class="panel care-sheet-list-panel">
         <div class="panel-header">
           <div>
-            <h2 class="panel-title">Danh sách phiếu chăm sóc</h2>
+            <h2 class="panel-title">Danh sách phiếu theo dõi và chăm sóc cấp ${careLevelLabel(careSheetTypeLevel())}</h2>
             <p class="panel-subtitle">${h(subtitle)}</p>
           </div>
         </div>
         <div class="panel-body">
           <div class="care-list-toolbar">
-            <button class="btn primary care-list-btn care-list-btn-create" data-action="create-care">Thêm phiếu chăm sóc</button>
+            <button class="btn primary care-list-btn care-list-btn-create" data-action="create-care">Thêm phiếu theo dõi và chăm sóc</button>
             <button class="btn care-list-btn care-list-btn-evaluate" data-action="evaluate-results">Đánh giá kết quả</button>
-            <button type="button" class="btn care-list-btn care-list-btn-care primary" data-care-list-tab="care">Phiếu chăm sóc</button>
+            <button type="button" class="btn care-list-btn care-list-btn-care primary" data-care-list-tab="care">Phiếu theo dõi và chăm sóc</button>
           </div>
           ${renderCareSheetListBody()}
         </div>
@@ -3361,28 +3406,29 @@ function renderCareSheetListScreen() {
 
 function renderCareSheetListBody() {
   if (state.careSheetsLoading) {
-    return `<div class="empty care-list-empty">Đang tải danh sách phiếu chăm sóc...</div>`;
+    return `<div class="empty care-list-empty">Đang tải danh sách phiếu theo dõi và chăm sóc...</div>`;
   }
   if (state.careSheetsError) {
     return `<div class="empty care-list-empty">${h(state.careSheetsError)}</div>`;
   }
-  if (!state.careSheets.length) {
+  const sheets = careSheetsForCurrentType();
+  if (!sheets.length) {
     return `
       <div class="empty-care compact-empty-care">
         <div class="empty-doc-icon">+</div>
-        <h2>Chưa có phiếu chăm sóc</h2>
-        <p>Bệnh nhân chưa có phiếu chăm sóc nào. Bấm “Thêm phiếu chăm sóc” để tạo phiếu mới.</p>
+        <h2>Chưa có phiếu theo dõi và chăm sóc</h2>
+        <p>Bệnh nhân chưa có phiếu theo dõi và chăm sóc nào. Bấm “Thêm phiếu theo dõi và chăm sóc” để tạo phiếu mới.</p>
       </div>
     `;
   }
   return `
     <div class="care-sheet-list">
-      ${state.careSheets.map((sheet) => `
+      ${sheets.map((sheet) => `
         <article class="care-sheet-row">
           <div class="care-sheet-code">
             <span class="care-sheet-code-label">Mã phiếu</span>
             <strong>${h(sheet.ma_phieu || `Phiếu #${sheet.id}`)}</strong>
-            <span class="care-sheet-level">Cấp chăm sóc: ${h(sheet.cap_cham_soc || "-")}</span>
+            <span class="care-sheet-level">Cấp chăm sóc: ${h(careLevelLabel(sheet.cap_cham_soc))}</span>
           </div>
           <div class="care-sheet-evaluation-time">
             <span>Thời gian đánh giá</span>
@@ -3559,7 +3605,7 @@ function gdskPatientContext(selected = {}) {
 }
 
 function latestHealthEducationSheetsByDate() {
-  const groups = state.careSheets.reduce((acc, sheet) => {
+  const groups = careSheetsForCurrentType().reduce((acc, sheet) => {
     const key = careSheetDateKey(sheet);
     if (!acc[key] || careSheetTimeValue(sheet) > careSheetTimeValue(acc[key])) acc[key] = sheet;
     return acc;
@@ -3975,10 +4021,10 @@ function renderCareSheetDetailScreen() {
   if (!sheet) {
     return `
       <div class="mobile-app care-detail-screen">
-        ${appBar("Chi tiết phiếu chăm sóc", "careEmpty")}
+        ${appBar("Chi tiết phiếu theo dõi và chăm sóc", "careEmpty")}
         <section class="panel care-sheet-list-panel">
           <div class="panel-body">
-            <div class="empty care-list-empty">Không tìm thấy phiếu chăm sóc.</div>
+            <div class="empty care-list-empty">Không tìm thấy phiếu theo dõi và chăm sóc.</div>
           </div>
         </section>
       </div>
@@ -3996,7 +4042,7 @@ function renderCareSheetDetailScreen() {
   const medicines = handoverMedicineRows(handover);
   return `
     <div class="mobile-app care-detail-screen">
-      ${appBar("Chi tiết phiếu chăm sóc", "careEmpty")}
+      ${appBar("Chi tiết phiếu theo dõi và chăm sóc", "careEmpty")}
       <div class="report-actions no-print">
         <button class="btn" data-screen="careEmpty">Quay lại</button>
         <button class="btn" data-action="edit-care-sheet" data-sheet-id="${h(sheet.id)}">Sửa phiếu</button>
@@ -4006,7 +4052,7 @@ function renderCareSheetDetailScreen() {
       <main class="report-page">
         <header class="report-head">
           <h1>Phiếu theo dõi và chăm sóc</h1>
-          <div>[Phân cấp chăm sóc ${h(sheet.cap_cham_soc || "-")}]</div>
+          <div>[Phân cấp chăm sóc ${h(careLevelLabel(sheet.cap_cham_soc))}]</div>
         </header>
 
         <section class="report-patient-card">
@@ -4020,7 +4066,7 @@ function renderCareSheetDetailScreen() {
           <div class="report-grid cols-3 report-admin-grid">
             ${detailField("Thời gian đánh giá", formatDateTime(sheet.thoi_gian_danh_gia))}
             ${detailField("Người đánh giá", sheet.nguoi_danh_gia)}
-            ${detailField("Phân cấp chăm sóc", `CS cấp ${sheet.cap_cham_soc || "-"}`)}
+            ${detailField("Phân cấp chăm sóc", `CS cấp ${careLevelLabel(sheet.cap_cham_soc)}`)}
             ${detailField("Chiều cao (cm)", check.height)}
             ${detailField("Cân nặng (kg)", check.weight)}
             ${detailField("BMI", check.bmi)}
@@ -4231,7 +4277,7 @@ function render(focusSelector = "") {
 
   app.innerHTML = `
     <div class="mobile-app form-mode">
-      ${appBar("Phiếu Chăm Sóc", "careEmpty")}
+      ${appBar(careSheetTypeTitle(), "careEmpty")}
       <div class="form-actions">
         <button class="btn ghost" data-action="save-care">${state.editingCareSheetId ? "Cập nhật phiếu" : "Lưu phiếu và ký"}</button>
         ${document.body?.dataset.careFormLayout === "all" ? '<button type="button" class="btn primary" data-action="export-full-care-pdf">Xuất PDF đầy đủ form</button>' : ""}
@@ -4281,7 +4327,7 @@ function renderCareFormTabs() {
     ? state.activeCareFormTab
     : "patient";
   return `
-    <nav class="care-form-tabs" aria-label="Các phần phiếu chăm sóc">
+    <nav class="care-form-tabs" aria-label="Các phần phiếu theo dõi và chăm sóc">
       ${careFormTabs().map((tab) => `
         <button
           type="button"
@@ -4309,7 +4355,7 @@ function renderActiveCareFormTab(assessments) {
     case "diagnosis":
       return renderDiagnosisPanelV2();
     case "intervention":
-      return renderInterventionPanel();
+      return renderInterventionTab();
     case "handover":
       return renderHandoverPanel();
     case "patient":
@@ -4327,13 +4373,13 @@ function renderAllCareFormSections(assessments) {
     renderAssessmentPanel(assessments),
     renderFluidBalancePanel(),
     renderDiagnosisPanelV2(),
-    renderInterventionPanel(),
+    renderInterventionTab(),
     renderHandoverPanel(),
   ].join("");
 }
 
 function renderPatientPanel() {
-  return `${renderCareHeaderPanel()}${renderCareLevelPanel()}`;
+  return renderCareHeaderPanel();
 }
 
 function renderCareHeaderPanel() {
@@ -4478,7 +4524,245 @@ function patientDetail(label, value, variant = "") {
   `;
 }
 
+function renderCirculationCard(check = state.assessmentChecklist) {
+  return `
+        <div class="assessment-section-card">
+          <h3>Tuần hoàn</h3>
+          <div class="assessment-form compact-form circulation-form">
+            ${multiCheckGroup("circulationSymptoms", "Triệu chứng cơ năng", ["Không triệu chứng", "Hồi hộp/đánh trống ngực", "Đau ngực", "Chóng mặt", "Ngất", "Không đánh giá được"], check.circulationSymptoms)}
+            ${radioGroup("peripheralPerfusion", "Tưới máu ngoại vi", ["Bình thường", "Giảm tưới máu ngoại vi"], check.peripheralPerfusion)}
+            ${radioGroup("heartRhythm", "Nhịp tim", ["Đều", "Không đều"], check.heartRhythm)}
+            ${radioGroup("heartRateStatus", "Mạch", ["Bình thường", "Nhanh", "Chậm"], check.heartRateStatus)}
+            ${radioGroup("heartSounds", "Tiếng tim", ["Nghe rõ", "Mờ", "Không đánh giá được"], check.heartSounds)}
+            ${checkBool("circulationOtherChecked", "Khác", check.circulationOtherChecked)}
+            ${check.circulationOtherChecked ? checkField("circulationOther", "Khác", check.circulationOther, "text", "circulation-other-field") : ""}
+          </div>
+        </div>
+  `;
+}
+
+function renderNutritionCard(check = state.assessmentChecklist) {
+  return `
+        <div class="assessment-section-card">
+          <h3>Dinh dưỡng</h3>
+          <div class="assessment-form compact-form">
+            ${multiCheckGroup("nutritionRoute", "Đường nuôi dưỡng", ["Đường miệng", "Sonde dạ dày", "Sonde hỗng tràng", "Tĩnh mạch", "Kết hợp", "Nhịn ăn"], check.nutritionRoute)}
+            ${multiCheckGroup("nutritionRegimen", "Chế độ dinh dưỡng", ["Cơm", "Cháo", "Soup", "Sữa", "Khác"], check.nutritionRegimen)}
+            ${Array.isArray(check.nutritionRegimen) && check.nutritionRegimen.includes("Khác") ? checkField("nutritionRegimenOther", "Chế độ dinh dưỡng khác", check.nutritionRegimenOther) : ""}
+            ${checkBool("pathologicalDiet", "Chế độ bệnh lý", check.pathologicalDiet)}
+            ${check.pathologicalDiet ? multiCheckGroup("pathologicalDietTypes", "Loại chế độ bệnh lý", ["Tim mạch", "Đái tháo đường (kiểm soát đường)", "Suy thận", "Gan mật", "Giảm mỡ / tim mạch", "Theo chỉ định riêng", "Khác"], check.pathologicalDietTypes) : ""}
+            ${check.pathologicalDiet && Array.isArray(check.pathologicalDietTypes) && check.pathologicalDietTypes.includes("Khác") ? checkField("pathologicalDietOther", "Chế độ bệnh lý khác", check.pathologicalDietOther) : ""}
+          </div>
+        </div>
+  `;
+}
+
+function renderMobilityCard(check = state.assessmentChecklist) {
+  return `
+        <div class="assessment-section-card">
+          <h3>Vận động/Phục hồi chức năng</h3>
+          <div class="assessment-form compact-form mobility-rehab-form">
+            ${multiCheckGroup("mobilityAbility", "Khả năng vận động", ["Tự đi lại bình thường", "Đi lại cần hỗ trợ", "Đi lại bằng dụng cụ hỗ trợ", "Không tự đi lại được", "Nằm bất động tại giường", "Khác"], check.mobilityAbility)}
+            ${Array.isArray(check.mobilityAbility) && check.mobilityAbility.includes("Khác") ? checkField("mobilityAbilityOther", "Khả năng vận động khác", check.mobilityAbilityOther) : ""}
+            ${multiCheckGroup("muscleStrength", "Tình trạng cơ lực", ["Cơ lực bình thường", "Yếu nhẹ", "Yếu 1 chi", "Yếu 2 chi", "Liệt nửa người", "Liệt tứ chi", "Khác"], check.muscleStrength)}
+            ${Array.isArray(check.muscleStrength) && check.muscleStrength.includes("Khác") ? checkField("muscleStrengthOther", "Tình trạng cơ lực khác", check.muscleStrengthOther) : ""}
+            ${multiCheckGroup("movementStatus", "Tình trạng vận động", ["Bình thường", "Hạn chế vận động", "Đau khi vận động", "Co cứng cơ", "Run tay chân", "Giảm thăng bằng", "Khác"], check.movementStatus)}
+            ${Array.isArray(check.movementStatus) && check.movementStatus.includes("Khác") ? checkField("movementStatusOther", "Tình trạng vận động khác", check.movementStatusOther) : ""}
+          </div>
+        </div>
+  `;
+}
+
+// ===== Phiếu theo dõi và chăm sóc cấp 2, 3 (MS: 38/BV1 - Phụ lục XXIX, TT 32/2023/TT-BYT) =====
+const LEVEL23_EXTRA_ASSESSMENT_KEYS = [
+  "sleepStatus", "sleepStatusOther", "hygieneAbility", "hygieneCondition", "hygieneOther",
+  "mentalStatus", "mentalStatusOther", "healthKnowledge", "healthEducationNeeds", "healthEducationNeedsOther",
+  "earlyWarningScore", "earlyWarningLevel",
+];
+
+const LEVEL23_SHEET_LABELS = {
+  consciousness: "Tri giác",
+  sleepStatus: "Giấc ngủ", sleepStatusOther: "Giấc ngủ khác",
+  hygieneAbility: "Khả năng tự vệ sinh", hygieneCondition: "Tình trạng vệ sinh", hygieneOther: "Vệ sinh cá nhân khác",
+  mentalStatus: "Tinh thần", mentalStatusOther: "Tinh thần khác",
+  healthKnowledge: "Hiểu biết về bệnh", healthEducationNeeds: "Nhu cầu GDSK", healthEducationNeedsOther: "Nhu cầu GDSK khác",
+  earlyWarningScore: "Điểm cảnh báo sớm (NEWS2)", earlyWarningLevel: "Mức cảnh báo sớm",
+  ivMedication: "Thực hiện thuốc theo chỉ định", ivMedicationRoutes: "Đường dùng thuốc", ivMedicationOther: "Đường dùng khác",
+  ivLabOrders: "Thực hiện theo chỉ định CLS", ivLabOrderTypes: "Cận lâm sàng", ivLabOrderOther: "CLS khác",
+  ivHealthEducation: "Tư vấn, giáo dục sức khỏe", ivHealthEducationOther: "Tư vấn GDSK khác",
+};
+
+function level23SheetSectionGroups() {
+  return {
+    "A. Thông tin người bệnh": ["evalTime", "evaluator", "height", "weight", "bmi", "allergy", "allergyDrug", "allergyFood", "allergyOther", "allergySymptoms", "allergy_note"],
+    "B. Chỉ số sinh tồn, sinh trắc": ["pulse", "temperature", "bloodPressure", "respiratoryRate", "spo2"],
+    "C. Toàn thân": ["mucosa", "consciousness", "edema", "systemicNote"],
+    "D. Hô hấp": ["breathingMode", "oxygenFlow", "ventilationAirway", "ventilatorMode", "fio2", "peep", "vt", "coughStatus", "respiratoryNote"],
+    "E. Tuần hoàn": ["circulationSymptoms", "peripheralPerfusion", "heartRhythm", "heartRateStatus", "heartSounds", "circulationOther"],
+    "F. Dinh dưỡng": ["nutritionRoute", "nutritionRegimen", "nutritionRegimenOther", "pathologicalDiet", "pathologicalDietTypes", "pathologicalDietOther"],
+    "G. Giấc ngủ, nghỉ ngơi": ["sleepStatus", "sleepStatusOther"],
+    "H. Vệ sinh cá nhân": ["hygieneAbility", "hygieneCondition", "hygieneOther"],
+    "I. Tinh thần": ["mentalStatus", "mentalStatusOther"],
+    "J. Vận động, PHCN": ["mobilityAbility", "mobilityAbilityOther", "muscleStrength", "muscleStrengthOther", "movementStatus", "movementStatusOther"],
+    "K. GDSK": ["healthKnowledge", "healthEducationNeeds", "healthEducationNeedsOther"],
+    "L. Theo dõi khác": ["painAssessment", "pressureUlcerRiskAssessment", "fallRiskAssessment", "vteRiskAssessment", "earlyWarningScore", "earlyWarningLevel"],
+    "M. Thực hiện theo chỉ định": ["ivMedication", "ivMedicationRoutes", "ivMedicationOther", "ivLabOrders", "ivLabOrderTypes", "ivLabOrderOther"],
+    "N. Tư vấn, giáo dục sức khỏe": ["ivHealthEducation", "ivHealthEducationOther"],
+    "P. Bàn giao": ["handoverMedicineHalf", "handoverLab", "handoverWaitLab", "handoverFilm", "handoverWaitFilm", "handoverDressing", "handoverDrain", "handoverVitals", "handoverUrine", "handoverTube", "handoverOther"],
+  };
+}
+
+function includesOther(value) {
+  return Array.isArray(value) && value.includes("Khác");
+}
+
+function renderLevel23AssessmentPanel() {
+  const check = state.assessmentChecklist;
+  return `
+    <section class="panel assessment-checklist-panel structured-assessment">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title">Nhận định, theo dõi</h2>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="assessment-section-card">
+          <h3>Chỉ số sinh tồn, sinh trắc</h3>
+          <div class="care-info-grid vital-grid">
+            ${checkField("pulse", "Mạch (lần/phút)", check.pulse)}
+            ${checkField("temperature", "Nhiệt độ (°C)", check.temperature)}
+            ${checkField("bloodPressure", "Huyết áp (mmHg)", check.bloodPressure)}
+            ${checkField("respiratoryRate", "Nhịp thở (lần/phút)", check.respiratoryRate)}
+            ${checkField("spo2", "SpO2 (%)", check.spo2)}
+          </div>
+        </div>
+
+        <div class="assessment-section-card">
+          <h3>Toàn thân</h3>
+          <div class="assessment-form compact-form">
+            ${multiCheckGroup("mucosa", "Da, niêm mạc", ["Hồng", "Nhợt", "Vàng da", "Ngứa ngoài da"], check.mucosa)}
+            ${multiCheckGroup("consciousness", "Tri giác", ["Tỉnh", "Lơ mơ", "Hôn mê", "Kích thích", "An thần"], check.consciousness)}
+            ${radioGroup("edema", "Phù", ["Có", "Không"], check.edema)}
+            ${checkArea("systemicNote", "Khác", check.systemicNote)}
+          </div>
+        </div>
+
+        <div class="assessment-section-card respiratory-section">
+          <h3>Hô hấp</h3>
+          <div class="assessment-form compact-form respiratory-form">
+            ${radioGroup("breathingMode", "Tình trạng thở", ["Tự thở", "Thở oxy", "HFNC", "NIV", "Thở máy"], check.breathingMode)}
+            ${renderRespiratoryDetails(check)}
+            ${multiCheckGroup("coughStatus", "Ho", ["Không ho", "Ho khan", "Ho có đờm", "Ho từng cơn", "Ho thường xuyên", "Ho có máu", "Ho yếu / không hiệu quả", "Không đánh giá được"], check.coughStatus)}
+            ${checkArea("respiratoryNote", "Khác", check.respiratoryNote, "respiratory-note-field")}
+          </div>
+        </div>
+
+${renderCirculationCard(check)}
+
+${renderNutritionCard(check)}
+
+        <div class="assessment-section-card">
+          <h3>Giấc ngủ, nghỉ ngơi</h3>
+          <div class="assessment-form compact-form">
+            ${multiCheckGroup("sleepStatus", "Giấc ngủ", ["Ngủ được", "Khó ngủ", "Ngủ ít", "Hay thức giấc", "Mất ngủ", "Dùng thuốc ngủ", "Khác"], check.sleepStatus)}
+            ${includesOther(check.sleepStatus) ? checkField("sleepStatusOther", "Giấc ngủ khác", check.sleepStatusOther) : ""}
+          </div>
+        </div>
+
+        <div class="assessment-section-card">
+          <h3>Vệ sinh cá nhân</h3>
+          <div class="assessment-form compact-form">
+            ${radioGroup("hygieneAbility", "Khả năng tự vệ sinh", ["Tự vệ sinh", "Cần hỗ trợ một phần", "Phụ thuộc hoàn toàn"], check.hygieneAbility)}
+            ${radioGroup("hygieneCondition", "Tình trạng vệ sinh", ["Sạch sẽ", "Chưa sạch"], check.hygieneCondition)}
+            ${checkArea("hygieneOther", "Khác", check.hygieneOther)}
+          </div>
+        </div>
+
+        <div class="assessment-section-card">
+          <h3>Tinh thần</h3>
+          <div class="assessment-form compact-form">
+            ${multiCheckGroup("mentalStatus", "Tinh thần", ["Ổn định", "Lo lắng", "Bồn chồn", "Buồn chán", "Sợ hãi", "Không hợp tác", "Khác"], check.mentalStatus)}
+            ${includesOther(check.mentalStatus) ? checkField("mentalStatusOther", "Tinh thần khác", check.mentalStatusOther) : ""}
+          </div>
+        </div>
+
+${renderMobilityCard(check)}
+
+        <div class="assessment-section-card">
+          <h3>Giáo dục sức khỏe</h3>
+          <div class="assessment-form compact-form">
+            ${radioGroup("healthKnowledge", "Hiểu biết về bệnh", ["Đã hiểu", "Hiểu chưa đầy đủ", "Chưa hiểu"], check.healthKnowledge)}
+            ${multiCheckGroup("healthEducationNeeds", "Nhu cầu GDSK", ["Chế độ ăn", "Dùng thuốc", "Vận động/PHCN", "Vệ sinh cá nhân", "Phòng ngừa té ngã", "Phòng ngừa loét tỳ đè", "Theo dõi dấu hiệu bất thường", "Khác"], check.healthEducationNeeds)}
+            ${includesOther(check.healthEducationNeeds) ? checkField("healthEducationNeedsOther", "Nhu cầu GDSK khác", check.healthEducationNeedsOther) : ""}
+          </div>
+        </div>
+
+        <div class="assessment-section-card">
+          <h3>Theo dõi khác</h3>
+          <div class="assessment-form compact-form">
+            ${renderScaleCheckItem("painAssessment", "Đau (VAS)", check.painAssessment)}
+            ${renderScaleCheckItem("pressureUlcerRiskAssessment", "Loét do tỳ đè (Braden)", check.pressureUlcerRiskAssessment)}
+            ${renderScaleCheckItem("fallRiskAssessment", "Nguy cơ ngã (Morse)", check.fallRiskAssessment)}
+            ${renderScaleCheckItem("vteRiskAssessment", "Viêm tĩnh mạch (VIP)", check.vteRiskAssessment)}
+            ${checkField("earlyWarningScore", "Cảnh báo sớm - điểm NEWS2", check.earlyWarningScore, "number")}
+            ${radioGroup("earlyWarningLevel", "Mức cảnh báo", ["Thấp (0-4)", "Trung bình (5-6)", "Cao (≥7)"], check.earlyWarningLevel)}
+          </div>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function renderLevel23OrdersPanel() {
+  const check = state.assessmentChecklist;
+  return `
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title">Thực hiện theo chỉ định</h2>
+          <p class="panel-subtitle">Tích chọn các y lệnh đã thực hiện.</p>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="assessment-form compact-form">
+          ${checkBool("ivMedication", "Thực hiện thuốc theo chỉ định", check.ivMedication)}
+          ${check.ivMedication ? multiCheckGroup("ivMedicationRoutes", "Đường dùng", ["Uống", "Tiêm tĩnh mạch", "Tiêm bắp", "Tiêm dưới da", "Truyền tĩnh mạch", "Khí dung", "Dùng ngoài", "Khác"], check.ivMedicationRoutes) : ""}
+          ${check.ivMedication && includesOther(check.ivMedicationRoutes) ? checkField("ivMedicationOther", "Đường dùng khác", check.ivMedicationOther) : ""}
+          ${checkBool("ivLabOrders", "Thực hiện theo chỉ định CLS", check.ivLabOrders)}
+          ${check.ivLabOrders ? multiCheckGroup("ivLabOrderTypes", "Cận lâm sàng", ["Lấy máu xét nghiệm", "Lấy nước tiểu", "Lấy đờm/dịch", "X-quang", "Siêu âm", "Điện tim", "CT/MRI", "Nội soi", "Khác"], check.ivLabOrderTypes) : ""}
+          ${check.ivLabOrders && includesOther(check.ivLabOrderTypes) ? checkField("ivLabOrderOther", "CLS khác", check.ivLabOrderOther) : ""}
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function renderLevel23EducationPanel() {
+  const check = state.assessmentChecklist;
+  return `
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title">Tư vấn, giáo dục sức khỏe</h2>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="assessment-form compact-form">
+          ${multiCheckGroup("ivHealthEducation", "Nội dung tư vấn", ["Nội quy khoa phòng", "Chế độ ăn", "Dùng thuốc", "Vận động/PHCN", "Vệ sinh cá nhân", "Phòng ngừa té ngã", "Phòng ngừa loét tỳ đè", "Theo dõi dấu hiệu bất thường", "Chăm sóc sau ra viện", "Khác"], check.ivHealthEducation)}
+          ${includesOther(check.ivHealthEducation) ? checkField("ivHealthEducationOther", "Nội dung khác", check.ivHealthEducationOther) : ""}
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function renderInterventionTab() {
+  if (state.careLevel === "1") return renderInterventionPanel();
+  return `${renderLevel23OrdersPanel()}${renderInterventionPanel()}${renderLevel23EducationPanel()}`;
+}
+
 function renderAssessmentPanel(assessments) {
+  if (state.careLevel !== "1") return renderLevel23AssessmentPanel();
   const check = state.assessmentChecklist;
   return `
     <section class="panel assessment-checklist-panel structured-assessment">
@@ -4520,18 +4804,7 @@ function renderAssessmentPanel(assessments) {
           </div>
         </div>
 
-        <div class="assessment-section-card">
-          <h3>Tuần hoàn</h3>
-          <div class="assessment-form compact-form circulation-form">
-            ${multiCheckGroup("circulationSymptoms", "Triệu chứng cơ năng", ["Không triệu chứng", "Hồi hộp/đánh trống ngực", "Đau ngực", "Chóng mặt", "Ngất", "Không đánh giá được"], check.circulationSymptoms)}
-            ${radioGroup("peripheralPerfusion", "Tưới máu ngoại vi", ["Bình thường", "Giảm tưới máu ngoại vi"], check.peripheralPerfusion)}
-            ${radioGroup("heartRhythm", "Nhịp tim", ["Đều", "Không đều"], check.heartRhythm)}
-            ${radioGroup("heartRateStatus", "Mạch", ["Bình thường", "Nhanh", "Chậm"], check.heartRateStatus)}
-            ${radioGroup("heartSounds", "Tiếng tim", ["Nghe rõ", "Mờ", "Không đánh giá được"], check.heartSounds)}
-            ${checkBool("circulationOtherChecked", "Khác", check.circulationOtherChecked)}
-            ${check.circulationOtherChecked ? checkField("circulationOther", "Khác", check.circulationOther, "text", "circulation-other-field") : ""}
-          </div>
-        </div>
+        ${renderCirculationCard(check)}
 
         <div class="assessment-section-card">
           <h3>Thần kinh cảm giác</h3>
@@ -4572,29 +4845,9 @@ function renderAssessmentPanel(assessments) {
           </div>
         </div>
 
-        <div class="assessment-section-card">
-          <h3>Dinh dưỡng</h3>
-          <div class="assessment-form compact-form">
-            ${multiCheckGroup("nutritionRoute", "Đường nuôi dưỡng", ["Đường miệng", "Sonde dạ dày", "Sonde hỗng tràng", "Tĩnh mạch", "Kết hợp", "Nhịn ăn"], check.nutritionRoute)}
-            ${multiCheckGroup("nutritionRegimen", "Chế độ dinh dưỡng", ["Cơm", "Cháo", "Soup", "Sữa", "Khác"], check.nutritionRegimen)}
-            ${Array.isArray(check.nutritionRegimen) && check.nutritionRegimen.includes("Khác") ? checkField("nutritionRegimenOther", "Chế độ dinh dưỡng khác", check.nutritionRegimenOther) : ""}
-            ${checkBool("pathologicalDiet", "Chế độ bệnh lý", check.pathologicalDiet)}
-            ${check.pathologicalDiet ? multiCheckGroup("pathologicalDietTypes", "Loại chế độ bệnh lý", ["Tim mạch", "Đái tháo đường (kiểm soát đường)", "Suy thận", "Gan mật", "Giảm mỡ / tim mạch", "Theo chỉ định riêng", "Khác"], check.pathologicalDietTypes) : ""}
-            ${check.pathologicalDiet && Array.isArray(check.pathologicalDietTypes) && check.pathologicalDietTypes.includes("Khác") ? checkField("pathologicalDietOther", "Chế độ bệnh lý khác", check.pathologicalDietOther) : ""}
-          </div>
-        </div>
+        ${renderNutritionCard(check)}
 
-        <div class="assessment-section-card">
-          <h3>Vận động/Phục hồi chức năng</h3>
-          <div class="assessment-form compact-form mobility-rehab-form">
-            ${multiCheckGroup("mobilityAbility", "Khả năng vận động", ["Tự đi lại bình thường", "Đi lại cần hỗ trợ", "Đi lại bằng dụng cụ hỗ trợ", "Không tự đi lại được", "Nằm bất động tại giường", "Khác"], check.mobilityAbility)}
-            ${Array.isArray(check.mobilityAbility) && check.mobilityAbility.includes("Khác") ? checkField("mobilityAbilityOther", "Khả năng vận động khác", check.mobilityAbilityOther) : ""}
-            ${multiCheckGroup("muscleStrength", "Tình trạng cơ lực", ["Cơ lực bình thường", "Yếu nhẹ", "Yếu 1 chi", "Yếu 2 chi", "Liệt nửa người", "Liệt tứ chi", "Khác"], check.muscleStrength)}
-            ${Array.isArray(check.muscleStrength) && check.muscleStrength.includes("Khác") ? checkField("muscleStrengthOther", "Tình trạng cơ lực khác", check.muscleStrengthOther) : ""}
-            ${multiCheckGroup("movementStatus", "Tình trạng vận động", ["Bình thường", "Hạn chế vận động", "Đau khi vận động", "Co cứng cơ", "Run tay chân", "Giảm thăng bằng", "Khác"], check.movementStatus)}
-            ${Array.isArray(check.movementStatus) && check.movementStatus.includes("Khác") ? checkField("movementStatusOther", "Tình trạng vận động khác", check.movementStatusOther) : ""}
-          </div>
-        </div>
+        ${renderMobilityCard(check)}
 
         <div class="assessment-section-card">
           <h3>Cơ quan bị bệnh</h3>
@@ -5909,7 +6162,7 @@ function renderInterventionPanel() {
     <section class="panel">
       <div class="panel-header">
         <div>
-          <h2 class="panel-title">Can thiệp chăm sóc</h2>
+          <h2 class="panel-title">${state.careLevel === "1" ? "Can thiệp chăm sóc" : "Chăm sóc điều dưỡng"}</h2>
           <p class="panel-subtitle">Gợi ý theo chẩn đoán, mục tiêu và nhận định; chọn mã sẽ tự lấy nội dung, chọn nội dung sẽ tự lấy mã.</p>
         </div>
         <span class="step-badge">4</span>
@@ -6435,7 +6688,7 @@ function renderSheet(condition) {
         <article class="sheet">
           <header class="sheet-head">
             <div>
-              <h2>Phiếu chăm sóc điều dưỡng cấp ${h(state.careLevel)}</h2>
+              <h2>Phiếu theo dõi và chăm sóc cấp ${h(careLevelLabel())}</h2>
               <div class="sheet-meta">
                 <span>Người bệnh: ${h((patients[state.selectedPatientIndex] || patients[0]).name)}</span>
                 <span>Tuổi: ${h((patients[state.selectedPatientIndex] || patients[0]).age)}</span>
@@ -6580,6 +6833,8 @@ function hasAssessmentTabContent() {
   ];
   if (state.careLevel === "1") {
     assessmentFields.push("fluidIn", "fluidOut", "fluidBalance");
+  } else {
+    assessmentFields.push(...LEVEL23_EXTRA_ASSESSMENT_KEYS);
   }
   const hasStructuredContent = hasAnyFilledValue(assessmentFields.map((field) => check[field]));
   const hasSuggestedContent = [...state.selectedAssessments].some((id) =>
@@ -7026,7 +7281,7 @@ function buildAssessmentSectionsForSheet() {
   const check = state.assessmentChecklist;
   const sections = [];
   
-  const sectionGroups = {
+  const sectionGroups = state.careLevel !== "1" ? level23SheetSectionGroups() : {
     "A. Thông tin người bệnh": ["evalTime", "evaluator", "height", "weight", "bmi", "allergy", "allergyDrug", "allergyFood", "allergyOther", "allergySymptoms", "allergy_note"],
     ...(state.careLevel === "1" ? { "B. Theo dõi dịch": ["fluidIn", "fluidOut", "fluidBalance"] } : {}),
     "C. Dấu hiệu sinh tồn": ["pulse", "temperature", "bloodPressure", "spo2"],
@@ -7063,7 +7318,8 @@ function buildAssessmentSectionsForSheet() {
     vteRiskAssessment: "Đánh giá nguy cơ viêm tĩnh mạch",
     painAssessment: "Đánh giá đau",
     pressureUlcerRiskAssessment: "Đánh giá nguy cơ loét tỳ đè",
-    glasgowAssessment: "Đánh giá Glasgow"
+    glasgowAssessment: "Đánh giá Glasgow",
+    ...(state.careLevel !== "1" ? LEVEL23_SHEET_LABELS : {}),
   };
   
   for (const [section, fields] of Object.entries(sectionGroups)) {
@@ -7295,6 +7551,7 @@ app.addEventListener("click", (event) => {
   }
 
   if (target.dataset.screen) {
+    if (target.dataset.careSheetType) state.careSheetType = careSheetTypeLevel(target.dataset.careSheetType);
     state.screen = target.dataset.screen;
     render();
     return;
@@ -7491,7 +7748,7 @@ app.addEventListener("click", (event) => {
   if (target.dataset.action === "edit-care-sheet") {
     const sheet = state.careSheets.find((item) => String(item.id) === String(target.dataset.sheetId));
     if (!sheet) {
-      alert("Không tìm thấy phiếu chăm sóc để sửa.");
+      alert("Không tìm thấy phiếu theo dõi và chăm sóc để sửa.");
       return;
     }
     hydrateCareFormFromSheet(sheet);
@@ -7978,7 +8235,7 @@ app.addEventListener("click", (event) => {
       .then((sheetId) => {
         state.careSheetsLoadedFor = "";
         state.careGoalEvaluationsLoadedFor = "";
-        alert(`${state.editingCareSheetId ? "Đã cập nhật" : "Đã lưu"} phiếu chăm sóc #${sheetId}`);
+        alert(`${state.editingCareSheetId ? "Đã cập nhật" : "Đã lưu"} phiếu theo dõi và chăm sóc #${sheetId}`);
       })
       .catch((error) => {
         alert(`Không lưu được phiếu: ${error.message || error}`);
@@ -8557,6 +8814,14 @@ app.addEventListener("change", (event) => {
     if (target.dataset.checklistBool === "obgynEnabled" && !target.checked) {
       state.assessmentChecklist.obgynMode = "";
       (state.obgynTemplate?.sections || []).forEach((section) => clearObgynFieldValues(section.fields || []));
+    }
+    if (target.dataset.checklistBool === "ivMedication" && !target.checked) {
+      state.assessmentChecklist.ivMedicationRoutes = [];
+      state.assessmentChecklist.ivMedicationOther = "";
+    }
+    if (target.dataset.checklistBool === "ivLabOrders" && !target.checked) {
+      state.assessmentChecklist.ivLabOrderTypes = [];
+      state.assessmentChecklist.ivLabOrderOther = "";
     }
     if (target.dataset.checklistBool === "handoverMedicineHalf" && !target.checked) {
       state.assessmentChecklist.handoverMedicines = [];
